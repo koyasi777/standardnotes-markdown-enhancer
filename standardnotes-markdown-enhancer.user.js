@@ -13,6 +13,14 @@
 // @version      1.8.0
 // @description         Adds a rich Markdown editor with preview and toolbar to Standard Notes (unofficial). Fully client-side and secure.
 // @description:ja      Standard Notesに装飾ツールバー＆プレビュー付きのMarkdownエディタを追加（非公式）。完全にローカルで動作。
+// @description:zh-CN   为 Standard Notes 添加带工具栏和预览功能的 Markdown 编辑器（非官方）。完全在本地运行，安全可靠。
+// @description:zh-TW   為 Standard Notes 新增具工具列與預覽功能的 Markdown 編輯器（非官方）。完全本機端運行，安全可靠。
+// @description:ko      Standard Notes에 툴바 및 미리보기가 포함된 Markdown 편집기를 추가합니다(비공식). 완전히 클라이언트 측에서 동작하며 안전합니다。
+// @description:fr      Ajoute un éditeur Markdown avec barre d’outils et aperçu à Standard Notes (non officiel). Fonctionne entièrement côté client, sécurisé.
+// @description:es      Añade un editor Markdown con barra de herramientas y vista previa a Standard Notes (no oficial). Funciona completamente en el cliente y es seguro.
+// @description:de      Fügt einen Markdown-Editor mit Werkzeugleiste und Vorschau zu Standard Notes hinzu (inoffiziell). Funktioniert vollständig clientseitig und ist sicher.
+// @description:pt-BR   Adiciona um editor Markdown com barra de ferramentas e visualização ao Standard Notes (não oficial). Funciona totalmente no cliente, de forma segura.
+// @description:ru      Добавляет редактор Markdown с панелью инструментов и предварительным просмотром в Standard Notes (неофициально). Полностью работает на стороне клиента и безопасен.
 // @namespace    https://github.com/koyasi777/standardnotes-markdown-enhancer
 // @author       koyasi777
 // @match        https://app.standardnotes.com/*
