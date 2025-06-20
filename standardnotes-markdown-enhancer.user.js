@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Standard NotesにMarkdownエディタを追加
+// @name         Add Markdown Editor to Standard Notes
 // @name:ja      Standard NotesにMarkdownエディタを追加
 // @name:en      Add Markdown Editor to Standard Notes
 // @name:zh-CN   为Standard Notes添加Markdown编辑器
@@ -11,12 +11,15 @@
 // @name:pt-BR   Adicionar editor Markdown ao Standard Notes
 // @name:ru      Добавить редактор Markdown в Standard Notes
 // @version      1.8.0
-// @description         Standard Notesの編集画面に、ツールバー＆プレビュー付きMarkdownエディタを追加！強調・リスト・引用などもワンクリックで挿入可能。
-// @description:en      Adds a Markdown editor with toolbar and preview to Standard Notes. Easily insert headings, bold, lists, quotes, and more.
+// @description         Adds a rich Markdown editor with preview and toolbar to Standard Notes (unofficial). Fully client-side and secure.
+// @description:ja      Standard Notesに装飾ツールバー＆プレビュー付きのMarkdownエディタを追加（非公式）。完全にローカルで動作。
 // @namespace    https://github.com/koyasi777/standardnotes-markdown-enhancer
 // @author       koyasi777
 // @match        https://app.standardnotes.com/*
 // @grant        GM_addStyle
+// @require      https://cdn.jsdelivr.net/npm/marked/marked.min.js
+// @require      https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js
+// @require      https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js
 // @license      MIT
 // @homepageURL  https://github.com/koyasi777/standardnotes-markdown-enhancer
 // @supportURL   https://github.com/koyasi777/standardnotes-markdown-enhancer/issues
