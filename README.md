@@ -2,16 +2,17 @@
 
 ## 📌 Overview
 
-This userscript enhances **Standard Notes** (web version) by adding a **rich Markdown editor** with a formatting toolbar and live preview panel.
+This userscript enhances **Standard Notes** (web version) by adding a **rich Markdown editor** with a formatting toolbar, live preview, and PDF export.
 
 ### ✨ Key Features
 
 * 🛠️ Easily insert **headings, bold, lists, code blocks** with one click
-* 🔄 Toggle between **editor** and **preview** modes
+* ↺ Switch between **Editor / Preview / Split** views
 * 🌙 Automatically adapts to dark mode
-* 🧼 Fully client-side and secure — no data sent externally
+* 🖫 Print or export your note as **clean PDF**
+* 🚼 Fully client-side and secure — no data sent externally
 
-> 🚫 This is an **unofficial tool** and has **no affiliation with Standard Notes Inc.**
+> ⛔ This is an **unofficial tool** and has **no affiliation with Standard Notes Inc.**
 > Developed independently out of appreciation for the Standard Notes platform.
 
 ---
@@ -35,10 +36,13 @@ This userscript enhances **Standard Notes** (web version) by adding a **rich Mar
 
 ## 💡 Features
 
-* Markdown toolbar (headings, bold, italic, lists, checklists, quotes, links, etc.)
-* Live preview toggle with syntax highlighting
-* Copy-to-clipboard button for code blocks
-* Dark mode support
+* Markdown formatting toolbar (headings, bold, italic, lists, checkboxes, quotes, links, tables, etc.)
+* Three display modes: **Editor**, **Preview**, and **Split View**
+* Live preview with syntax highlighting (`highlight.js`)
+* Copy-to-clipboard buttons for code blocks
+* Clean and responsive print styles
+* Export to PDF with one click
+* Fully responsive and dark mode–compatible UI
 * Uses `marked.js`, `DOMPurify`, and `highlight.js` for safe, rich rendering
 
 ---
@@ -47,7 +51,7 @@ This userscript enhances **Standard Notes** (web version) by adding a **rich Mar
 
 * This script **does not send or store your notes anywhere**
 * All processing is done locally within your browser
-* Uses DOMPurify to sanitize rendered HTML
+* Rendered HTML is sanitized using `DOMPurify`
 
 > ⚠️ Use this script at **your own risk**
 
@@ -56,8 +60,8 @@ This userscript enhances **Standard Notes** (web version) by adding a **rich Mar
 ## 📌 Limitations & Notes
 
 * Only supports the **default plain text editor** on `https://app.standardnotes.com/`
-* Does **not** work with other editors (e.g., Bold Editor, Code Editor, etc.)
-* May break if Standard Notes updates their editor implementation
+* Does **not** work with other editor types (e.g., Bold Editor, Code Editor)
+* May require updates if Standard Notes changes their DOM structure
 
 ---
 
@@ -65,8 +69,8 @@ This userscript enhances **Standard Notes** (web version) by adding a **rich Mar
 
 This script was created as a community contribution to complement the official Standard Notes project, and to express respect for its open-source nature.
 
-* Distributed under the **MIT License**, not for commercial purposes
-* Contributions (issues, improvements, PRs) are **welcome and encouraged**
+* Distributed under the **MIT License**
+* Contributions (issues, feature requests, pull requests) are **welcome and encouraged**
 
 > GitHub Repository:
 > 🔗 [https://github.com/koyasi777/standardnotes-markdown-enhancer](https://github.com/koyasi777/standardnotes-markdown-enhancer)
