@@ -2,87 +2,92 @@
 
 ## 📌 Overview
 
-This userscript enhances **Standard Notes** (web version) by adding a **rich Markdown editor** with a formatting toolbar, live preview, and PDF export.
-
-### ✨ Key Features
-
-* 🛠️ Easily insert **headings, bold, lists, code blocks** with one click
-* ↺ Switch between **Editor / Preview / Split** views
-* 🌙 Automatically adapts to dark mode
-* 🖫 Print or export your note as **clean PDF**
-* 🚼 Fully client-side and secure — no data sent externally
-
-> ⛔ This is an **unofficial tool** and has **no affiliation with Standard Notes Inc.**
-> Developed independently out of appreciation for the Standard Notes platform.
+This userscript enhances **Standard Notes** (web version) by seamlessly replacing the default editor with a **full-featured Markdown editor**. It offers a rich formatting toolbar, live preview, split view, image support, print-friendly styles, and PDF export—all client-side and privacy-safe.
 
 ---
 
-## ⚙️ Installation Guide
+## ✨ Key Features
 
-1. **Install a userscript manager** such as Tampermonkey or Violentmonkey:
+- 🛠️ Toolbar buttons for **headings, bold, italic, lists, checkboxes, quotes, code blocks, links, tables, horizontal rules, and more**
+- 🔀 Switch between **Editor**, **Split**, and **Preview** modes
+- 🖨 One-click **Print / Export to PDF**
+- 🌙 **Dark mode–aware**, responsive design
+- 🖼 **Image insertion**:
+  - Paste from clipboard → automatically resizes (max 1280px) + base64 embed
+  - Upload via UI or insert via URL
+  - **Garbage-collector**: automatically removes unused pasted image data
+- 🧼 Clean print layout & syntax highlighting with copy-to-clipboard support
+- 🔐 Fully **client-side**, with no external data leaks (processed entirely in-browser)
+- 🧹 Uses `marked.js`, `DOMPurify`, and `highlight.js` for safe and rich Markdown rendering
 
-   * [Violentmonkey](https://violentmonkey.github.io/)
-   * [Tampermonkey for Firefox](https://addons.mozilla.org/firefox/addon/tampermonkey/)
-   * [Tampermonkey for Chrome](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)
-
-2. Install the userscript from the link below:
-   👉 [Click here to install the script](https://raw.githubusercontent.com/koyasi777/standardnotes-markdown-enhancer/main/standardnotes-markdown-enhancer.user.js)
-
-3. Open `https://app.standardnotes.com/` — the Markdown editor will activate automatically.
-
-> 💡 The script detects the default plain text editor and replaces it with the enhanced interface.
+> ⚠️ **Unofficial enhancement**, not affiliated with Standard Notes, Inc.
 
 ---
 
-## 💡 Features
+## 🚀 Installation Guide
 
-* Markdown formatting toolbar (headings, bold, italic, lists, checkboxes, quotes, links, tables, etc.)
-* Three display modes: **Editor**, **Preview**, and **Split View**
-* Live preview with syntax highlighting (`highlight.js`)
-* Copy-to-clipboard buttons for code blocks
-* Clean and responsive print styles
-* Export to PDF with one click
-* Fully responsive and dark mode–compatible UI
-* Uses `marked.js`, `DOMPurify`, and `highlight.js` for safe, rich rendering
+1. Install a userscript manager:
+   - [Violentmonkey](https://violentmonkey.github.io/)
+   - [Tampermonkey for Firefox](https://addons.mozilla.org/firefox/addon/tampermonkey/)
+   - [Tampermonkey for Chrome](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)
+2. Install the userscript:
+   👉 **[Click to install](https://raw.githubusercontent.com/koyasi777/standardnotes-markdown-enhancer/main/standardnotes-markdown-enhancer.user.js)**
+3. Navigate to `https://app.standardnotes.com/` – the enhanced Markdown editor activates automatically.
+
+> 💡 The script detects the default plain‑text editor and injects the Markdown UI.
+
+---
+
+## 🔍 Feature Overview
+
+| Feature | Description |
+|--------|-------------|
+| **Toolbar** | Insert headings, bold/italic, lists, checkboxes, quotes, code blocks, links, tables, HR |
+| **Modes** | Editor / Split / Preview views with live sync |
+| **Preview** | Sanitized HTML rendering with syntax highlighting and clipboard support |
+| **Image Handling** | Paste or upload → resized + embedded; unused images auto‑removed |
+| **PDF / Print** | Clean-page styles; copy-to-clipboard for code; print-friendly output |
+| **Performance** | Debounced image garbage collection and live rendering |
+| **Customizable** | Theme-aware CSS uses Standard Notes variables; no external dependencies |
 
 ---
 
 ## 🔐 Security & Privacy
 
-* This script **does not send or store your notes anywhere**
-* All processing is done locally within your browser
-* Rendered HTML is sanitized using `DOMPurify`
+- ✋ 100% **local processing** — no external calls or data uploads
+- ✔ Syntax-safe and sanitized via `DOMPurify`
+- 🛡 Full control over image data—embedded only as base64, cleaned automatically
 
-> ⚠️ Use this script at **your own risk**
-
----
-
-## 📌 Limitations & Notes
-
-* Only supports the **default plain text editor** on `https://app.standardnotes.com/`
-* Does **not** work with other editor types (e.g., Bold Editor, Code Editor)
-* May require updates if Standard Notes changes their DOM structure
+> Use at your own risk; no affiliation with Standard Notes, Inc.
 
 ---
 
-## 🙏 OSS Spirit & Disclaimer
+## 📝 Limitations & Notes
 
-This script was created as a community contribution to complement the official Standard Notes project, and to express respect for its open-source nature.
-
-* Distributed under the **MIT License**
-* Contributions (issues, feature requests, pull requests) are **welcome and encouraged**
-
-> GitHub Repository:
-> 🔗 [https://github.com/koyasi777/standardnotes-markdown-enhancer](https://github.com/koyasi777/standardnotes-markdown-enhancer)
+- Supports **only the default plain-text editor** at `app.standardnotes.com`
+- Incompatible with other official editors (e.g. Bold, Code)
+- DOM changes in Standard Notes may require script updates
 
 ---
 
-## 📜 License
+## 🌍 Community & Contribution
 
-MIT License
-Free to use, modify, and distribute — all usage is at your own risk.
+- ⭐ **MIT License** — free to use, modify, distribute
+- Welcome feedback, issues, and pull requests via GitHub
+
+🔗 **Repository**: https://github.com/koyasi777/standardnotes-markdown-enhancer
 
 ---
 
-> Elevate your editing experience with a clean, powerful Markdown interface.
-> Powered by OSS, inspired by Standard Notes.
+## 💡 Why Use This?
+
+> Transform Standard Notes into a powerful Markdown workspace with live preview, clean exports, and intuitive image workflows—all while preserving privacy and staying lightweight.
+
+---
+
+## 🛠 Changelog Highlights (v2.6.0)
+
+- 📸 **Automatic image resizing** with quality control (max 1280px, JPEG quality 0.8)
+- 🧹 **Image garbage collection**: unused embedded images are removed automatically
+- 🖼 Added **image upload UI** and modal for URL/file insertion
+- 🧹 UI consistency improvements; tooltips and accessibility labels added
