@@ -10,7 +10,7 @@
 // @name:de          Erweiterter Markdown-Editor für Standard Notes
 // @name:pt-BR       Editor Markdown avançado para Standard Notes
 // @name:ru          Улучшенный редактор Markdown для Standard Notes
-// @version          2.9.0
+// @version          3.7.0
 // @description         Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency.
 // @description:ja      Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップされます。
 // @description:zh-CN   非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。
@@ -38,11 +38,11 @@
     'use strict';
 
     // --- 設定値 ---
-    const MAX_IMAGE_DIMENSION = 1280; // 画像の最大辺の長さ (これより大きい場合リサイズ)
-    const JPEG_QUALITY = 0.8;         // JPEG圧縮の品質 (0.0 - 1.0)
-    const INDENT_SPACES = '  ';       // Tabキーで挿入されるスペース
+    const MAX_IMAGE_DIMENSION = 1280;
+    const JPEG_QUALITY = 0.8;
+    const INDENT_SPACES = '  ';
 
-    // --- 国際化 (i18n) のための文字列定義 ---
+    // --- 国際化 (i18n) ---
     const I18N = {
         en: {
             editor: 'Editor', split: 'Split', preview: 'Preview', toggleToolbar: 'Toggle Toolbar',
@@ -50,7 +50,7 @@
             heading2: 'Heading 2', heading3: 'Heading 3', heading4: 'Heading 4', bold: 'Bold',
             italic: 'Italic', strikethrough: 'Strikethrough', inlineCode: 'Inline Code', quote: 'Quote',
             list: 'Bulleted List', numberedList: 'Numbered List', checklist: 'Checklist',
-            codeBlock: 'Code Block', link: 'Link', insertTable: 'Insert Table', horizontalRule: 'Horizontal Rule',
+            codeBlock: 'Code Block', link: 'Link', insertTable: 'Insert/Edit Table', horizontalRule: 'Horizontal Rule',
             image: 'Image',
             linkPrompt: 'Enter the link URL:', boldPlaceholder: 'bold text', italicPlaceholder: 'italic text',
             strikethroughPlaceholder: 'strikethrough', codePlaceholder: 'code', quotePlaceholder: 'quote',
@@ -62,6 +62,9 @@
             imageURL: 'Image URL', altText: 'Alt Text (optional)', chooseFile: 'Choose a file...',
             insert: 'Insert', close: 'Close', processing: 'Processing...',
             errorImageProcessing: 'Failed to process image.',
+            tableEditor: 'Interactive Table Editor', addRow: 'Add Row', addCol: 'Add Column',
+            deleteRow: 'Delete Row', deleteCol: 'Delete Column',
+            alignLeft: 'Align Left', alignCenter: 'Align Center', alignRight: 'Align Right'
         },
         ja: {
             editor: 'エディタ', split: '分割', preview: 'プレビュー', toggleToolbar: 'ツールバー表示切替',
@@ -69,18 +72,21 @@
             heading2: '見出し 2', heading3: '見出し 3', heading4: '見出し 4', bold: '太字',
             italic: '斜体', strikethrough: '打ち消し線', inlineCode: 'インラインコード', quote: '引用',
             list: 'リスト', numberedList: '番号付きリスト', checklist: 'チェックリスト',
-            codeBlock: 'コードブロック', link: 'リンク', insertTable: 'テーブル挿入', horizontalRule: '水平線',
+            codeBlock: 'コードブロック', link: 'リンク', insertTable: 'テーブルを挿入/編集', horizontalRule: '水平線',
             image: '画像',
             linkPrompt: 'リンク先のURLを入力してください:', boldPlaceholder: '太字', italicPlaceholder: '斜体',
             strikethroughPlaceholder: '打ち消し', codePlaceholder: 'code', quotePlaceholder: '引用文',
             listItemPlaceholder: '項目', taskPlaceholder: 'タスク', linkTextPlaceholder: 'リンクテキスト',
-            copy: 'Copy', copied: 'Copied!', copyError: 'Error', copyAriaLabel: 'クリップボードにコードをコピー',
+            copy: 'コピー', copied: 'コピーしました!', copyError: 'エラー', copyAriaLabel: 'クリップボードにコードをコピー',
             previewErrorTitle: 'プレビューの更新中にエラーが発生しました:', printPDF: 'PDF',
             pastedImageAltText: '貼り付けられた画像',
             insertImage: '画像を挿入', fromURL: 'URLから', uploadFile: 'ファイルをアップロード',
             imageURL: '画像のURL', altText: '代替テキスト（任意）', chooseFile: 'ファイルを選択...',
             insert: '挿入', close: '閉じる', processing: '処理中...',
             errorImageProcessing: '画像の処理に失敗しました。',
+            tableEditor: 'インタラクティブ テーブルエディタ', addRow: '行を追加', addCol: '列を追加',
+            deleteRow: 'この行を削除', deleteCol: 'この列を削除',
+            alignLeft: '左揃え', alignCenter: '中央揃え', alignRight: '右揃え'
         }
     };
     const lang = navigator.language.startsWith('ja') ? 'ja' : 'en';
@@ -91,6 +97,7 @@
 
     // --- スタイル定義 ---
     GM_addStyle(`
+        /* General Styles */
         .markdown-editor-container { display: flex; flex-direction: column; height: 100%; overflow: hidden; border: 1px solid var(--sn-stylekit-border-color, #e0e0e0); border-radius: 4px; }
         .mode-toggle-bar { flex-shrink: 0; padding: 4px 10px; background-color: var(--sn-stylekit-editor-background-color, #f9f9f9); border-bottom: 1px solid var(--sn-stylekit-border-color, #e0e0e0); display: flex; align-items: center; gap: 5px; }
         .mode-toggle-button { padding: 5px 12px; border: 1px solid var(--sn-stylekit-border-color, #ccc); border-radius: 6px; cursor: pointer; background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-foreground-color, #333); font-size: 13px; }
@@ -116,55 +123,113 @@
         .markdown-editor-container.mode-preview .markdown-preview { display: block; }
         .markdown-editor-container.mode-split .custom-markdown-textarea, .markdown-editor-container.mode-split .markdown-preview { display: block !important; flex-basis: 50%; width: 50%; }
         .markdown-editor-container.mode-split .markdown-preview { border-left: 1px solid var(--sn-stylekit-border-color, #e0e0e0); }
+        /* Markdown Content Styles */
         .markdown-preview h1, .markdown-preview h2, .markdown-preview h3, .markdown-preview h4, .markdown-preview h5, .markdown-preview h6 { margin-top: 24px; margin-bottom: 16px; font-weight: 600; line-height: 1.25; border-bottom: 1px solid var(--sn-stylekit-border-color, #eee); padding-bottom: .3em; } .markdown-preview h1 { font-size: 2em; } .markdown-preview h2 { font-size: 1.5em; } .markdown-preview h3 { font-size: 1.25em; }
         .markdown-preview p { margin-bottom: 16px; } .markdown-preview ul, .markdown-preview ol { padding-left: 2em; margin-bottom: 16px; } .markdown-preview blockquote { padding: 0 1em; color: var(--sn-stylekit-secondary-foreground-color, #6a737d); border-left: .25em solid var(--sn-stylekit-border-color, #dfe2e5); margin: 0 0 16px 0; } .markdown-preview code { padding: .2em .4em; margin: 0; font-size: 85%; background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); border-radius: 3px; font-family: var(--sn-stylekit-font-code, monospace); } .markdown-preview pre { position: relative; padding: 16px; overflow: auto; font-size: 85%; line-height: 1.45; background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); border-radius: 6px; word-wrap: normal; margin-bottom: 16px; } .markdown-preview pre code { background-color: transparent; padding: 0; margin: 0; } .markdown-preview img { max-width: 100%; height: auto; border-radius: 6px; } .markdown-preview table { border-collapse: collapse; width: 100%; margin-bottom: 16px; display: block; overflow: auto; } .markdown-preview th, .markdown-preview td { border: 1px solid var(--sn-stylekit-border-color, #dfe2e5); padding: 6px 13px; } .markdown-preview tr:nth-child(2n) { background-color: var(--sn-stylekit-secondary-background-color, #f6f8fa); } .markdown-preview hr { height: .25em; padding: 0; margin: 24px 0; background-color: var(--sn-stylekit-border-color, #dfe2e5); border: 0; }
-        /* === 修正点 1: li.task-list-item に変更し、詳細度を上げる === */
         .markdown-preview li.task-list-item { list-style-type: none; } .markdown-preview .task-list-item-checkbox { margin: 0 .2em .25em -1.6em; vertical-align: middle; cursor: pointer; }
         .markdown-preview li.task-list-item.completed { color: var(--sn-stylekit-secondary-foreground-color, #6a737d); }
         .markdown-preview li.task-list-item.completed, .markdown-preview li.task-list-item.completed a { text-decoration: line-through; }
         .copy-code-button { position: absolute; top: 10px; right: 10px; padding: 5px 8px; font-size: 12px; border: 1px solid var(--sn-stylekit-border-color, #ccc); border-radius: 4px; background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-secondary-foreground-color, #555); cursor: pointer; opacity: 0; transition: opacity 0.2s, background-color 0.2s, color 0.2s; z-index: 1; } .markdown-preview pre:hover .copy-code-button { opacity: 1; } .copy-code-button:hover { background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); } .copy-code-button.copied { background-color: var(--sn-stylekit-primary-color, #346df1); color: var(--sn-stylekit-primary-contrast-color, #fff); border-color: var(--sn-stylekit-primary-color, #346df1); }
         .markdown-preview pre code.hljs { display: block; overflow-x: auto; padding: 0; color: var(--sn-stylekit-foreground-color, #333); background: transparent; } .hljs-comment, .hljs-quote { color: var(--sn-stylekit-secondary-foreground-color, #6a737d); font-style: italic; } .hljs-keyword, .hljs-selector-tag, .hljs-subst, .hljs-deletion, .hljs-meta, .hljs-selector-class { color: #d73a49; } .hljs-number, .hljs-literal, .hljs-variable, .hljs-template-variable, .hljs-tag .hljs-attr { color: var(--sn-stylekit-primary-color, #005cc5); } .hljs-string, .hljs-doctag { color: #032f62; } .hljs-title, .hljs-section, .hljs-selector-id, .hljs-type, .hljs-symbol, .hljs-bullet, .hljs-link { color: #6f42c1; } .hljs-addition { color: #22863a; } .hljs-emphasis { font-style: italic; } .hljs-strong { font-weight: bold; }
         @media (prefers-color-scheme: dark) { .markdown-preview pre code.hljs .hljs-keyword, .markdown-preview pre code.hljs .hljs-selector-tag, .markdown-preview pre code.hljs .hljs-subst, .markdown-preview pre code.hljs .hljs-deletion, .markdown-preview pre code.hljs .hljs-meta, .markdown-preview pre code.hljs .hljs-selector-class { color: #ff7b72; } .markdown-preview pre code.hljs .hljs-string, .markdown-preview pre code.hljs .hljs-doctag { color: #a5d6ff; } .markdown-preview pre code.hljs .hljs-title, .markdown-preview pre code.hljs .hljs-section, .markdown-preview pre code.hljs .hljs-selector-id, .markdown-preview pre code.hljs .hljs-type, .markdown-preview pre code.hljs .hljs-symbol, .markdown-preview pre code.hljs .hljs-bullet, .markdown-preview pre code.hljs .hljs-link { color: #d2a8ff; } .markdown-preview pre code.hljs .hljs-addition { color: #7ee787; } }
+        /* Print Styles */
         @media print { body > *:not(.print-container) { display: none !important; } .print-container, .print-container > * { display: block !important; width: 100% !important; height: auto !important; overflow: visible !important; } html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; } .markdown-preview { padding: 2cm !important; border: none !important; box-shadow: none !important; color: #000 !important; background-color: #fff !important; font-size: 12pt !important; line-height: 1.5 !important; } .markdown-preview h1, .markdown-preview h2, .markdown-preview h3, .markdown-preview h4, .markdown-preview h5, .markdown-preview h6 { color: #000 !important; border-bottom-color: #ccc !important; } .markdown-preview pre, .markdown-preview code { background-color: #f0f0f0 !important; color: #000 !important; border: 1px solid #ccc !important; } .markdown-preview pre code.hljs { color: #000 !important; } .markdown-preview blockquote { color: #333 !important; border-left-color: #ccc !important; } .markdown-preview tr:nth-child(2n) { background-color: #f6f8fa !important; } .markdown-preview th, .markdown-preview td { border-color: #ccc !important; } .copy-code-button { display: none !important; } .raw-text-print { margin: 0 !important; padding: 2cm !important; white-space: pre-wrap !important; word-wrap: break-word !important; font-family: 'Menlo', 'Monaco', 'Consolas', 'Courier New', monospace; font-size: 10pt !important; color: #000 !important; background: #fff !important; } pre, blockquote, table, img, h1, h2, h3, h4 { page-break-inside: avoid; } h1, h2, h3 { page-break-after: avoid; } }
-        .sn-image-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); z-index: 9999; display: flex; align-items: center; justify-content: center; }
-        .sn-image-modal-content { background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-foreground-color, #333); padding: 20px; border-radius: 8px; width: 90%; max-width: 500px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-        .sn-image-modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--sn-stylekit-border-color, #eee); padding-bottom: 10px; margin-bottom: 20px; }
-        .sn-image-modal-header h3 { margin: 0; font-size: 18px; }
-        .sn-image-modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--sn-stylekit-secondary-foreground-color, #888); padding: 0 8px; }
-        .sn-image-modal-tabs { display: flex; border-bottom: 1px solid var(--sn-stylekit-border-color, #ccc); margin-bottom: 20px; }
-        .sn-image-modal-tab { padding: 10px 15px; cursor: pointer; border: none; background: none; border-bottom: 3px solid transparent; font-size: 15px; color: var(--sn-stylekit-secondary-foreground-color, #666); }
-        .sn-image-modal-tab.active { color: var(--sn-stylekit-primary-color, #346df1); border-bottom-color: var(--sn-stylekit-primary-color, #346df1); }
-        .sn-image-modal-panel { display: none; }
-        .sn-image-modal-panel.active { display: block; }
-        .sn-image-modal-body label { display: block; margin-bottom: 8px; font-weight: bold; font-size: 14px; }
-        .sn-image-modal-body input[type="text"], .sn-image-modal-body input[type="file"] { width: 100%; padding: 8px; border-radius: 4px; border: 1px solid var(--sn-stylekit-border-color, #ccc); background-color: var(--sn-stylekit-editor-background-color, #f9f9f9); color: var(--sn-stylekit-foreground-color, #333); box-sizing: border-box; margin-bottom: 15px; }
-        .sn-image-modal-footer { text-align: right; margin-top: 20px; }
-        .sn-image-modal-insert-btn { padding: 8px 16px; border-radius: 5px; border: none; background-color: var(--sn-stylekit-primary-color, #346df1); color: var(--sn-stylekit-primary-contrast-color, #fff); cursor: pointer; }
-        .sn-image-modal-insert-btn:disabled { background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); color: var(--sn-stylekit-secondary-foreground-color, #888); cursor: not-allowed; }
-        .sn-image-upload-preview { margin-top: 10px; max-height: 150px; text-align: center; }
-        .sn-image-upload-preview img { max-width: 100%; max-height: 150px; border-radius: 4px; border: 1px solid var(--sn-stylekit-border-color, #ccc); }
-     `);
+
+        /* --- Modal Styles --- */
+        .sn-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .sn-modal-content { background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-foreground-color, #333); padding: 20px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: flex; flex-direction: column; max-height: 90vh; }
+        .sn-modal-content-image { max-width: 500px; width: 90%; }
+        .sn-modal-content-table { max-width: 900px; width: 90%; }
+        .sn-modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--sn-stylekit-border-color, #eee); padding-bottom: 10px; margin-bottom: 15px; flex-shrink: 0; }
+        .sn-modal-header h3 { margin: 0; font-size: 18px; }
+        .sn-modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--sn-stylekit-secondary-foreground-color, #888); padding: 0 8px; }
+        .sn-modal-body { flex-grow: 1; overflow-y: auto; position: relative; }
+        .sn-modal-footer { text-align: right; margin-top: 15px; border-top: 1px solid var(--sn-stylekit-border-color, #eee); padding-top: 15px; flex-shrink: 0; }
+        .sn-modal-insert-btn { padding: 8px 16px; border-radius: 5px; border: none; background-color: var(--sn-stylekit-primary-color, #346df1); color: var(--sn-stylekit-primary-contrast-color, #fff); cursor: pointer; }
+        .sn-modal-insert-btn:disabled { background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); color: var(--sn-stylekit-secondary-foreground-color, #a0a0a0); cursor: not-allowed; }
+
+        /* --- Image Inserter Modal --- */
+        .sn-modal-tabs { display: flex; border-bottom: 1px solid var(--sn-stylekit-border-color, #eee); margin-bottom: 15px; }
+        .sn-modal-tab { padding: 10px 15px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+        .sn-modal-tab.active { border-bottom-color: var(--sn-stylekit-primary-color, #346df1); font-weight: bold; }
+        .sn-modal-tab-content { display: none; padding: 5px 0; }
+        .sn-modal-tab-content.active { display: block; }
+        .sn-modal-form-group { margin-bottom: 15px; }
+        .sn-modal-form-group label { display: block; margin-bottom: 5px; font-weight: 500; }
+        .sn-modal-input { width: 100%; padding: 8px; border: 1px solid var(--sn-stylekit-border-color, #ccc); border-radius: 4px; box-sizing: border-box; background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-foreground-color, #333); }
+        .sn-modal-file-wrapper { position: relative; }
+        .sn-modal-file-label { display: block; padding: 12px; border: 2px dashed var(--sn-stylekit-border-color, #ccc); border-radius: 4px; text-align: center; cursor: pointer; transition: border-color 0.2s; }
+        .sn-modal-file-label:hover { border-color: var(--sn-stylekit-primary-color, #346df1); }
+        .sn-modal-file-input[type="file"] { display: none; }
+        .sn-modal-processing-indicator { margin-top: 10px; font-style: italic; color: var(--sn-stylekit-secondary-foreground-color, #888); text-align: center; }
+        .sn-modal-image-preview { max-height: 150px; max-width: 100%; border: 1px solid var(--sn-stylekit-border-color, #ccc); border-radius: 4px; margin-top: 10px; }
+
+
+        /* --- Interactive Table Editor Styles --- */
+        .sn-modal-content-table .sn-modal-body { overflow: hidden; }
+        .sn-table-editor-container { position: relative; height: 100%; display: flex; flex-direction: column; }
+        .sn-table-scroll-container { overflow: auto; flex-grow: 1; padding: 40px 0 0 40px; }
+        .sn-table-editor { border-collapse: collapse; width: 100%; }
+        .sn-table-editor th, .sn-table-editor td { border: 1px solid var(--sn-stylekit-border-color, #ccc); padding: 2px; }
+        .sn-table-editor .cell-input { width: 100%; height: 100%; border: none; outline: none; padding: 8px; background: transparent; color: var(--sn-stylekit-foreground-color, #333); font-size: 14px; box-sizing: border-box; min-height: 38px; }
+        .sn-table-editor .cell-input::placeholder { color: var(--sn-stylekit-secondary-foreground-color, #a0a0a0); opacity: 1; }
+        .sn-table-editor .cell-input:focus { background-color: var(--sn-stylekit-info-color-background, #e7f3fe); }
+        .sn-table-editor th { background-color: var(--sn-stylekit-secondary-background-color, #f6f8fa); position: relative; }
+        .col-header { cursor: pointer; padding: 8px; display: flex; align-items: center; justify-content: center; gap: 4px; }
+        .col-header:hover { background-color: var(--sn-stylekit-border-color, #e0e0e0); }
+        .align-icon { font-size: 10px; font-weight: bold; }
+        .delete-btn { position: absolute; cursor: pointer; background: #fff; border: 1px solid #ccc; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; color: #d73a49; font-size: 14px; line-height: 1; opacity: 0.2; transition: opacity 0.2s; z-index: 5; }
+        .delete-btn:hover { opacity: 1; background-color: #d73a49; color: white; border-color: #d73a49; }
+        .delete-col-btn { top: -30px; left: 50%; transform: translateX(-50%); }
+        .delete-row-btn { left: -30px; top: 50%; transform: translateY(-50%); }
+        .sn-table-editor tr:hover .delete-row-btn { opacity: 1; }
+        .sn-table-editor th:hover .delete-col-btn { opacity: 1; }
+        .add-btn { position: absolute; cursor: pointer; background: var(--sn-stylekit-primary-color, #346df1); color: white; border: 1px solid white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; z-index: 10; }
+        .add-col-btn { top: 5px; right: 5px; }
+        .add-row-btn { bottom: 5px; left: 5px; }
+    `);
 
     function debounce(func, wait) {
         let timeout;
         return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
+            const later = () => { clearTimeout(timeout); func(...args); };
             clearTimeout(timeout);
             timeout = setTimeout(later, wait);
         };
     }
 
     function applyMarkdown(textarea, prefix, suffix = '', placeholder = '') {
-        const start = textarea.selectionStart; const end = textarea.selectionEnd; const selectedText = textarea.value.substring(start, end);
-        const textBefore = textarea.value.substring(start - prefix.length, start); const textAfter = textarea.value.substring(end, end + suffix.length);
-        if (textBefore === prefix && textAfter === suffix) { textarea.setRangeText(selectedText, start - prefix.length, end + suffix.length, 'select'); }
-        else if (selectedText.startsWith(prefix) && selectedText.endsWith(suffix)) { const unwrappedText = selectedText.substring(prefix.length, selectedText.length - suffix.length); textarea.setRangeText(unwrappedText, start, end, 'select'); }
-        else { let newText; if (selectedText) { newText = prefix + selectedText + suffix; } else { newText = prefix + placeholder + suffix; } textarea.setRangeText(newText, start, end, 'end'); if (!selectedText && placeholder) { textarea.selectionStart = start + prefix.length; textarea.selectionEnd = start + prefix.length + placeholder.length; } }
-        textarea.focus(); textarea.dispatchEvent(new Event('input', { bubbles: true }));
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        let selectedText = textarea.value.substring(start, end);
+
+        const textBefore = textarea.value.substring(start - prefix.length, start);
+        const textAfter = textarea.value.substring(end, end + suffix.length);
+
+        // Case 1: Already wrapped (e.g., user selects 'text' inside '**text**')
+        if (textBefore === prefix && textAfter === suffix) {
+            textarea.setRangeText(selectedText, start - prefix.length, end + suffix.length, 'select');
+        // Case 2: Selection includes the wrappers (e.g., user selects '**text**')
+        } else if (selectedText.startsWith(prefix) && selectedText.endsWith(suffix)) {
+            const unwrappedText = selectedText.slice(prefix.length, -suffix.length || undefined);
+            textarea.setRangeText(unwrappedText, start, end, 'select');
+        } else {
+        // Case 3: Not wrapped, so wrap it
+            if (selectedText) {
+                textarea.setRangeText(prefix + selectedText + suffix, start, end, 'select');
+            } else {
+                textarea.setRangeText(prefix + placeholder + suffix, start, end, 'end');
+                if (placeholder) {
+                    textarea.selectionStart = start + prefix.length;
+                    textarea.selectionEnd = start + prefix.length + placeholder.length;
+                }
+            }
+        }
+
+        textarea.focus();
+        textarea.dispatchEvent(new Event('input', { bubbles: true }));
     }
+
 
     function setupMarkdownEditor(originalTextarea) {
         if (originalTextarea.dataset.markdownReady) return;
@@ -203,7 +268,6 @@
                         ctx.fillRect(0, 0, width, height);
                         ctx.drawImage(img, 0, 0, width, height);
                         const dataUrl = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
-                        console.log(`Image resized: original=${(file.size / 1024).toFixed(1)}KB, new=${(dataUrl.length / 1024 * 0.75).toFixed(1)}KB (approx)`);
                         resolve(dataUrl);
                     };
                     img.onerror = (err) => reject(new Error('Failed to load image.'));
@@ -231,157 +295,277 @@
             textarea.focus();
         };
 
+        const textToTable = (text) => {
+            const rows = text.trim().split('\n').map(row => row.split('\t'));
+            const colCount = Math.max(...rows.map(row => row.length));
+            let markdown = `| ${rows[0].map(h => h || ' ').join(' | ')} |\n`;
+            markdown += `|${' :--- |'.repeat(colCount)}\n`;
+            for (let i = 1; i < rows.length; i++) {
+                markdown += `| ${rows[i].map(c => c || ' ').join(' | ')} |\n`;
+            }
+            return markdown;
+        };
+
         const handlePaste = async (event) => {
-            const items = event.clipboardData.items;
-            for (let i = 0; i < items.length; i++) {
-                if (items[i].type.startsWith('image/')) {
-                    const file = items[i].getAsFile();
-                    if (file) {
-                        event.preventDefault();
-                        try {
-                            const resizedBase64 = await resizeAndEncodeImage(file);
-                            insertImageAsReference(resizedBase64, null, event.target);
-                        } catch (error) {
-                            console.error("Image processing failed:", error);
-                            alert(T.errorImageProcessing);
-                        }
-                    }
-                    break;
+            const clipboardData = event.clipboardData;
+            const imageItem = Array.from(clipboardData.items).find(item => item.type.startsWith('image/'));
+            if (imageItem) {
+                const file = imageItem.getAsFile();
+                if (file) {
+                    event.preventDefault();
+                    try {
+                        const resizedBase64 = await resizeAndEncodeImage(file);
+                        insertImageAsReference(resizedBase64, null, event.target);
+                    } catch (error) { console.error("Image processing failed:", error); }
                 }
+                return;
+            }
+            const text = clipboardData.getData('text/plain');
+            if (text.includes('\t') && text.includes('\n')) {
+                 event.preventDefault();
+                 const tableMd = textToTable(text);
+                 document.execCommand('insertText', false, tableMd);
             }
         };
 
-        const garbageCollectImageReferences = () => {
-            const text = markdownTextarea.value;
-            const usedRefs = new Set();
-            const usageRegex = /!\[.*?\]\[(image-ref-\d+?)\]/g;
-            let usageMatch;
-            while ((usageMatch = usageRegex.exec(text)) !== null) {
-                usedRefs.add(usageMatch[1]);
-            }
-            const lines = text.split('\n');
-            const newLines = [];
-            let definitionsRemoved = false;
-            const definitionRegex = /^\[(image-ref-\d+?)\]:\s*data:image\//;
-            for (const line of lines) {
-                const defMatch = line.match(definitionRegex);
-                if (defMatch) {
-                    const defId = defMatch[1];
-                    if (usedRefs.has(defId)) {
-                        newLines.push(line);
-                    } else {
-                        definitionsRemoved = true;
-                        console.log(`GC: Removing orphaned image reference: ${defId}`);
-                    }
-                } else {
-                    newLines.push(line);
-                }
-            }
-            if (definitionsRemoved) {
-                const cleanedText = newLines.join('\n');
-                const cursorPos = markdownTextarea.selectionStart;
-                markdownTextarea.value = cleanedText;
-                markdownTextarea.selectionStart = markdownTextarea.selectionEnd = cursorPos;
-                originalTextarea.value = markdownTextarea.value;
-                originalTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            }
+        const parseMarkdownTable = (text) => {
+            if (!text || typeof text !== 'string' || !text.includes('|')) return null;
+            const lines = text.trim().split('\n').map(l => l.trim()).filter(l => l.includes('|'));
+            if (lines.length < 2) return null;
+            const headerLine = lines[0];
+            const separatorLine = lines[1];
+            const dataLines = lines.slice(2);
+            const parseRow = (rowString) => {
+                const trimmed = rowString.trim();
+                const content = (trimmed.startsWith('|') && trimmed.endsWith('|')) ? trimmed.slice(1, -1) : trimmed;
+                return content.split('|').map(cell => cell.trim());
+            };
+            const separatorParts = parseRow(separatorLine);
+            if (!separatorParts.every(part => /^:?-+:?$/.test(part))) return null;
+            const header = parseRow(headerLine);
+            const numCols = header.length;
+            if (separatorParts.length !== numCols) return null;
+            const alignments = separatorParts.map(part => {
+                const left = part.startsWith(':');
+                const right = part.endsWith(':');
+                if (left && right) return 'center';
+                if (right) return 'right';
+                return 'left';
+            });
+            const rows = [
+                header,
+                ...dataLines.map(line => {
+                    const rowData = parseRow(line);
+                    while (rowData.length < numCols) rowData.push('');
+                    return rowData.slice(0, numCols);
+                })
+            ];
+            return { rows, alignments };
         };
 
-        const debouncedGarbageCollector = debounce(garbageCollectImageReferences, 1500);
-
-        const openImageModal = () => {
-            let selectedFile = null;
+        const openImageInserterModal = (onInsertCallback) => {
             const modalOverlay = document.createElement('div');
-            modalOverlay.className = 'sn-image-modal-overlay';
+            modalOverlay.className = 'sn-modal-overlay';
             modalOverlay.innerHTML = `
-                <div class="sn-image-modal-content">
-                    <div class="sn-image-modal-header">
+                <div class="sn-modal-content sn-modal-content-image">
+                    <div class="sn-modal-header">
                         <h3>${T.insertImage}</h3>
-                        <button class="sn-image-modal-close" title="${T.close}">&times;</button>
+                        <button class="sn-modal-close" title="${T.close}">&times;</button>
                     </div>
-                    <div class="sn-image-modal-tabs">
-                        <button class="sn-image-modal-tab active" data-tab="url">${T.fromURL}</button>
-                        <button class="sn-image-modal-tab" data-tab="upload">${T.uploadFile}</button>
-                    </div>
-                    <div class="sn-image-modal-body">
-                        <div class="sn-image-modal-panel active" id="image-modal-panel-url">
-                            <label for="image-url-input">${T.imageURL}</label>
-                            <input type="text" id="image-url-input" placeholder="https://example.com/image.png">
+                    <div class="sn-modal-body">
+                        <div class="sn-modal-tabs">
+                            <div class="sn-modal-tab active" data-tab="url">${T.fromURL}</div>
+                            <div class="sn-modal-tab" data-tab="upload">${T.uploadFile}</div>
                         </div>
-                        <div class="sn-image-modal-panel" id="image-modal-panel-upload">
-                            <input type="file" id="image-file-input" accept="image/*" style="display: none;">
-                            <button type="button" onclick="document.getElementById('image-file-input').click()" class="mode-toggle-button">${T.chooseFile}</button>
-                            <div class="sn-image-upload-preview"></div>
+                        <div class="sn-modal-tab-content active" data-tab-content="url">
+                            <div class="sn-modal-form-group">
+                                <label for="sn-image-url">${T.imageURL}</label>
+                                <input type="text" id="sn-image-url" class="sn-modal-input" placeholder="https://example.com/image.jpg">
+                            </div>
                         </div>
-                        <label for="image-alt-input" style="margin-top: 15px;">${T.altText}</label>
-                        <input type="text" id="image-alt-input" placeholder="${T.altText}">
+                        <div class="sn-modal-tab-content" data-tab-content="upload">
+                             <div class="sn-modal-form-group">
+                                 <label class="sn-modal-file-wrapper">
+                                     <span class="sn-modal-file-label">${T.chooseFile}</span>
+                                     <input type="file" class="sn-modal-file-input" accept="image/*">
+                                 </label>
+                                 <div class="sn-modal-processing-indicator"></div>
+                             </div>
+                        </div>
+                         <div class="sn-modal-form-group">
+                            <label for="sn-image-alt">${T.altText}</label>
+                            <input type="text" id="sn-image-alt" class="sn-modal-input" placeholder="A description of the image">
+                        </div>
                     </div>
-                    <div class="sn-image-modal-footer">
-                        <button class="sn-image-modal-insert-btn">${T.insert}</button>
+                    <div class="sn-modal-footer">
+                        <button class="sn-modal-insert-btn">${T.insert}</button>
                     </div>
-                </div>`;
+                </div>
+            `;
+
             document.body.appendChild(modalOverlay);
-            const content = modalOverlay.querySelector('.sn-image-modal-content');
-            const closeBtn = modalOverlay.querySelector('.sn-image-modal-close');
-            const tabs = modalOverlay.querySelectorAll('.sn-image-modal-tab');
-            const panels = modalOverlay.querySelectorAll('.sn-image-modal-panel');
-            const insertBtn = modalOverlay.querySelector('.sn-image-modal-insert-btn');
-            const urlInput = modalOverlay.querySelector('#image-url-input');
-            const fileInput = modalOverlay.querySelector('#image-file-input');
-            const altInput = modalOverlay.querySelector('#image-alt-input');
-            const previewContainer = modalOverlay.querySelector('.sn-image-upload-preview');
-            let activeTab = 'url';
+            const content = modalOverlay.querySelector('.sn-modal-content');
+            const urlInput = modalOverlay.querySelector('#sn-image-url');
+            const altInput = modalOverlay.querySelector('#sn-image-alt');
+            const fileInput = modalOverlay.querySelector('.sn-modal-file-input');
+            const fileLabel = modalOverlay.querySelector('.sn-modal-file-label');
+            const processingIndicator = modalOverlay.querySelector('.sn-modal-processing-indicator');
+            const insertBtn = modalOverlay.querySelector('.sn-modal-insert-btn');
             const closeModal = () => document.body.contains(modalOverlay) && document.body.removeChild(modalOverlay);
-            closeBtn.onclick = closeModal;
-            content.onclick = (e) => e.stopPropagation();
-            modalOverlay.onclick = closeModal;
-            tabs.forEach(tab => {
+
+            let base64data = null;
+            let currentTab = 'url';
+
+            modalOverlay.querySelectorAll('.sn-modal-tab').forEach(tab => {
                 tab.onclick = () => {
-                    tabs.forEach(t => t.classList.remove('active'));
-                    panels.forEach(p => p.classList.remove('active'));
+                    currentTab = tab.dataset.tab;
+                    modalOverlay.querySelectorAll('.sn-modal-tab').forEach(t => t.classList.remove('active'));
+                    modalOverlay.querySelectorAll('.sn-modal-tab-content').forEach(c => c.classList.remove('active'));
                     tab.classList.add('active');
-                    activeTab = tab.dataset.tab;
-                    modalOverlay.querySelector(`#image-modal-panel-${activeTab}`).classList.add('active');
+                    modalOverlay.querySelector(`.sn-modal-tab-content[data-tab-content="${currentTab}"]`).classList.add('active');
+                    base64data = null;
+                    fileInput.value = '';
+                    fileLabel.textContent = T.chooseFile;
+                    processingIndicator.innerHTML = '';
                 };
             });
-            fileInput.onchange = (e) => {
+
+            fileInput.onchange = async (e) => {
                 const file = e.target.files[0];
-                if (file) {
-                    selectedFile = file;
-                    const reader = new FileReader();
-                    reader.onload = (re) => {
-                        previewContainer.innerHTML = `<img src="${re.target.result}" alt="Preview">`;
-                    };
-                    reader.readAsDataURL(file);
-                    if (!altInput.value) { altInput.value = file.name; }
+                if (!file) return;
+                fileLabel.textContent = file.name;
+                processingIndicator.innerHTML = `<span>${T.processing}</span>`;
+                insertBtn.disabled = true;
+                try {
+                    base64data = await resizeAndEncodeImage(file);
+                    processingIndicator.innerHTML = ''; // Clear old text
+                    const imgPreview = document.createElement('img');
+                    imgPreview.src = base64data;
+                    imgPreview.className = 'sn-modal-image-preview';
+                    processingIndicator.appendChild(imgPreview);
+                } catch (error) {
+                    console.error(error);
+                    processingIndicator.innerHTML = `<span>${T.errorImageProcessing}</span>`;
+                    base64data = null;
+                } finally {
+                    insertBtn.disabled = false;
                 }
             };
-            insertBtn.onclick = async () => {
-                const alt = altInput.value.trim();
-                if (activeTab === 'url') {
+
+            insertBtn.onclick = () => {
+                const altText = altInput.value.trim();
+                if (currentTab === 'url') {
                     const url = urlInput.value.trim();
                     if (url) {
-                        applyMarkdown(markdownTextarea, '', `![${alt}](${url})`);
+                        onInsertCallback(url, altText, false); // URL, alt, isReference=false
                         closeModal();
                     }
-                } else if (activeTab === 'upload') {
-                    if (selectedFile) {
-                        try {
-                            insertBtn.textContent = T.processing;
-                            insertBtn.disabled = true;
-                            const resizedBase64 = await resizeAndEncodeImage(selectedFile);
-                            insertImageAsReference(resizedBase64, alt, markdownTextarea);
-                            closeModal();
-                        } catch (error) {
-                            console.error("Image processing failed:", error);
-                            alert(T.errorImageProcessing);
-                            insertBtn.textContent = T.insert;
-                            insertBtn.disabled = false;
-                        }
+                } else { // upload tab
+                    if (base64data) {
+                        onInsertCallback(base64data, altText, true); // Base64, alt, isReference=true
+                        closeModal();
                     }
                 }
             };
+            modalOverlay.querySelector('.sn-modal-close').onclick = closeModal;
+            content.onclick = e => e.stopPropagation();
+            modalOverlay.onclick = closeModal;
             urlInput.focus();
+        };
+
+        const openTableEditorModal = (initialData, onInsertCallback) => {
+            let tableData;
+            if (initialData && initialData.rows.length > 0) {
+                tableData = JSON.parse(JSON.stringify(initialData));
+            } else {
+                tableData = { rows: [ ['', '', ''], ['', '', ''] ], alignments: ['left', 'left', 'left'] };
+            }
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 'sn-modal-overlay';
+            const render = () => {
+                const colCount = tableData.rows[0]?.length || 0;
+                const rowCount = tableData.rows.length;
+                let tableHtml = `<table class="sn-table-editor"><thead><tr>`;
+                for (let c = 0; c < colCount; c++) {
+                    const align = tableData.alignments[c];
+                    let alignIcon;
+                    switch(align) { case 'center': alignIcon = '⇌'; break; case 'right': alignIcon = '→'; break; default: alignIcon = '←'; }
+                    tableHtml += `<th data-col="${c}"><div class="col-header" title="${T.alignLeft}/${T.alignCenter}/${T.alignRight}"><span class="align-icon">${alignIcon}</span></div><div class="delete-btn delete-col-btn" title="${T.deleteCol}">🗑️</div></th>`;
+                }
+                tableHtml += `</tr></thead><tbody>`;
+                for (let r = 0; r < rowCount; r++) {
+                    tableHtml += `<tr data-row="${r}">`;
+                    for (let c = 0; c < colCount; c++) {
+                        const cellValue = tableData.rows[r][c] || '';
+                        const placeholder = r === 0 ? 'Header' : 'Cell';
+                        tableHtml += `<td><input class="cell-input" type="text" value="${cellValue.replace(/"/g, '&quot;')}" placeholder="${placeholder}" data-row="${r}" data-col="${c}"></td>`;
+                    }
+                    tableHtml += `<td style="border:none; position:relative; width:0;"><div class="delete-btn delete-row-btn" title="${T.deleteRow}">🗑️</div></td></tr>`;
+                }
+                tableHtml += `</tbody></table>`;
+                modalOverlay.innerHTML = `
+                    <div class="sn-modal-content sn-modal-content-table">
+                        <div class="sn-modal-header">
+                            <h3>${T.tableEditor}</h3>
+                            <button class="sn-modal-close" title="${T.close}">&times;</button>
+                        </div>
+                        <div class="sn-modal-body">
+                           <div class="sn-table-editor-container">
+                                <div class="add-btn add-col-btn" title="${T.addCol}">+</div>
+                                <div class="add-btn add-row-btn" title="${T.addRow}">+</div>
+                                <div class="sn-table-scroll-container">${tableHtml}</div>
+                            </div>
+                        </div>
+                        <div class="sn-modal-footer">
+                            <button class="sn-modal-insert-btn">${T.insert}</button>
+                        </div>
+                    </div>`;
+                attachEventListeners();
+            };
+            const attachEventListeners = () => {
+                const content = modalOverlay.querySelector('.sn-modal-content');
+                const closeModal = () => document.body.contains(modalOverlay) && document.body.removeChild(modalOverlay);
+                modalOverlay.querySelector('.sn-modal-close').onclick = closeModal;
+                content.onclick = e => e.stopPropagation();
+                modalOverlay.onclick = closeModal;
+                modalOverlay.querySelector('.sn-modal-insert-btn').onclick = () => {
+                    let markdown = '';
+                    const colCount = tableData.rows[0]?.length || 0;
+                    if (colCount > 0) {
+                        markdown += '| ' + tableData.rows[0].map(c => c.trim()).join(' | ') + ' |\n';
+                        markdown += '|' + tableData.alignments.map(a => { if (a === 'center') return ' :---: '; if (a === 'right') return ' ---: '; return ' :--- '; }).join('|') + '|\n';
+                        for (let i = 1; i < tableData.rows.length; i++) {
+                            markdown += '| ' + tableData.rows[i].map(c => c.trim()).join(' | ') + ' |\n';
+                        }
+                    }
+                    onInsertCallback(markdown);
+                    closeModal();
+                };
+                modalOverlay.querySelector('.add-row-btn').onclick = () => { tableData.rows.push(new Array(tableData.rows[0]?.length || 1).fill('')); render(); };
+                modalOverlay.querySelector('.add-col-btn').onclick = () => { tableData.rows.forEach(row => row.push('')); tableData.alignments.push('left'); render(); };
+                modalOverlay.querySelectorAll('.delete-row-btn').forEach(btn => {
+                    btn.onclick = e => {
+                        const row = parseInt(e.target.closest('tr').dataset.row, 10);
+                        if (tableData.rows.length > 1) { tableData.rows.splice(row, 1); render(); }
+                    };
+                });
+                modalOverlay.querySelectorAll('.delete-col-btn').forEach(btn => { btn.onclick = e => { const col = parseInt(e.target.closest('th').dataset.col, 10); if (tableData.rows[0].length > 1) { tableData.rows.forEach(row => row.splice(col, 1)); tableData.alignments.splice(col, 1); render(); } }; });
+                modalOverlay.querySelectorAll('.col-header').forEach(header => { header.onclick = e => { const col = parseInt(e.currentTarget.closest('th').dataset.col, 10); const currentAlign = tableData.alignments[col]; const aligns = ['left', 'center', 'right']; const nextIndex = (aligns.indexOf(currentAlign) + 1) % aligns.length; tableData.alignments[col] = aligns[nextIndex]; render(); }; });
+                modalOverlay.querySelectorAll('.cell-input').forEach(input => {
+                    input.oninput = e => { const { row, col } = e.target.dataset; tableData.rows[row][col] = e.target.value; };
+                    input.onkeydown = e => {
+                        const { row, col } = e.target.dataset; const r = parseInt(row, 10); const c = parseInt(col, 10); let nextCell = null;
+                        if (e.key === 'Enter' || e.key === 'ArrowDown') { nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r + 1}"][data-col="${c}"]`); }
+                        else if (e.key === 'ArrowUp') { nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r - 1}"][data-col="${c}"]`); }
+                        else if (e.key === 'Tab' && !e.shiftKey || e.key === 'ArrowRight') { nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r}"][data-col="${c + 1}"]`) || modalOverlay.querySelector(`.cell-input[data-row="${r + 1}"][data-col="0"]`); }
+                        else if (e.key === 'Tab' && e.shiftKey || e.key === 'ArrowLeft') { nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r}"][data-col="${c - 1}"]`) || modalOverlay.querySelector(`.cell-input[data-row="${r - 1}"][data-col="${(tableData.rows[0]?.length || 1) - 1}"]`); }
+                        if(nextCell) { e.preventDefault(); nextCell.focus(); }
+                    };
+                });
+            };
+            document.body.appendChild(modalOverlay);
+            render();
+            modalOverlay.querySelector('.cell-input')?.focus();
         };
 
         const container = document.createElement('div'); container.className = 'markdown-editor-container';
@@ -397,7 +581,24 @@
 
         markdownTextarea.addEventListener('paste', handlePaste);
 
-        const toolbarButtons = [ { type: 'select', name: 'heading', options: [ { value: 'p', text: T.paragraph }, { value: 'h1', text: T.heading1 }, { value: 'h2', text: T.heading2 }, { value: 'h3', text: T.heading3 }, { value: 'h4', text: T.heading4 } ], action: (prefix) => { const start = markdownTextarea.selectionStart; let lineStart = markdownTextarea.value.lastIndexOf('\n', start - 1) + 1; let lineEnd = markdownTextarea.value.indexOf('\n', start); if (lineEnd === -1) lineEnd = markdownTextarea.value.length; const originalLine = markdownTextarea.value.substring(lineStart, lineEnd); const cleanedLine = originalLine.replace(/^\s*#+\s*/, ''); const newText = prefix ? `${prefix} ${cleanedLine}` : cleanedLine; markdownTextarea.setRangeText(newText, lineStart, lineEnd, 'end'); markdownTextarea.dispatchEvent(new Event('input', { bubbles: true })); markdownTextarea.focus(); } }, { type: 'button', name: 'B', title: T.bold, action: () => applyMarkdown(markdownTextarea, '**', '**', T.boldPlaceholder) }, { type: 'button', name: 'I', title: T.italic, action: () => applyMarkdown(markdownTextarea, '*', '*', T.italicPlaceholder) }, { type: 'button', name: 'S', title: T.strikethrough, action: () => applyMarkdown(markdownTextarea, '~~', '~~', T.strikethroughPlaceholder) }, { type: 'button', name: '`', title: T.inlineCode, action: () => applyMarkdown(markdownTextarea, '`', '`', T.codePlaceholder) }, { type: 'button', name: '“ ”', title: T.quote, action: () => applyMarkdown(markdownTextarea, '> ', '', T.quotePlaceholder) }, { type: 'button', name: '•', title: T.list, action: () => applyMarkdown(markdownTextarea, '- ', '', T.listItemPlaceholder) }, { type: 'button', name: '1.', title: T.numberedList, action: () => applyMarkdown(markdownTextarea, '1. ', '', T.listItemPlaceholder) }, { type: 'button', name: '☑', title: T.checklist, action: () => applyMarkdown(markdownTextarea, '- [ ] ', '', T.taskPlaceholder) }, { type: 'button', name: '</>', title: T.codeBlock, action: () => applyMarkdown(markdownTextarea, '```\n', '\n```', T.codePlaceholder) }, { type: 'icon-button', name: 'Image', title: T.image, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"></path></svg>`, action: openImageModal }, { type: 'button', name: 'Link', title: T.link, action: () => { const url = prompt(T.linkPrompt, 'https://'); if (url) applyMarkdown(markdownTextarea, '[', `](${url})`, T.linkTextPlaceholder); }}, { type: 'button', name: T.insertTable, title: T.insertTable, action: () => applyMarkdown(markdownTextarea, '| Column 1 | Column 2 |\n|---|---|\n|  |  |\n') }, { type: 'button', name: '―', title: T.horizontalRule, action: () => applyMarkdown(markdownTextarea, '\n---\n') }, ];
+        const toolbarButtons = [ { type: 'select', name: 'heading', options: [ { value: 'p', text: T.paragraph }, { value: 'h1', text: T.heading1 }, { value: 'h2', text: T.heading2 }, { value: 'h3', text: T.heading3 }, { value: 'h4', text: T.heading4 } ], action: (prefix) => { const start = markdownTextarea.selectionStart; let lineStart = markdownTextarea.value.lastIndexOf('\n', start - 1) + 1; let lineEnd = markdownTextarea.value.indexOf('\n', start); if (lineEnd === -1) lineEnd = markdownTextarea.value.length; const originalLine = markdownTextarea.value.substring(lineStart, lineEnd); const cleanedLine = originalLine.replace(/^\s*#+\s*/, ''); const newText = prefix ? `${prefix} ${cleanedLine}` : cleanedLine; markdownTextarea.setRangeText(newText, lineStart, lineEnd, 'end'); markdownTextarea.dispatchEvent(new Event('input', { bubbles: true })); markdownTextarea.focus(); } }, { type: 'button', name: 'B', title: T.bold, action: () => applyMarkdown(markdownTextarea, '**', '**', T.boldPlaceholder) }, { type: 'button', name: 'I', title: T.italic, action: () => applyMarkdown(markdownTextarea, '*', '*', T.italicPlaceholder) }, { type: 'button', name: 'S', title: T.strikethrough, action: () => applyMarkdown(markdownTextarea, '~~', '~~', T.strikethroughPlaceholder) }, { type: 'button', name: '`', title: T.inlineCode, action: () => applyMarkdown(markdownTextarea, '`', '`', T.codePlaceholder) }, { type: 'button', name: '“ ”', title: T.quote, action: () => applyMarkdown(markdownTextarea, '> ', '', T.quotePlaceholder) }, { type: 'button', name: '•', title: T.list, action: () => applyMarkdown(markdownTextarea, '- ', '', T.listItemPlaceholder) }, { type: 'button', name: '1.', title: T.numberedList, action: () => applyMarkdown(markdownTextarea, '1. ', '', T.listItemPlaceholder) }, { type: 'button', name: '☑', title: T.checklist, action: () => applyMarkdown(markdownTextarea, '- [ ] ', '', T.taskPlaceholder) }, { type: 'button', name: '</>', title: T.codeBlock, action: () => applyMarkdown(markdownTextarea, '```\n', '\n```', T.codePlaceholder) }, { type: 'icon-button', name: 'Image', title: T.image, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"></path></svg>`, action: () => {
+            openImageInserterModal((data, altText, isReference) => {
+                if (isReference) {
+                    insertImageAsReference(data, altText, markdownTextarea);
+                } else {
+                    const markdown = `![${altText}](${data})`;
+                    applyMarkdown(markdownTextarea, markdown);
+                }
+            });
+        } }, { type: 'icon-button', name: 'Link', title: T.link, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"></path></svg>`, action: () => { const url = prompt(T.linkPrompt, 'https://'); if (url) applyMarkdown(markdownTextarea, '[', `](${url})`, T.linkTextPlaceholder); }}, { type: 'icon-button', name: T.insertTable, title: T.insertTable, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM8 10H4V6h4v4zm6 0h-4V6h4v4zm6 0h-4V6h4v4zM8 14H4v4h4v-4zm6 0h-4v4h4v-4zm6 0h-4v4h4v-4z"></path></svg>`, action: () => {
+            const start = markdownTextarea.selectionStart; const end = markdownTextarea.selectionEnd; const selectedText = markdownTextarea.value.substring(start, end);
+            const existingTableData = parseMarkdownTable(selectedText);
+            openTableEditorModal(existingTableData, (markdown) => {
+                markdownTextarea.setRangeText(markdown, start, end, 'select');
+                markdownTextarea.focus();
+                markdownTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+        } }, { type: 'button', name: '―', title: T.horizontalRule, action: () => applyMarkdown(markdownTextarea, '\n---\n') }, ];
         toolbarButtons.forEach(item => { if (item.type === 'select') { const select = document.createElement('select'); select.className = 'toolbar-select heading-select'; item.options.forEach(opt => { const option = document.createElement('option'); option.value = opt.value; option.textContent = opt.text; select.appendChild(option); }); select.onchange = (e) => { let prefix = ''; switch (e.target.value) { case 'h1': prefix = '#'; break; case 'h2': prefix = '##'; break; case 'h3': prefix = '###'; break; case 'h4': prefix = '####'; break; } item.action(prefix); }; toolbar.appendChild(select); } else { const button = document.createElement('button'); button.className = 'toolbar-button'; button.title = item.title; button.onclick = item.action; if (item.type === 'icon-button') { button.classList.add('icon-button'); button.innerHTML = item.icon; } else { button.textContent = item.name; } toolbar.appendChild(button); } });
 
         const contentWrapper = document.createElement('div'); contentWrapper.className = 'editor-preview-wrapper';
@@ -412,37 +613,26 @@
                 const sanitizedHtml = DOMPurify.sanitize(dirtyHtml, { USE_PROFILES: { html: true }, ADD_ATTR: ['class', 'type', 'disabled', 'checked', 'data-task-index'], ADD_TAGS: ['span', 'input'], });
                 previewPane.innerHTML = sanitizedHtml;
 
-                // コードブロックのコピーボタン
                 previewPane.querySelectorAll('pre code').forEach(hljs.highlightElement);
                 previewPane.querySelectorAll('pre').forEach(preEl => {
                     if (preEl.querySelector('.copy-code-button')) return;
-                    const codeEl = preEl.querySelector('code');
-                    if (!codeEl) return;
-                    const copyButton = document.createElement('button');
-                    copyButton.className = 'copy-code-button';
-                    copyButton.textContent = T.copy;
-                    copyButton.setAttribute('aria-label', T.copyAriaLabel);
-                    preEl.appendChild(copyButton);
+                    const codeEl = preEl.querySelector('code'); if (!codeEl) return;
+                    const copyButton = document.createElement('button'); copyButton.className = 'copy-code-button'; copyButton.textContent = T.copy; copyButton.setAttribute('aria-label', T.copyAriaLabel); preEl.appendChild(copyButton);
                     copyButton.addEventListener('click', (e) => {
                         e.stopPropagation();
                         navigator.clipboard.writeText(codeEl.innerText).then(() => {
-                            copyButton.textContent = T.copied;
-                            copyButton.classList.add('copied');
+                            copyButton.textContent = T.copied; copyButton.classList.add('copied');
                             setTimeout(() => { copyButton.textContent = T.copy; copyButton.classList.remove('copied'); }, 2000);
                         }).catch(err => {
-                            console.error('Failed to copy code block.', err);
-                            copyButton.textContent = T.copyError;
+                            console.error('Failed to copy code block.', err); copyButton.textContent = T.copyError;
                             setTimeout(() => { copyButton.textContent = T.copy; }, 2000);
                         });
                     });
                 });
 
-                // --- チェックリスト機能強化: プレビュー上のクリック処理 ---
                 const checkboxes = previewPane.querySelectorAll('.task-list-item-checkbox');
                 checkboxes.forEach((checkbox, index) => {
-                    if (checkbox.checked) {
-                        checkbox.closest('.task-list-item')?.classList.add('completed');
-                    }
+                    if (checkbox.checked) { checkbox.closest('.task-list-item')?.classList.add('completed'); }
                     const newCheckbox = checkbox.cloneNode(true);
                     checkbox.parentNode.replaceChild(newCheckbox, checkbox);
                     newCheckbox.addEventListener('click', () => handlePreviewChecklistToggle(index));
@@ -455,176 +645,136 @@
         };
 
         const handlePreviewChecklistToggle = (toggledIndex) => {
-            const text = markdownTextarea.value;
-            const regex = /-\s\[[ x]\]/g;
-            let match;
-            let currentIndex = 0;
-            let newText = text;
-
+            const text = markdownTextarea.value; const regex = /-\s\[[ x]\]/g;
+            let match; let currentIndex = 0; let newText = text;
             while ((match = regex.exec(text)) !== null) {
                 if (currentIndex === toggledIndex) {
-                    const original = match[0];
-                    const replacement = original.includes('[ ]') ? '- [x]' : '- [ ]';
-                    const pos = match.index;
-                    newText = text.substring(0, pos) + replacement + text.substring(pos + original.length);
+                    const original = match[0]; const replacement = original.includes('[ ]') ? '- [x]' : '- [ ]';
+                    const pos = match.index; newText = text.substring(0, pos) + replacement + text.substring(pos + original.length);
                     break;
                 }
                 currentIndex++;
             }
-
             if (markdownTextarea.value !== newText) {
                 const cursorPos = markdownTextarea.selectionStart;
-                markdownTextarea.value = newText;
-                originalTextarea.value = newText;
+                markdownTextarea.value = newText; originalTextarea.value = newText;
                 markdownTextarea.selectionStart = markdownTextarea.selectionEnd = cursorPos;
                 originalTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-                if (container.classList.contains('mode-split') || container.classList.contains('mode-preview')) {
-                    updatePreview();
-                }
+                if (container.classList.contains('mode-split') || container.classList.contains('mode-preview')) { updatePreview(); }
             }
         };
 
-        // === 修正点 2: クリックとドラッグを区別する、より堅牢なクリック処理ロジック ===
-        let mouseDownTime = 0;
-        let mouseDownPos = { x: 0, y: 0 };
-
-        markdownTextarea.addEventListener('mousedown', (e) => {
-            mouseDownTime = Date.now();
-            mouseDownPos = { x: e.clientX, y: e.clientY };
-        });
-
+        let mouseDownTime = 0; let mouseDownPos = { x: 0, y: 0 };
+        markdownTextarea.addEventListener('mousedown', (e) => { mouseDownTime = Date.now(); mouseDownPos = { x: e.clientX, y: e.clientY }; });
         const handleEditorClick = (e) => {
-            const textarea = e.target;
-
-            // --- 判定ロジック ---
-            // 1. ドラッグ操作や範囲選択を誤判定しないようにする
-            const mouseUpTime = Date.now();
+            const textarea = e.target; const mouseUpTime = Date.now();
             const distance = Math.sqrt(Math.pow(e.clientX - mouseDownPos.x, 2) + Math.pow(e.clientY - mouseDownPos.y, 2));
-
-            // mousedownからmouseup(click)までの時間が長いか、マウスの移動距離が大きい場合は「ドラッグ」とみなし、処理を中断
-            if (mouseUpTime - mouseDownTime > 250 || distance > 5) {
-                return;
-            }
-            // テキストが選択状態の場合（コピー目的の可能性）も処理を中断
-            if (textarea.selectionStart !== textarea.selectionEnd) {
-                return;
-            }
-            // --- 判定ロジックここまで ---
-
-            const pos = textarea.selectionStart;
-            const text = textarea.value;
-
+            if (mouseUpTime - mouseDownTime > 250 || distance > 5 || textarea.selectionStart !== textarea.selectionEnd) { return; }
+            const pos = textarea.selectionStart; const text = textarea.value;
             const lineStart = text.lastIndexOf('\n', pos - 1) + 1;
             const lineEnd = text.indexOf('\n', pos);
             const effectiveLineEnd = lineEnd === -1 ? text.length : lineEnd;
             const line = text.substring(lineStart, effectiveLineEnd);
-
-            // === 修正点 3: 番号付きリスト内のチェックリストにも対応 ===
             const checklistRegex = /^(\s*)(-|\*|\d+\.)\s\[( |x)\]/;
             const match = line.match(checklistRegex);
-
             if (match && pos - lineStart <= match[0].length) {
-                e.preventDefault(); // デフォルトのクリック動作をキャンセル
-
-                const replacement = line.includes('[ ]') ? '[x]' : '[ ]';
-                const newLine = line.replace(/\[( |x)\]/, replacement);
-
+                e.preventDefault();
+                const replacement = line.includes('[ ]') ? '[x]' : '[ ]'; const newLine = line.replace(/\[( |x)\]/, replacement);
                 const newText = text.substring(0, lineStart) + newLine + text.substring(effectiveLineEnd);
-
-                markdownTextarea.value = newText;
-                originalTextarea.value = newText;
+                markdownTextarea.value = newText; originalTextarea.value = newText;
                 textarea.selectionStart = textarea.selectionEnd = pos;
-
                 originalTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-                if (container.classList.contains('mode-split') || container.classList.contains('mode-preview')) {
-                    updatePreview();
-                }
+                if (container.classList.contains('mode-split') || container.classList.contains('mode-preview')) { updatePreview(); }
             }
         };
         markdownTextarea.addEventListener('click', handleEditorClick);
 
-
-        const handleEditorKeyDown = (e) => {
+        const handleEnterKey = (e) => {
             const textarea = e.target;
-            const start = textarea.selectionStart;
-            const end = textarea.selectionEnd;
-            const lineStart = textarea.value.lastIndexOf('\n', start - 1) + 1;
-            const currentLineText = textarea.value.substring(lineStart, textarea.value.indexOf('\n', start) === -1 ? textarea.value.length : textarea.value.indexOf('\n', start));
+            const pos = textarea.selectionStart;
+            const text = textarea.value;
+            const lineStart = text.lastIndexOf('\n', pos - 1) + 1;
+            const line = text.substring(lineStart, pos);
 
-            const listRegex = /^(\s*)(-|\*|\d+\.)\s/;
-            // === 修正点 3: 番号付きリスト内のチェックリストにも対応 ===
-            const checklistRegex = /^(\s*)(-|\*|\d+\.)\s\[( |x)\]\s/;
+            const listRegex = /^(\s*)((?:-|\*|\d+\.)\s(?:\[[ x]\]\s)?)(\s*.*)/;
+            const match = line.match(listRegex);
 
-            if (e.key === 'Enter' && !e.shiftKey && start === end) {
-                const checkMatch = currentLineText.match(checklistRegex);
-                if (checkMatch) {
+            if (match) {
+                 const content = match[3];
+                // If the list item is empty (only marker and whitespace), remove it
+                if (!content.trim()) {
                     e.preventDefault();
-                    const indent = checkMatch[1] || '';
-                    if (currentLineText.replace(checklistRegex, '').trim() === '') {
-                        textarea.setRangeText('', lineStart, lineStart + currentLineText.length);
-                    } else {
-                        textarea.setRangeText(`\n${indent}- [ ] `, start, end, 'end');
-                    }
+                    textarea.setRangeText('', lineStart, pos, 'end');
                     textarea.dispatchEvent(new Event('input', { bubbles: true }));
                     return;
                 }
 
-                const listMatch = currentLineText.match(listRegex);
-                 if (listMatch) {
-                     e.preventDefault();
-                     const indent = listMatch[1] || '';
-                     const marker = listMatch[2];
-                      if (currentLineText.replace(listRegex, '').trim() === '') {
-                          textarea.setRangeText('', lineStart, lineStart + currentLineText.length);
-                      } else {
-                          const newMarker = isNaN(parseInt(marker, 10)) ? `${marker} ` : `${parseInt(marker, 10) + 1}. `;
-                          textarea.setRangeText(`\n${indent}${newMarker}`, start, end, 'end');
-                      }
-                     textarea.dispatchEvent(new Event('input', { bubbles: true }));
-                     return;
-                 }
-            }
-
-            if (e.key === 'Tab' && start === end) {
+                // If Enter is pressed on a non-empty list item, create a new one
                 e.preventDefault();
-                const lineEnd = textarea.value.indexOf('\n', start) === -1 ? textarea.value.length : textarea.value.indexOf('\n', start);
+                const indent = match[1];
+                let listMarker = match[2];
 
-                if (!e.shiftKey) { // Indent
-                    textarea.setRangeText(INDENT_SPACES, start, start, 'end');
-                } else { // Outdent
-                    const precedingText = textarea.value.substring(lineStart, start);
-                    if (precedingText.startsWith(INDENT_SPACES)) {
-                        textarea.setRangeText('', lineStart, lineStart + INDENT_SPACES.length, 'end');
-                    }
+                const numberedMatch = listMarker.match(/^(\d+)\.\s/);
+                if (numberedMatch) {
+                    const newNum = parseInt(numberedMatch[1], 10) + 1;
+                    listMarker = `${newNum}. `;
+                } else if (listMarker.includes('[x]')) {
+                    listMarker = listMarker.replace('[x]', '[ ]');
                 }
+
+                textarea.setRangeText(`\n${indent}${listMarker}`, pos, pos, 'end');
                 textarea.dispatchEvent(new Event('input', { bubbles: true }));
             }
         };
-        markdownTextarea.addEventListener('keydown', handleEditorKeyDown);
 
-        const updateToolbarState = () => { const headerSelect = toolbar.querySelector('.heading-select'); if (!headerSelect) return; const start = markdownTextarea.selectionStart; const lineStart = markdownTextarea.value.lastIndexOf('\n', start - 1) + 1; const currentLine = markdownTextarea.value.substring(lineStart).split('\n')[0]; let currentStyle = 'p'; if (/^#\s/.test(currentLine)) { currentStyle = 'h1'; } else if (/^##\s/.test(currentLine)) { currentStyle = 'h2'; } else if (/^###\s/.test(currentLine)) { currentStyle = 'h3'; } else if (/^####\s/.test(currentLine)) { currentStyle = 'h4'; } if (headerSelect.value !== currentStyle) { headerSelect.value = currentStyle; } };
-        markdownTextarea.addEventListener('keyup', updateToolbarState);
-        markdownTextarea.addEventListener('mouseup', updateToolbarState);
-        markdownTextarea.addEventListener('focus', updateToolbarState);
-        markdownTextarea.addEventListener('input', () => {
-            updateToolbarState();
-            originalTextarea.value = markdownTextarea.value;
-            if (!document.hidden) {
-                originalTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+        markdownTextarea.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+                handleEnterKey(e);
             }
-            if (container.classList.contains('mode-split') || container.classList.contains('mode-preview')) {
-                updatePreview();
-            }
-            debouncedGarbageCollector();
         });
+
+        const cleanupOrphanedImageRefs = debounce((textarea) => {
+            let value = textarea.value;
+            const originalValue = value;
+            const referenceRegex = /!\[.*?\]\[(image-ref-\d+)\]/g;
+            const usedRefs = new Set();
+            let match;
+            while ((match = referenceRegex.exec(value)) !== null) { usedRefs.add(match[1]); }
+
+            const definitionRegex = /^\n?\[(image-ref-\d+)\]:\s*data:image\/.*$/gm;
+            let changed = false;
+            const cleanedValue = value.replace(definitionRegex, (fullMatch, refId) => {
+                if (usedRefs.has(refId)) { return fullMatch; }
+                changed = true;
+                return '';
+            });
+
+            if (changed) {
+                const cursorPos = textarea.selectionStart;
+                textarea.value = cleanedValue.replace(/(\n\n\n+)/g, '\n\n').trim();
+                const diff = originalValue.length - textarea.value.length;
+                textarea.selectionStart = textarea.selectionEnd = Math.max(0, cursorPos - diff);
+                originalTextarea.value = textarea.value;
+                originalTextarea.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+                 if (container.classList.contains('mode-split') || container.classList.contains('mode-preview')) {
+                    updatePreview();
+                }
+            }
+        }, 1500);
+
+        markdownTextarea.addEventListener('input', () => {
+            originalTextarea.value = markdownTextarea.value;
+            if (!document.hidden) { originalTextarea.dispatchEvent(new Event('input', { bubbles: true })); }
+            if (container.classList.contains('mode-split') || container.classList.contains('mode-preview')) { debounce(updatePreview, 250)(); }
+            cleanupOrphanedImageRefs(markdownTextarea);
+        });
+
         const observer = new MutationObserver(() => {
-            if (originalTextarea.value !== markdownTextarea.value) {
+            if (originalTextarea.value !== markdownTextarea.value && document.activeElement !== markdownTextarea) {
                 const cursorPos = markdownTextarea.selectionStart;
                 markdownTextarea.value = originalTextarea.value;
                 markdownTextarea.selectionStart = markdownTextarea.selectionEnd = cursorPos;
-                updateToolbarState();
                 if(container.classList.contains('mode-split') || container.classList.contains('mode-preview')) { updatePreview(); }
-                debouncedGarbageCollector();
             }
         });
         observer.observe(originalTextarea, { attributes: true, childList: true, subtree: true, characterData: true });
@@ -644,8 +794,8 @@
         const savedMode = localStorage.getItem(STORAGE_KEY_MODE);
         switchMode(savedMode || 'split');
 
-        console.log('Markdown Editor for Standard Notes has been initialized (v2.9.0 with Editor & Preview Interactive Checklists and improved click handling).');
-     }
+        console.log('Markdown Editor for Standard Notes (Final Form v3.6) has been initialized.');
+    }
 
     const mainObserver = new MutationObserver(() => {
         const editor = document.querySelector('#note-text-editor');
