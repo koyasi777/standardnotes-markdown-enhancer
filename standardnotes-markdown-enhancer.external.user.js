@@ -1,16 +1,16 @@
 // ==UserScript==
-// @name         Enhanced Markdown Editor for Standard Notes
-// @name:ja      Standard Notes用 高機能Markdownエディタ拡張
-// @name:en      Enhanced Markdown Editor for Standard Notes
-// @name:zh-CN   为Standard Notes增强Markdown编辑器
-// @name:zh-TW   為Standard Notes強化Markdown編輯器
-// @name:ko      Standard Notes용 고급 Markdown 에디터 확장
-// @name:fr      Éditeur Markdown amélioré pour Standard Notes
-// @name:es      Editor Markdown mejorado para Standard Notes
-// @name:de      Erweiterter Markdown-Editor für Standard Notes
-// @name:pt-BR   Editor Markdown avançado para Standard Notes
-// @name:ru      Улучшенный редактор Markdown для Standard Notes
-// @version      2.7.0
+// @name             Enhanced Markdown Editor for Standard Notes
+// @name:ja          Standard Notes用 高機能Markdownエディタ拡張
+// @name:en          Enhanced Markdown Editor for Standard Notes
+// @name:zh-CN       为Standard Notes增强Markdown编辑器
+// @name:zh-TW       為Standard Notes強化Markdown編輯器
+// @name:ko          Standard Notes용 고급 Markdown 에디터 확장
+// @name:fr          Éditeur Markdown amélioré pour Standard Notes
+// @name:es          Editor Markdown mejorado para Standard Notes
+// @name:de          Erweiterter Markdown-Editor für Standard Notes
+// @name:pt-BR       Editor Markdown avançado para Standard Notes
+// @name:ru          Улучшенный редактор Markdown для Standard Notes
+// @version          2.9.0
 // @description         Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency.
 // @description:ja      Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップされます。
 // @description:zh-CN   非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。
@@ -21,17 +21,17 @@
 // @description:de      Erweitern Sie Standard Notes mit einem leistungsstarken, inoffiziellen Markdown-Editor: Live-Vorschau, Formatierungsleiste, Bild-Einfügen/-Hochladen mit automatischer Größenanpassung und PDF-Export. Nicht verwendete Bilder werden automatisch bereinigt.
 // @description:pt-BR   Potencialize o Standard Notes com um editor Markdown poderoso e não oficial: visualização ao vivo, barra de formatação, colagem/envio de imagens com redimensionamento automático e exportação para PDF. Imagens não utilizadas são removidas automaticamente.
 // @description:ru      Улучшите Standard Notes с помощью мощного неофициального редактора Markdown: живая превью, панель форматирования, вставка/загрузка изображений с автоизменением размера и экспорт в PDF. Неиспользуемые изображения автоматически удаляются.
-// @namespace    https://github.com/koyasi777/standardnotes-markdown-enhancer
-// @author       koyasi777
-// @match        https://app.standardnotes.com/*
-// @grant        GM_addStyle
-// @require      https://cdn.jsdelivr.net/npm/marked/marked.min.js
-// @require      https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js
-// @require      https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js
-// @license      MIT
-// @homepageURL  https://github.com/koyasi777/standardnotes-markdown-enhancer
-// @supportURL   https://github.com/koyasi777/standardnotes-markdown-enhancer/issues
-// @icon         https://app.standardnotes.com/favicon/favicon-32x32.png
+// @namespace        https://github.com/koyasi777/standardnotes-markdown-enhancer
+// @author           koyasi777
+// @match            https://app.standardnotes.com/*
+// @grant            GM_addStyle
+// @require          https://cdn.jsdelivr.net/npm/marked/marked.min.js
+// @require          https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js
+// @require          https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js
+// @license          MIT
+// @homepageURL      https://github.com/koyasi777/standardnotes-markdown-enhancer
+// @supportURL       https://github.com/koyasi777/standardnotes-markdown-enhancer/issues
+// @icon             https://app.standardnotes.com/favicon/favicon-32x32.png
 // ==/UserScript==
 
 (function() {
@@ -40,6 +40,7 @@
     // --- 設定値 ---
     const MAX_IMAGE_DIMENSION = 1280; // 画像の最大辺の長さ (これより大きい場合リサイズ)
     const JPEG_QUALITY = 0.8;         // JPEG圧縮の品質 (0.0 - 1.0)
+    const INDENT_SPACES = '  ';       // Tabキーで挿入されるスペース
 
     // --- 国際化 (i18n) のための文字列定義 ---
     const I18N = {
@@ -116,7 +117,11 @@
         .markdown-editor-container.mode-split .custom-markdown-textarea, .markdown-editor-container.mode-split .markdown-preview { display: block !important; flex-basis: 50%; width: 50%; }
         .markdown-editor-container.mode-split .markdown-preview { border-left: 1px solid var(--sn-stylekit-border-color, #e0e0e0); }
         .markdown-preview h1, .markdown-preview h2, .markdown-preview h3, .markdown-preview h4, .markdown-preview h5, .markdown-preview h6 { margin-top: 24px; margin-bottom: 16px; font-weight: 600; line-height: 1.25; border-bottom: 1px solid var(--sn-stylekit-border-color, #eee); padding-bottom: .3em; } .markdown-preview h1 { font-size: 2em; } .markdown-preview h2 { font-size: 1.5em; } .markdown-preview h3 { font-size: 1.25em; }
-        .markdown-preview p { margin-bottom: 16px; } .markdown-preview ul, .markdown-preview ol { padding-left: 2em; margin-bottom: 16px; } .markdown-preview blockquote { padding: 0 1em; color: var(--sn-stylekit-secondary-foreground-color, #6a737d); border-left: .25em solid var(--sn-stylekit-border-color, #dfe2e5); margin: 0 0 16px 0; } .markdown-preview code { padding: .2em .4em; margin: 0; font-size: 85%; background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); border-radius: 3px; font-family: var(--sn-stylekit-font-code, monospace); } .markdown-preview pre { position: relative; padding: 16px; overflow: auto; font-size: 85%; line-height: 1.45; background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); border-radius: 6px; word-wrap: normal; margin-bottom: 16px; } .markdown-preview pre code { background-color: transparent; padding: 0; margin: 0; } .markdown-preview img { max-width: 100%; height: auto; border-radius: 6px; } .markdown-preview table { border-collapse: collapse; width: 100%; margin-bottom: 16px; display: block; overflow: auto; } .markdown-preview th, .markdown-preview td { border: 1px solid var(--sn-stylekit-border-color, #dfe2e5); padding: 6px 13px; } .markdown-preview tr:nth-child(2n) { background-color: var(--sn-stylekit-secondary-background-color, #f6f8fa); } .markdown-preview hr { height: .25em; padding: 0; margin: 24px 0; background-color: var(--sn-stylekit-border-color, #dfe2e5); border: 0; } .markdown-preview .task-list-item { list-style-type: none; } .markdown-preview .task-list-item-checkbox { margin: 0 .2em .25em -1.6em; vertical-align: middle; }
+        .markdown-preview p { margin-bottom: 16px; } .markdown-preview ul, .markdown-preview ol { padding-left: 2em; margin-bottom: 16px; } .markdown-preview blockquote { padding: 0 1em; color: var(--sn-stylekit-secondary-foreground-color, #6a737d); border-left: .25em solid var(--sn-stylekit-border-color, #dfe2e5); margin: 0 0 16px 0; } .markdown-preview code { padding: .2em .4em; margin: 0; font-size: 85%; background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); border-radius: 3px; font-family: var(--sn-stylekit-font-code, monospace); } .markdown-preview pre { position: relative; padding: 16px; overflow: auto; font-size: 85%; line-height: 1.45; background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); border-radius: 6px; word-wrap: normal; margin-bottom: 16px; } .markdown-preview pre code { background-color: transparent; padding: 0; margin: 0; } .markdown-preview img { max-width: 100%; height: auto; border-radius: 6px; } .markdown-preview table { border-collapse: collapse; width: 100%; margin-bottom: 16px; display: block; overflow: auto; } .markdown-preview th, .markdown-preview td { border: 1px solid var(--sn-stylekit-border-color, #dfe2e5); padding: 6px 13px; } .markdown-preview tr:nth-child(2n) { background-color: var(--sn-stylekit-secondary-background-color, #f6f8fa); } .markdown-preview hr { height: .25em; padding: 0; margin: 24px 0; background-color: var(--sn-stylekit-border-color, #dfe2e5); border: 0; }
+        /* === 修正点 1: li.task-list-item に変更し、詳細度を上げる === */
+        .markdown-preview li.task-list-item { list-style-type: none; } .markdown-preview .task-list-item-checkbox { margin: 0 .2em .25em -1.6em; vertical-align: middle; cursor: pointer; }
+        .markdown-preview li.task-list-item.completed { color: var(--sn-stylekit-secondary-foreground-color, #6a737d); }
+        .markdown-preview li.task-list-item.completed, .markdown-preview li.task-list-item.completed a { text-decoration: line-through; }
         .copy-code-button { position: absolute; top: 10px; right: 10px; padding: 5px 8px; font-size: 12px; border: 1px solid var(--sn-stylekit-border-color, #ccc); border-radius: 4px; background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-secondary-foreground-color, #555); cursor: pointer; opacity: 0; transition: opacity 0.2s, background-color 0.2s, color 0.2s; z-index: 1; } .markdown-preview pre:hover .copy-code-button { opacity: 1; } .copy-code-button:hover { background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); } .copy-code-button.copied { background-color: var(--sn-stylekit-primary-color, #346df1); color: var(--sn-stylekit-primary-contrast-color, #fff); border-color: var(--sn-stylekit-primary-color, #346df1); }
         .markdown-preview pre code.hljs { display: block; overflow-x: auto; padding: 0; color: var(--sn-stylekit-foreground-color, #333); background: transparent; } .hljs-comment, .hljs-quote { color: var(--sn-stylekit-secondary-foreground-color, #6a737d); font-style: italic; } .hljs-keyword, .hljs-selector-tag, .hljs-subst, .hljs-deletion, .hljs-meta, .hljs-selector-class { color: #d73a49; } .hljs-number, .hljs-literal, .hljs-variable, .hljs-template-variable, .hljs-tag .hljs-attr { color: var(--sn-stylekit-primary-color, #005cc5); } .hljs-string, .hljs-doctag { color: #032f62; } .hljs-title, .hljs-section, .hljs-selector-id, .hljs-type, .hljs-symbol, .hljs-bullet, .hljs-link { color: #6f42c1; } .hljs-addition { color: #22863a; } .hljs-emphasis { font-style: italic; } .hljs-strong { font-weight: bold; }
         @media (prefers-color-scheme: dark) { .markdown-preview pre code.hljs .hljs-keyword, .markdown-preview pre code.hljs .hljs-selector-tag, .markdown-preview pre code.hljs .hljs-subst, .markdown-preview pre code.hljs .hljs-deletion, .markdown-preview pre code.hljs .hljs-meta, .markdown-preview pre code.hljs .hljs-selector-class { color: #ff7b72; } .markdown-preview pre code.hljs .hljs-string, .markdown-preview pre code.hljs .hljs-doctag { color: #a5d6ff; } .markdown-preview pre code.hljs .hljs-title, .markdown-preview pre code.hljs .hljs-section, .markdown-preview pre code.hljs .hljs-selector-id, .markdown-preview pre code.hljs .hljs-type, .markdown-preview pre code.hljs .hljs-symbol, .markdown-preview pre code.hljs .hljs-bullet, .markdown-preview pre code.hljs .hljs-link { color: #d2a8ff; } .markdown-preview pre code.hljs .hljs-addition { color: #7ee787; } }
@@ -138,7 +143,7 @@
         .sn-image-modal-insert-btn:disabled { background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); color: var(--sn-stylekit-secondary-foreground-color, #888); cursor: not-allowed; }
         .sn-image-upload-preview { margin-top: 10px; max-height: 150px; text-align: center; }
         .sn-image-upload-preview img { max-width: 100%; max-height: 150px; border-radius: 4px; border: 1px solid var(--sn-stylekit-border-color, #ccc); }
-    `);
+     `);
 
     function debounce(func, wait) {
         let timeout;
@@ -401,7 +406,202 @@
         container.append(modeBar, toolbar, contentWrapper);
         editorWrapper.after(container);
 
-        const updatePreview = () => { try { const dirtyHtml = marked.parse(markdownTextarea.value); const sanitizedHtml = DOMPurify.sanitize(dirtyHtml, { USE_PROFILES: { html: true }, ADD_ATTR: ['class', 'type', 'disabled', 'checked'], ADD_TAGS: ['span', 'input'], }); previewPane.innerHTML = sanitizedHtml; previewPane.querySelectorAll('pre code').forEach(hljs.highlightElement); previewPane.querySelectorAll('pre').forEach(preEl => { if (preEl.querySelector('.copy-code-button')) return; const codeEl = preEl.querySelector('code'); if (!codeEl) return; const copyButton = document.createElement('button'); copyButton.className = 'copy-code-button'; copyButton.textContent = T.copy; copyButton.setAttribute('aria-label', T.copyAriaLabel); preEl.appendChild(copyButton); copyButton.addEventListener('click', (e) => { e.stopPropagation(); navigator.clipboard.writeText(codeEl.innerText).then(() => { copyButton.textContent = T.copied; copyButton.classList.add('copied'); setTimeout(() => { copyButton.textContent = T.copy; copyButton.classList.remove('copied'); }, 2000); }).catch(err => { console.error('Failed to copy code block.', err); copyButton.textContent = T.copyError; setTimeout(() => { copyButton.textContent = T.copy; }, 2000); }); }); }); } catch (e) { console.error("Error updating preview:", e); previewPane.innerHTML = `<div style="padding: 1rem; color: #d73a49; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: .25rem;"><strong>${T.previewErrorTitle}</strong><br><pre style="white-space: pre-wrap; word-break: break-all; margin-top: 0.5rem;">${e.stack}</pre></div>`; } };
+        const updatePreview = () => {
+            try {
+                const dirtyHtml = marked.parse(markdownTextarea.value);
+                const sanitizedHtml = DOMPurify.sanitize(dirtyHtml, { USE_PROFILES: { html: true }, ADD_ATTR: ['class', 'type', 'disabled', 'checked', 'data-task-index'], ADD_TAGS: ['span', 'input'], });
+                previewPane.innerHTML = sanitizedHtml;
+
+                // コードブロックのコピーボタン
+                previewPane.querySelectorAll('pre code').forEach(hljs.highlightElement);
+                previewPane.querySelectorAll('pre').forEach(preEl => {
+                    if (preEl.querySelector('.copy-code-button')) return;
+                    const codeEl = preEl.querySelector('code');
+                    if (!codeEl) return;
+                    const copyButton = document.createElement('button');
+                    copyButton.className = 'copy-code-button';
+                    copyButton.textContent = T.copy;
+                    copyButton.setAttribute('aria-label', T.copyAriaLabel);
+                    preEl.appendChild(copyButton);
+                    copyButton.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        navigator.clipboard.writeText(codeEl.innerText).then(() => {
+                            copyButton.textContent = T.copied;
+                            copyButton.classList.add('copied');
+                            setTimeout(() => { copyButton.textContent = T.copy; copyButton.classList.remove('copied'); }, 2000);
+                        }).catch(err => {
+                            console.error('Failed to copy code block.', err);
+                            copyButton.textContent = T.copyError;
+                            setTimeout(() => { copyButton.textContent = T.copy; }, 2000);
+                        });
+                    });
+                });
+
+                // --- チェックリスト機能強化: プレビュー上のクリック処理 ---
+                const checkboxes = previewPane.querySelectorAll('.task-list-item-checkbox');
+                checkboxes.forEach((checkbox, index) => {
+                    if (checkbox.checked) {
+                        checkbox.closest('.task-list-item')?.classList.add('completed');
+                    }
+                    const newCheckbox = checkbox.cloneNode(true);
+                    checkbox.parentNode.replaceChild(newCheckbox, checkbox);
+                    newCheckbox.addEventListener('click', () => handlePreviewChecklistToggle(index));
+                });
+
+            } catch (e) {
+                console.error("Error updating preview:", e);
+                previewPane.innerHTML = `<div style="padding: 1rem; color: #d73a49; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: .25rem;"><strong>${T.previewErrorTitle}</strong><br><pre style="white-space: pre-wrap; word-break: break-all; margin-top: 0.5rem;">${e.stack}</pre></div>`;
+            }
+        };
+
+        const handlePreviewChecklistToggle = (toggledIndex) => {
+            const text = markdownTextarea.value;
+            const regex = /-\s\[[ x]\]/g;
+            let match;
+            let currentIndex = 0;
+            let newText = text;
+
+            while ((match = regex.exec(text)) !== null) {
+                if (currentIndex === toggledIndex) {
+                    const original = match[0];
+                    const replacement = original.includes('[ ]') ? '- [x]' : '- [ ]';
+                    const pos = match.index;
+                    newText = text.substring(0, pos) + replacement + text.substring(pos + original.length);
+                    break;
+                }
+                currentIndex++;
+            }
+
+            if (markdownTextarea.value !== newText) {
+                const cursorPos = markdownTextarea.selectionStart;
+                markdownTextarea.value = newText;
+                originalTextarea.value = newText;
+                markdownTextarea.selectionStart = markdownTextarea.selectionEnd = cursorPos;
+                originalTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+                if (container.classList.contains('mode-split') || container.classList.contains('mode-preview')) {
+                    updatePreview();
+                }
+            }
+        };
+
+        // === 修正点 2: クリックとドラッグを区別する、より堅牢なクリック処理ロジック ===
+        let mouseDownTime = 0;
+        let mouseDownPos = { x: 0, y: 0 };
+
+        markdownTextarea.addEventListener('mousedown', (e) => {
+            mouseDownTime = Date.now();
+            mouseDownPos = { x: e.clientX, y: e.clientY };
+        });
+
+        const handleEditorClick = (e) => {
+            const textarea = e.target;
+
+            // --- 判定ロジック ---
+            // 1. ドラッグ操作や範囲選択を誤判定しないようにする
+            const mouseUpTime = Date.now();
+            const distance = Math.sqrt(Math.pow(e.clientX - mouseDownPos.x, 2) + Math.pow(e.clientY - mouseDownPos.y, 2));
+
+            // mousedownからmouseup(click)までの時間が長いか、マウスの移動距離が大きい場合は「ドラッグ」とみなし、処理を中断
+            if (mouseUpTime - mouseDownTime > 250 || distance > 5) {
+                return;
+            }
+            // テキストが選択状態の場合（コピー目的の可能性）も処理を中断
+            if (textarea.selectionStart !== textarea.selectionEnd) {
+                return;
+            }
+            // --- 判定ロジックここまで ---
+
+            const pos = textarea.selectionStart;
+            const text = textarea.value;
+
+            const lineStart = text.lastIndexOf('\n', pos - 1) + 1;
+            const lineEnd = text.indexOf('\n', pos);
+            const effectiveLineEnd = lineEnd === -1 ? text.length : lineEnd;
+            const line = text.substring(lineStart, effectiveLineEnd);
+
+            // === 修正点 3: 番号付きリスト内のチェックリストにも対応 ===
+            const checklistRegex = /^(\s*)(-|\*|\d+\.)\s\[( |x)\]/;
+            const match = line.match(checklistRegex);
+
+            if (match && pos - lineStart <= match[0].length) {
+                e.preventDefault(); // デフォルトのクリック動作をキャンセル
+
+                const replacement = line.includes('[ ]') ? '[x]' : '[ ]';
+                const newLine = line.replace(/\[( |x)\]/, replacement);
+
+                const newText = text.substring(0, lineStart) + newLine + text.substring(effectiveLineEnd);
+
+                markdownTextarea.value = newText;
+                originalTextarea.value = newText;
+                textarea.selectionStart = textarea.selectionEnd = pos;
+
+                originalTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+                if (container.classList.contains('mode-split') || container.classList.contains('mode-preview')) {
+                    updatePreview();
+                }
+            }
+        };
+        markdownTextarea.addEventListener('click', handleEditorClick);
+
+
+        const handleEditorKeyDown = (e) => {
+            const textarea = e.target;
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const lineStart = textarea.value.lastIndexOf('\n', start - 1) + 1;
+            const currentLineText = textarea.value.substring(lineStart, textarea.value.indexOf('\n', start) === -1 ? textarea.value.length : textarea.value.indexOf('\n', start));
+
+            const listRegex = /^(\s*)(-|\*|\d+\.)\s/;
+            // === 修正点 3: 番号付きリスト内のチェックリストにも対応 ===
+            const checklistRegex = /^(\s*)(-|\*|\d+\.)\s\[( |x)\]\s/;
+
+            if (e.key === 'Enter' && !e.shiftKey && start === end) {
+                const checkMatch = currentLineText.match(checklistRegex);
+                if (checkMatch) {
+                    e.preventDefault();
+                    const indent = checkMatch[1] || '';
+                    if (currentLineText.replace(checklistRegex, '').trim() === '') {
+                        textarea.setRangeText('', lineStart, lineStart + currentLineText.length);
+                    } else {
+                        textarea.setRangeText(`\n${indent}- [ ] `, start, end, 'end');
+                    }
+                    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                    return;
+                }
+
+                const listMatch = currentLineText.match(listRegex);
+                 if (listMatch) {
+                     e.preventDefault();
+                     const indent = listMatch[1] || '';
+                     const marker = listMatch[2];
+                      if (currentLineText.replace(listRegex, '').trim() === '') {
+                          textarea.setRangeText('', lineStart, lineStart + currentLineText.length);
+                      } else {
+                          const newMarker = isNaN(parseInt(marker, 10)) ? `${marker} ` : `${parseInt(marker, 10) + 1}. `;
+                          textarea.setRangeText(`\n${indent}${newMarker}`, start, end, 'end');
+                      }
+                     textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                     return;
+                 }
+            }
+
+            if (e.key === 'Tab' && start === end) {
+                e.preventDefault();
+                const lineEnd = textarea.value.indexOf('\n', start) === -1 ? textarea.value.length : textarea.value.indexOf('\n', start);
+
+                if (!e.shiftKey) { // Indent
+                    textarea.setRangeText(INDENT_SPACES, start, start, 'end');
+                } else { // Outdent
+                    const precedingText = textarea.value.substring(lineStart, start);
+                    if (precedingText.startsWith(INDENT_SPACES)) {
+                        textarea.setRangeText('', lineStart, lineStart + INDENT_SPACES.length, 'end');
+                    }
+                }
+                textarea.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        };
+        markdownTextarea.addEventListener('keydown', handleEditorKeyDown);
+
         const updateToolbarState = () => { const headerSelect = toolbar.querySelector('.heading-select'); if (!headerSelect) return; const start = markdownTextarea.selectionStart; const lineStart = markdownTextarea.value.lastIndexOf('\n', start - 1) + 1; const currentLine = markdownTextarea.value.substring(lineStart).split('\n')[0]; let currentStyle = 'p'; if (/^#\s/.test(currentLine)) { currentStyle = 'h1'; } else if (/^##\s/.test(currentLine)) { currentStyle = 'h2'; } else if (/^###\s/.test(currentLine)) { currentStyle = 'h3'; } else if (/^####\s/.test(currentLine)) { currentStyle = 'h4'; } if (headerSelect.value !== currentStyle) { headerSelect.value = currentStyle; } };
         markdownTextarea.addEventListener('keyup', updateToolbarState);
         markdownTextarea.addEventListener('mouseup', updateToolbarState);
@@ -409,8 +609,12 @@
         markdownTextarea.addEventListener('input', () => {
             updateToolbarState();
             originalTextarea.value = markdownTextarea.value;
-            originalTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            if (container.classList.contains('mode-split') || container.classList.contains('mode-preview')) { updatePreview(); }
+            if (!document.hidden) {
+                originalTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+            if (container.classList.contains('mode-split') || container.classList.contains('mode-preview')) {
+                updatePreview();
+            }
             debouncedGarbageCollector();
         });
         const observer = new MutationObserver(() => {
@@ -438,10 +642,10 @@
         const initialToolbarVisible = localStorage.getItem(STORAGE_KEY_TOOLBAR_VISIBLE) !== 'false';
         toggleToolbar(initialToolbarVisible);
         const savedMode = localStorage.getItem(STORAGE_KEY_MODE);
-        switchMode(savedMode || 'editor');
+        switchMode(savedMode || 'split');
 
-        console.log('Markdown Editor for Standard Notes has been initialized (v2.6.0 with Auto Image Resizing).');
-    }
+        console.log('Markdown Editor for Standard Notes has been initialized (v2.9.0 with Editor & Preview Interactive Checklists and improved click handling).');
+     }
 
     const mainObserver = new MutationObserver(() => {
         const editor = document.querySelector('#note-text-editor');
