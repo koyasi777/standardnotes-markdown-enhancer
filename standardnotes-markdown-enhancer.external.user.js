@@ -10,7 +10,7 @@
 // @name:de          Erweiterter Markdown-Editor für Standard Notes
 // @name:pt-BR       Editor Markdown avançado para Standard Notes
 // @name:ru          Улучшенный редактор Markdown для Standard Notes
-// @version          3.7.5
+// @version          3.7.8
 // @description      Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency.
 // @description:ja   Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップされます。
 // @description:zh-CN 非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。
@@ -198,10 +198,8 @@
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
         let selectedText = textarea.value.substring(start, end);
-
         const textBefore = textarea.value.substring(start - prefix.length, start);
         const textAfter = textarea.value.substring(end, end + suffix.length);
-
         if (textBefore === prefix && textAfter === suffix) {
             textarea.setRangeText(selectedText, start - prefix.length, end + suffix.length, 'select');
         } else if (selectedText.startsWith(prefix) && selectedText.endsWith(suffix)) {
@@ -218,7 +216,6 @@
                 }
             }
         }
-
         textarea.focus();
         textarea.dispatchEvent(new Event('input', { bubbles: true }));
     }
@@ -227,39 +224,27 @@
     function setupMarkdownEditor(originalTextarea) {
         if (originalTextarea.dataset.markdownReady) return;
         originalTextarea.dataset.markdownReady = 'true';
-
         marked.setOptions({ gfm: true, breaks: true, smartLists: true, langPrefix: 'language-' });
-
         const editorWrapper = originalTextarea.parentElement;
         editorWrapper.style.display = 'none';
         editorWrapper.style.height = '100%';
-
         const container = document.createElement('div'); container.className = 'markdown-editor-container';
         const markdownTextarea = document.createElement('textarea'); markdownTextarea.className = originalTextarea.className + ' custom-markdown-textarea'; markdownTextarea.spellcheck = false;
         const dataTextarea = document.createElement('textarea'); dataTextarea.style.display = 'none';
-
         const combineContent = () => {
             const main = markdownTextarea.value;
             const defs = dataTextarea.value;
-            if (!defs.trim()) {
-                return main.trim();
-            }
+            if (!defs.trim()) { return main.trim(); }
             return `${main.trim()}\n\n${defs.trim()}`;
         };
-
         const splitAndSetContent = (text) => {
             const lines = text.split('\n');
             let firstDefLineIndex = -1;
-
             for (let i = lines.length - 1; i >= 0; i--) {
                 const line = lines[i].trim();
-                if (line.startsWith('[image-ref-')) {
-                    firstDefLineIndex = i;
-                } else if (line !== '' && firstDefLineIndex !== -1) {
-                    break;
-                }
+                if (line.startsWith('[image-ref-')) { firstDefLineIndex = i; }
+                else if (line !== '' && firstDefLineIndex !== -1) { break; }
             }
-
             if (firstDefLineIndex !== -1) {
                 const mainContent = lines.slice(0, firstDefLineIndex).join('\n').trimEnd();
                 const dataDefinitions = lines.slice(firstDefLineIndex).join('\n');
@@ -270,12 +255,9 @@
                 dataTextarea.value = '';
             }
         };
-
         const resizeAndEncodeImage = (file) => {
             return new Promise((resolve, reject) => {
-                if (!file.type.startsWith('image/')) {
-                    return reject(new Error('File is not an image.'));
-                }
+                if (!file.type.startsWith('image/')) { return reject(new Error('File is not an image.')); }
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     const img = new Image();
@@ -291,11 +273,9 @@
                             }
                         }
                         const canvas = document.createElement('canvas');
-                        canvas.width = width;
-                        canvas.height = height;
+                        canvas.width = width; canvas.height = height;
                         const ctx = canvas.getContext('2d');
-                        ctx.fillStyle = '#FFFFFF';
-                        ctx.fillRect(0, 0, width, height);
+                        ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, width, height);
                         ctx.drawImage(img, 0, 0, width, height);
                         const dataUrl = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
                         resolve(dataUrl);
@@ -307,7 +287,6 @@
                 reader.readAsDataURL(file);
             });
         };
-
         const insertImageAsReference = (base64data, altText) => {
             const timestamp = new Date();
             const finalAltText = altText || `${T.pastedImageAltText} ${timestamp.toLocaleString(lang)}`;
@@ -318,7 +297,6 @@
             dataTextarea.value = (dataTextarea.value.trim() ? dataTextarea.value.trim() + '\n' : '') + markdownImageDef;
             dataTextarea.dispatchEvent(new Event('input', { bubbles: true }));
         };
-
         const textToTable = (text) => {
             const rows = text.trim().split('\n').map(row => row.split('\t'));
             const colCount = Math.max(...rows.map(row => row.length));
@@ -329,7 +307,6 @@
             }
             return markdown;
         };
-
         const handlePaste = async (event) => {
             const clipboardData = event.clipboardData;
             const imageItem = Array.from(clipboardData.items).find(item => item.type.startsWith('image/'));
@@ -351,14 +328,11 @@
                 document.execCommand('insertText', false, tableMd);
             }
         };
-
         const parseMarkdownTable = (text) => {
             if (!text || typeof text !== 'string' || !text.includes('|')) return null;
             const lines = text.trim().split('\n').map(l => l.trim()).filter(l => l.includes('|'));
             if (lines.length < 2) return null;
-            const headerLine = lines[0];
-            const separatorLine = lines[1];
-            const dataLines = lines.slice(2);
+            const headerLine = lines[0]; const separatorLine = lines[1]; const dataLines = lines.slice(2);
             const parseRow = (rowString) => {
                 const trimmed = rowString.trim();
                 const content = (trimmed.startsWith('|') && trimmed.endsWith('|')) ? trimmed.slice(1, -1) : trimmed;
@@ -376,17 +350,13 @@
                 if (right) return 'right';
                 return 'left';
             });
-            const rows = [
-                header,
-                ...dataLines.map(line => {
-                    const rowData = parseRow(line);
-                    while (rowData.length < numCols) rowData.push('');
-                    return rowData.slice(0, numCols);
-                })
-            ];
+            const rows = [header, ...dataLines.map(line => {
+                const rowData = parseRow(line);
+                while (rowData.length < numCols) rowData.push('');
+                return rowData.slice(0, numCols);
+            })];
             return { rows, alignments };
         };
-
         const openImageInserterModal = (onInsertCallback) => {
             const modalOverlay = document.createElement('div');
             modalOverlay.className = 'sn-modal-overlay';
@@ -424,9 +394,7 @@
                     <div class="sn-modal-footer">
                         <button class="sn-modal-insert-btn">${T.insert}</button>
                     </div>
-                </div>
-            `;
-
+                </div>`;
             document.body.appendChild(modalOverlay);
             const content = modalOverlay.querySelector('.sn-modal-content');
             const urlInput = modalOverlay.querySelector('#sn-image-url');
@@ -436,10 +404,7 @@
             const processingIndicator = modalOverlay.querySelector('.sn-modal-processing-indicator');
             const insertBtn = modalOverlay.querySelector('.sn-modal-insert-btn');
             const closeModal = () => document.body.contains(modalOverlay) && document.body.removeChild(modalOverlay);
-
-            let base64data = null;
-            let currentTab = 'url';
-
+            let base64data = null; let currentTab = 'url';
             modalOverlay.querySelectorAll('.sn-modal-tab').forEach(tab => {
                 tab.onclick = () => {
                     currentTab = tab.dataset.tab;
@@ -447,13 +412,9 @@
                     modalOverlay.querySelectorAll('.sn-modal-tab-content').forEach(c => c.classList.remove('active'));
                     tab.classList.add('active');
                     modalOverlay.querySelector(`.sn-modal-tab-content[data-tab-content="${currentTab}"]`).classList.add('active');
-                    base64data = null;
-                    fileInput.value = '';
-                    fileLabel.textContent = T.chooseFile;
-                    processingIndicator.innerHTML = '';
+                    base64data = null; fileInput.value = ''; fileLabel.textContent = T.chooseFile; processingIndicator.innerHTML = '';
                 };
             });
-
             fileInput.onchange = async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -475,20 +436,13 @@
                     insertBtn.disabled = false;
                 }
             };
-
             insertBtn.onclick = () => {
                 const altText = altInput.value.trim();
                 if (currentTab === 'url') {
                     const url = urlInput.value.trim();
-                    if (url) {
-                        onInsertCallback(url, altText, false);
-                        closeModal();
-                    }
+                    if (url) { onInsertCallback(url, altText, false); closeModal(); }
                 } else {
-                    if (base64data) {
-                        onInsertCallback(base64data, altText, true);
-                        closeModal();
-                    }
+                    if (base64data) { onInsertCallback(base64data, altText, true); closeModal(); }
                 }
             };
             modalOverlay.querySelector('.sn-modal-close').onclick = closeModal;
@@ -496,54 +450,35 @@
             modalOverlay.onclick = closeModal;
             urlInput.focus();
         };
-
         const openTableEditorModal = (initialData, onInsertCallback) => {
             let tableData;
-            if (initialData && initialData.rows.length > 0) {
-                tableData = JSON.parse(JSON.stringify(initialData));
-            } else {
-                tableData = { rows: [ ['', ''], ['', ''] ], alignments: ['left', 'left'] };
-            }
+            if (initialData && initialData.rows.length > 0) { tableData = JSON.parse(JSON.stringify(initialData)); }
+            else { tableData = { rows: [ ['', ''], ['', ''] ], alignments: ['left', 'left'] }; }
             const modalOverlay = document.createElement('div');
             modalOverlay.className = 'sn-modal-overlay';
             const render = () => {
-                const colCount = tableData.rows[0]?.length || 0;
-                const rowCount = tableData.rows.length;
+                const colCount = tableData.rows[0]?.length || 0; const rowCount = tableData.rows.length;
                 let tableHtml = `<table class="sn-table-editor"><thead><tr><th class="control-cell"></th>`;
                 for (let c = 0; c < colCount; c++) {
-                    const align = tableData.alignments[c];
-                    let alignIcon;
+                    const align = tableData.alignments[c]; let alignIcon;
                     switch(align) { case 'center': alignIcon = '⇌'; break; case 'right': alignIcon = '→'; break; default: alignIcon = '←'; }
                     tableHtml += `<th data-col="${c}"><div class="col-header" title="${T.alignLeft}/${T.alignCenter}/${T.alignRight}"><span class="align-icon">${alignIcon}</span></div><div class="delete-btn delete-col-btn" title="${T.deleteCol}">🗑️</div></th>`;
                 }
-                tableHtml += `<th class="control-cell"><div class="add-btn add-col-btn" title="${T.addCol}">+</div></th>`;
-                tableHtml += `</tr></thead><tbody>`;
-
+                tableHtml += `<th class="control-cell"><div class="add-btn add-col-btn" title="${T.addCol}">+</div></th></tr></thead><tbody>`;
                 for (let r = 0; r < rowCount; r++) {
-                    tableHtml += `<tr data-row="${r}">`;
-                    tableHtml += `<td class="control-cell"><div class="delete-btn delete-row-btn" title="${T.deleteRow}">🗑️</div></td>`;
+                    tableHtml += `<tr data-row="${r}"><td class="control-cell"><div class="delete-btn delete-row-btn" title="${T.deleteRow}">🗑️</div></td>`;
                     for (let c = 0; c < colCount; c++) {
-                        const cellValue = tableData.rows[r][c] || '';
-                        const placeholder = r === 0 ? 'Header' : 'Cell';
+                        const cellValue = tableData.rows[r][c] || ''; const placeholder = r === 0 ? 'Header' : 'Cell';
                         tableHtml += `<td><input class="cell-input" type="text" value="${cellValue.replace(/"/g, '&quot;')}" placeholder="${placeholder}" data-row="${r}" data-col="${c}"></td>`;
                     }
-                    tableHtml += `<td class="control-cell"></td>`;
-                    tableHtml += `</tr>`;
+                    tableHtml += `<td class="control-cell"></td></tr>`;
                 }
-                tableHtml += `<tr><td class="control-cell"></td><td colspan="${colCount}" class="control-cell"><div class="add-btn add-row-btn" title="${T.addRow}">+</div></td><td class="control-cell"></td></tr>`;
-                tableHtml += `</tbody></table>`;
-
-                modalOverlay.innerHTML = `
-                    <div class="sn-modal-content sn-modal-content-table">
-                        <div class="sn-modal-header"><h3>${T.tableEditor}</h3><button class="sn-modal-close" title="${T.close}">&times;</button></div>
-                        <div class="sn-modal-body"><div class="sn-table-editor-container"><div class="sn-table-scroll-container">${tableHtml}</div></div></div>
-                        <div class="sn-modal-footer"><button class="sn-modal-insert-btn">${T.insert}</button></div>
-                    </div>`;
+                tableHtml += `<tr><td class="control-cell"></td><td colspan="${colCount}" class="control-cell"><div class="add-btn add-row-btn" title="${T.addRow}">+</div></td><td class="control-cell"></td></tr></tbody></table>`;
+                modalOverlay.innerHTML = `<div class="sn-modal-content sn-modal-content-table"><div class="sn-modal-header"><h3>${T.tableEditor}</h3><button class="sn-modal-close" title="${T.close}">&times;</button></div><div class="sn-modal-body"><div class="sn-table-editor-container"><div class="sn-table-scroll-container">${tableHtml}</div></div></div><div class="sn-modal-footer"><button class="sn-modal-insert-btn">${T.insert}</button></div></div>`;
                 attachEventListeners();
             };
             const attachEventListeners = () => {
-                const content = modalOverlay.querySelector('.sn-modal-content');
-                const closeModal = () => document.body.contains(modalOverlay) && document.body.removeChild(modalOverlay);
+                const content = modalOverlay.querySelector('.sn-modal-content'); const closeModal = () => document.body.contains(modalOverlay) && document.body.removeChild(modalOverlay);
                 modalOverlay.querySelector('.sn-modal-close').onclick = closeModal;
                 content.onclick = e => e.stopPropagation();
                 modalOverlay.onclick = closeModal;
@@ -553,9 +488,7 @@
                     if (colCount > 0 && tableData.rows.some(row => row.some(cell => cell.trim() !== ''))) {
                         markdown += '| ' + tableData.rows[0].map(c => c.trim() || ' ').join(' | ') + ' |\n';
                         markdown += '|' + tableData.alignments.map(a => { if (a === 'center') return ' :---: '; if (a === 'right') return ' ---: '; return ' :--- '; }).join('|') + '|\n';
-                        for (let i = 1; i < tableData.rows.length; i++) {
-                            markdown += '| ' + tableData.rows[i].map(c => c.trim() || ' ').join(' | ') + ' |\n';
-                        }
+                        for (let i = 1; i < tableData.rows.length; i++) { markdown += '| ' + tableData.rows[i].map(c => c.trim() || ' ').join(' | ') + ' |\n'; }
                     }
                     onInsertCallback(markdown);
                     closeModal();
@@ -589,7 +522,6 @@
             render();
             modalOverlay.querySelector('.cell-input')?.focus();
         };
-
         const modeBar = document.createElement('div'); modeBar.className = 'mode-toggle-bar';
         const editorButton = document.createElement('button'); editorButton.className = 'mode-toggle-button'; editorButton.textContent = T.editor;
         const splitButton = document.createElement('button'); splitButton.className = 'mode-toggle-button'; splitButton.textContent = T.split;
@@ -599,12 +531,9 @@
         const printButton = document.createElement('button'); printButton.className = 'mode-toggle-button pdf-export-button'; printButton.textContent = T.printPDF; printButton.title = T.exportPDF;
         const toolbar = document.createElement('div'); toolbar.className = 'markdown-toolbar';
         const previewPane = document.createElement('div'); previewPane.className = 'markdown-preview';
-
         markdownTextarea.addEventListener('paste', handlePaste);
-
         const toolbarButtons = [ { type: 'select', name: 'heading', options: [ { value: 'p', text: T.paragraph }, { value: 'h1', text: T.heading1 }, { value: 'h2', text: T.heading2 }, { value: 'h3', text: T.heading3 }, { value: 'h4', text: T.heading4 } ], action: (prefix) => { const start = markdownTextarea.selectionStart; let lineStart = markdownTextarea.value.lastIndexOf('\n', start - 1) + 1; let lineEnd = markdownTextarea.value.indexOf('\n', start); if (lineEnd === -1) lineEnd = markdownTextarea.value.length; const originalLine = markdownTextarea.value.substring(lineStart, lineEnd); const cleanedLine = originalLine.replace(/^\s*#+\s*/, ''); const newText = prefix ? `${prefix} ${cleanedLine}` : cleanedLine; markdownTextarea.setRangeText(newText, lineStart, lineEnd, 'end'); markdownTextarea.dispatchEvent(new Event('input', { bubbles: true })); markdownTextarea.focus(); } }, { type: 'button', name: 'B', title: T.bold, action: () => applyMarkdown(markdownTextarea, '**', '**', T.boldPlaceholder) }, { type: 'button', name: 'I', title: T.italic, action: () => applyMarkdown(markdownTextarea, '*', '*', T.italicPlaceholder) }, { type: 'button', name: 'S', title: T.strikethrough, action: () => applyMarkdown(markdownTextarea, '~~', '~~', T.strikethroughPlaceholder) }, { type: 'button', name: '`', title: T.inlineCode, action: () => applyMarkdown(markdownTextarea, '`', '`', T.codePlaceholder) }, { type: 'button', name: '“ ”', title: T.quote, action: () => applyMarkdown(markdownTextarea, '> ', '', T.quotePlaceholder) }, { type: 'button', name: '•', title: T.list, action: () => applyMarkdown(markdownTextarea, '- ', '', T.listItemPlaceholder) }, { type: 'button', name: '1.', title: T.numberedList, action: () => applyMarkdown(markdownTextarea, '1. ', '', T.listItemPlaceholder) }, { type: 'button', name: '☑', title: T.checklist, action: () => applyMarkdown(markdownTextarea, '- [ ] ', '', T.taskPlaceholder) }, { type: 'button', name: '</>', title: T.codeBlock, action: () => applyMarkdown(markdownTextarea, '```\n', '\n```', T.codePlaceholder) }, { type: 'icon-button', name: 'Image', title: T.image, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"></path></svg>`, action: () => { openImageInserterModal((data, altText, isReference) => { if (isReference) { insertImageAsReference(data, altText); } else { const markdown = `![${altText}](${data})`; applyMarkdown(markdownTextarea, markdown); } }); } }, { type: 'icon-button', name: 'Link', title: T.link, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"></path></svg>`, action: () => { const url = prompt(T.linkPrompt, 'https://'); if (url) applyMarkdown(markdownTextarea, '[', `](${url})`, T.linkTextPlaceholder); }}, { type: 'icon-button', name: T.insertTable, title: T.insertTable, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM8 10H4V6h4v4zm6 0h-4V6h4v4zm6 0h-4V6h4v4zM8 14H4v4h4v-4zm6 0h-4v4h4v-4zm6 0h-4v4h4v-4z"></path></svg>`, action: () => { const start = markdownTextarea.selectionStart; const end = markdownTextarea.selectionEnd; const selectedText = markdownTextarea.value.substring(start, end); const existingTableData = parseMarkdownTable(selectedText); openTableEditorModal(existingTableData, (markdown) => { markdownTextarea.setRangeText(markdown, start, end, 'select'); markdownTextarea.focus(); markdownTextarea.dispatchEvent(new Event('input', { bubbles: true })); }); } }, { type: 'button', name: '―', title: T.horizontalRule, action: () => applyMarkdown(markdownTextarea, '\n---\n') }, ];
         toolbarButtons.forEach(item => { if (item.type === 'select') { const select = document.createElement('select'); select.className = 'toolbar-select heading-select'; item.options.forEach(opt => { const option = document.createElement('option'); option.value = opt.value; option.textContent = opt.text; select.appendChild(option); }); select.onchange = (e) => { let prefix = ''; switch (e.target.value) { case 'h1': prefix = '#'; break; case 'h2': prefix = '##'; break; case 'h3': prefix = '###'; break; case 'h4': prefix = '####'; break; } item.action(prefix); select.value = 'p'; }; toolbar.appendChild(select); } else { const button = document.createElement('button'); button.className = 'toolbar-button'; button.title = item.title; button.onclick = item.action; if (item.type === 'icon-button') { button.classList.add('icon-button'); button.innerHTML = item.icon; } else { button.textContent = item.name; } toolbar.appendChild(button); } });
-
         const headingSelect = toolbar.querySelector('.heading-select');
         const updateHeadingSelector = () => {
             if (!headingSelect) return;
@@ -619,22 +548,17 @@
             else if (line.startsWith('### ')) { headingLevel = 'h3'; }
             else if (line.startsWith('## ')) { headingLevel = 'h2'; }
             else if (line.startsWith('# ')) { headingLevel = 'h1'; }
-            if (headingSelect.value !== headingLevel) {
-                headingSelect.value = headingLevel;
-            }
+            if (headingSelect.value !== headingLevel) { headingSelect.value = headingLevel; }
         };
-
         const debouncedUpdateHeadingSelector = debounce(updateHeadingSelector, 150);
         markdownTextarea.addEventListener('keyup', debouncedUpdateHeadingSelector);
         markdownTextarea.addEventListener('click', debouncedUpdateHeadingSelector);
         markdownTextarea.addEventListener('focus', debouncedUpdateHeadingSelector);
-
         const contentWrapper = document.createElement('div'); contentWrapper.className = 'editor-preview-wrapper';
         contentWrapper.append(markdownTextarea, previewPane);
         modeBar.append(editorButton, splitButton, previewButton, toolbarToggleButton, printButton);
         container.append(modeBar, toolbar, contentWrapper, dataTextarea);
         editorWrapper.after(container);
-
         const updatePreview = () => {
             try {
                 const fullContent = combineContent();
@@ -645,7 +569,8 @@
                 previewPane.querySelectorAll('pre').forEach(preEl => {
                     if (preEl.querySelector('.copy-code-button')) return;
                     const codeEl = preEl.querySelector('code'); if (!codeEl) return;
-                    const copyButton = document.createElement('button'); copyButton.className = 'copy-code-button'; copyButton.textContent = T.copy; copyButton.setAttribute('aria-label', T.copyAriaLabel); preEl.appendChild(copyButton);
+                    const copyButton = document.createElement('button'); copyButton.className = 'copy-code-button'; copyButton.textContent = T.copy; copyButton.setAttribute('aria-label', T.copyAriaLabel);
+                    preEl.appendChild(copyButton);
                     copyButton.addEventListener('click', (e) => {
                         e.stopPropagation();
                         navigator.clipboard.writeText(codeEl.innerText).then(() => {
@@ -669,7 +594,6 @@
                 previewPane.innerHTML = `<div style="padding: 1rem; color: #d73a49; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: .25rem;"><strong>${T.previewErrorTitle}</strong><br><pre style="white-space: pre-wrap; word-break: break-all; margin-top: 0.5rem;">${e.stack}</pre></div>`;
             }
         };
-
         const handlePreviewChecklistToggle = (toggledIndex) => {
             const text = markdownTextarea.value; const regex = /-\s\[[ x]\]/g;
             let match; let currentIndex = 0; let newText = text;
@@ -688,7 +612,6 @@
                 markdownTextarea.dispatchEvent(new Event('input', { bubbles: true }));
             }
         };
-
         let mouseDownTime = 0; let mouseDownPos = { x: 0, y: 0 };
         markdownTextarea.addEventListener('mousedown', (e) => { mouseDownTime = Date.now(); mouseDownPos = { x: e.clientX, y: e.clientY }; });
         const handleEditorClick = (e) => {
@@ -711,11 +634,8 @@
             }
         };
         markdownTextarea.addEventListener('click', handleEditorClick);
-
         const handleEnterKey = (e) => {
-            const textarea = e.target;
-            const pos = textarea.selectionStart;
-            const text = textarea.value;
+            const textarea = e.target; const pos = textarea.selectionStart; const text = textarea.value;
             const lineStart = text.lastIndexOf('\n', pos - 1) + 1;
             const line = text.substring(lineStart, pos);
             const listRegex = /^(\s*)((?:-|\*|\d+\.)\s(?:\[[ x]\]\s)?)(\s*.*)/;
@@ -732,21 +652,15 @@
                 const indent = match[1];
                 let listMarker = match[2];
                 const numberedMatch = listMarker.match(/^(\d+)\.\s/);
-                if (numberedMatch) {
-                    listMarker = `${parseInt(numberedMatch[1], 10) + 1}. `;
-                } else if (listMarker.includes('[x]')) {
-                    listMarker = listMarker.replace('[x]', '[ ]');
-                }
+                if (numberedMatch) { listMarker = `${parseInt(numberedMatch[1], 10) + 1}. `; }
+                else if (listMarker.includes('[x]')) { listMarker = listMarker.replace('[x]', '[ ]'); }
                 textarea.setRangeText(`\n${indent}${listMarker}`, pos, pos, 'end');
                 textarea.dispatchEvent(new Event('input', { bubbles: true }));
             }
         };
         markdownTextarea.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
-                handleEnterKey(e);
-            }
+            if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) { handleEnterKey(e); }
         });
-
         const cleanupOrphanedImageRefs = debounce(() => {
             const contentValue = markdownTextarea.value;
             let dataValue = dataTextarea.value;
@@ -754,9 +668,7 @@
             const usedRefs = new Set();
             const referenceRegex = /!\[.*?\]\[(image-ref-\d+)\]/g;
             let match;
-            while ((match = referenceRegex.exec(contentValue)) !== null) {
-                usedRefs.add(match[1]);
-            }
+            while ((match = referenceRegex.exec(contentValue)) !== null) { usedRefs.add(match[1]); }
             const defLines = dataValue.split('\n');
             const keptDefLines = defLines.filter(line => {
                 const defMatch = line.match(/^\[(image-ref-\d+)\]:/);
@@ -768,7 +680,6 @@
                 dataTextarea.dispatchEvent(new Event('input', { bubbles: true }));
             }
         }, 1500);
-
         const handleInput = () => {
             originalTextarea.value = combineContent();
             if (!document.hidden) {
@@ -781,7 +692,6 @@
         };
         markdownTextarea.addEventListener('input', handleInput);
         dataTextarea.addEventListener('input', handleInput);
-
         const observer = new MutationObserver(() => {
             if (originalTextarea.value !== combineContent() && document.activeElement !== markdownTextarea) {
                 splitAndSetContent(originalTextarea.value);
@@ -791,7 +701,6 @@
             }
         });
         observer.observe(originalTextarea, { attributes: true, childList: true, subtree: true, characterData: true });
-
         const modeButtons = { editor: editorButton, split: splitButton, preview: previewButton };
         const switchMode = (mode) => {
             container.classList.remove('mode-editor', 'mode-split', 'mode-preview');
@@ -799,35 +708,27 @@
             Object.values(modeButtons).forEach(btn => btn.classList.remove('active'));
             modeButtons[mode].classList.add('active');
             localStorage.setItem(STORAGE_KEY_MODE, mode);
-            if (mode === 'preview' || mode === 'split') {
-                updatePreview();
-            }
-            if (mode !== 'preview') {
-                markdownTextarea.focus();
-            }
+            if (mode === 'preview' || mode === 'split') { updatePreview(); }
+            if (mode !== 'preview') { markdownTextarea.focus(); }
             updateHeadingSelector();
         };
         editorButton.addEventListener('click', () => switchMode('editor'));
         splitButton.addEventListener('click', () => switchMode('split'));
         previewButton.addEventListener('click', () => switchMode('preview'));
-
         const toggleToolbar = (visible) => {
             container.classList.toggle('toolbar-hidden', !visible);
             toolbarToggleButton.classList.toggle('active', visible);
             localStorage.setItem(STORAGE_KEY_TOOLBAR_VISIBLE, visible);
         };
         toolbarToggleButton.addEventListener('click', () => { const isVisible = container.classList.contains('toolbar-hidden'); toggleToolbar(isVisible); });
-
         const handlePrint = () => { const printContainer = document.createElement('div'); printContainer.className = 'print-container'; if (container.classList.contains('mode-editor')) { const pre = document.createElement('pre'); pre.className = 'raw-text-print'; pre.textContent = markdownTextarea.value; printContainer.appendChild(pre); } else { updatePreview(); const previewClone = previewPane.cloneNode(true); printContainer.appendChild(previewClone); } document.body.appendChild(printContainer); window.print(); document.body.removeChild(printContainer); };
         printButton.addEventListener('click', handlePrint);
-
         splitAndSetContent(originalTextarea.value);
         const initialToolbarVisible = localStorage.getItem(STORAGE_KEY_TOOLBAR_VISIBLE) !== 'false';
         toggleToolbar(initialToolbarVisible);
         const savedMode = localStorage.getItem(STORAGE_KEY_MODE);
         switchMode(savedMode || 'split');
-
-        console.log('Markdown Editor for Standard Notes (v3.7.5) has been initialized.');
+        console.log('Markdown Editor for Standard Notes (v3.7.8) has been initialized.');
     }
 
     /**
@@ -837,36 +738,56 @@
      */
     function handleFocusToEditor(e) {
         console.log("イベント 'sn:title:enter' を受信。カスタムエディタにフォーカスします。");
-
-        // 我々が作成したカスタムMarkdownエディタのtextarea要素を取得
         const customEditorTextarea = document.querySelector('.custom-markdown-textarea');
-
-        // カスタムエディタが存在すれば、そこにフォーカスを当てる
         if (customEditorTextarea) {
             customEditorTextarea.focus();
-
-            // UX向上のため、カーソルを本文の末尾に移動させる
             const len = customEditorTextarea.value.length;
             customEditorTextarea.setSelectionRange(len, len);
         }
     }
-
-    // document全体でカスタムイベントを待機。これにより、DOM構造に依存しない堅牢なリスニングが実現できる。
     document.addEventListener('sn:title:enter', handleFocusToEditor);
 
+    /**
+     * エディタのセットアップを開始する関数。
+     * ネイティブエディタにコンテンツが読み込まれるのを待ってから実行する（ポーリング）。
+     * @param {HTMLElement} editor - ネイティブのtextarea要素
+     * @param {number} [attempts=0] - 再試行の回数
+     */
+    function initiateEditorSetup(editor, attempts = 0) {
+        const MAX_ATTEMPTS = 40; // 最大40回試行 (50ms * 40 = 2秒)
+        const RETRY_INTERVAL = 50; // 50ミリ秒ごとに再試行
+
+        // 条件：ネイティブエディタに何らかの値が設定されているか、
+        // または、5回(250ms)待っても値がなければ、空の新規ノートとみなしてセットアップを開始する
+        if (editor.value || attempts > 5) {
+            setupMarkdownEditor(editor);
+        } else if (attempts < MAX_ATTEMPTS) {
+            // まだ値がなく、試行回数が上限に達していない場合、再試行
+            setTimeout(() => initiateEditorSetup(editor, attempts + 1), RETRY_INTERVAL);
+        } else {
+            // タイムアウトした場合でも、セットアップを試みる(フェイルセーフ)
+            console.warn(`エディタのコンテンツ読み込みがタイムアウトしました。空の状態でセットアップを強制実行します。`);
+            setupMarkdownEditor(editor);
+        }
+    }
 
     const mainObserver = new MutationObserver(() => {
         const editor = document.querySelector('#note-text-editor');
         const customEditor = document.querySelector('.markdown-editor-container');
+
         if (editor && !editor.dataset.markdownReady) {
-            if(customEditor) customEditor.remove();
-            setupMarkdownEditor(editor);
+            if (customEditor) customEditor.remove();
+
+            // 直接setupMarkdownEditorを呼ぶ代わりに、ポーリングを開始する関数を呼び出す
+            initiateEditorSetup(editor);
+
         } else if (!editor && customEditor) {
             customEditor.remove();
             const hiddenWrapper = document.querySelector('#editor-content[style*="display: none"]');
             if(hiddenWrapper) hiddenWrapper.style.display = '';
         }
     });
+
     mainObserver.observe(document.body, { childList: true, subtree: true });
 
 })();
