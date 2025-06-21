@@ -10,17 +10,17 @@
 // @name:de          Erweiterter Markdown-Editor für Standard Notes
 // @name:pt-BR       Editor Markdown avançado para Standard Notes
 // @name:ru          Улучшенный редактор Markdown для Standard Notes
-// @version          3.7.4
-// @description         Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency.
-// @description:ja      Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップされます。
-// @description:zh-CN   非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。
-// @description:zh-TW   非官方強化Markdown編輯器，為Standard Notes新增即時預覽、工具列、自動縮放圖片貼上/上傳、PDF匯出等功能，並自動清除未使用圖片。
-// @description:ko      Standard Notes를 위한 강력한 비공식 Markdown 에디터! 실시간 미리보기, 서식 툴바, 이미지 붙여넣기/업로드(자동 리사이즈), PDF 내보내기 지원. 사용하지 않는 이미지는 자동 정리됩니다.
-// @description:fr      Améliorez Standard Notes avec un éditeur Markdown puissant et non officiel : aperçu en direct, barre d’outils, collage/téléversement d’images redimensionnées automatiquement, export PDF. Nettoyage automatique des images inutilisées.
-// @description:es      Mejora Standard Notes con un potente editor Markdown no oficial: vista previa en vivo, barra de herramientas, pegado/carga de imágenes con redimensionado automático y exportación a PDF. Las imágenes no usadas se eliminan automáticamente.
-// @description:de      Erweitern Sie Standard Notes mit einem leistungsstarken, inoffiziellen Markdown-Editor: Live-Vorschau, Formatierungsleiste, Bild-Einfügen/-Hochladen mit automatischer Größenanpassung und PDF-Export. Nicht verwendete Bilder werden automatisch bereinigt.
-// @description:pt-BR   Potencialize o Standard Notes com um editor Markdown poderoso e não oficial: visualização ao vivo, barra de formatação, colagem/envio de imagens com redimensionamento automático e exportação para PDF. Imagens não utilizadas são removidas automaticamente.
-// @description:ru      Улучшите Standard Notes с помощью мощного неофициального редактора Markdown: живая превью, панель форматирования, вставка/загрузка изображений с автоизменением размера и экспорт в PDF. Неиспользуемые изображения автоматически удаляются.
+// @version          3.7.5
+// @description      Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency.
+// @description:ja   Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップされます。
+// @description:zh-CN 非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。
+// @description:zh-TW 非官方強化Markdown編輯器，為Standard Notes新增即時預覽、工具列、自動縮放圖片貼上/上傳、PDF匯出等功能，並自動清除未使用圖片。
+// @description:ko   Standard Notes를 위한 강력한 비공식 Markdown 에디터! 실시간 미리보기, 서식 툴바, 이미지 붙여넣기/업로드(자동 리사이즈), PDF 내보내기 지원. 사용하지 않는 이미지는 자동 정리됩니다。
+// @description:fr   Améliorez Standard Notes avec un éditeur Markdown puissant et non officiel : aperçu en direct, barre d’outils, collage/téléversement d’images redimensionnées automatiquement, export PDF. Nettoyage automatique des images inutilisées.
+// @description:es   Mejora Standard Notes con un potente editor Markdown no oficial: vista previa en vivo, barra de herramientas, pegado/carga de imágenes con redimensionado automático y exportación a PDF. Las imágenes no usadas se eliminan automáticamente.
+// @description:de   Erweitern Sie Standard Notes mit einem leistungsstarken, inoffiziellen Markdown-Editor: Live-Vorschau, Formatierungsleiste, Bild-Einfügen/-Hochladen mit automatischer Größenanpassung und PDF-Export. Nicht verwendete Bilder werden automatisch bereinigt.
+// @description:pt-BR Potencialize o Standard Notes com um editor Markdown poderoso e não oficial: visualização ao vivo, barra de formatação, colagem/envio de imagens com redimensionamento automático e exportação para PDF. Imagens não utilizadas são removidas automaticamente.
+// @description:ru   Улучшите Standard Notes с помощью мощного неофициального редактора Markdown: живая превью, панель форматирования, вставка/загрузка изображений с автоизменением размера и экспорт в PDF. Неиспользуемые изображения автоматически удаляются.
 // @namespace        https://github.com/koyasi777/standardnotes-markdown-enhancer
 // @author           koyasi777
 // @match            https://app.standardnotes.com/*
@@ -133,7 +133,6 @@
         @media (prefers-color-scheme: dark) { .markdown-preview pre code.hljs .hljs-keyword, .markdown-preview pre code.hljs .hljs-selector-tag, .markdown-preview pre code.hljs .hljs-subst, .markdown-preview pre code.hljs .hljs-deletion, .markdown-preview pre code.hljs .hljs-meta, .markdown-preview pre code.hljs .hljs-selector-class { color: #ff7b72; } .markdown-preview pre code.hljs .hljs-string, .markdown-preview pre code.hljs .hljs-doctag { color: #a5d6ff; } .markdown-preview pre code.hljs .hljs-title, .markdown-preview pre code.hljs .hljs-section, .markdown-preview pre code.hljs .hljs-selector-id, .markdown-preview pre code.hljs .hljs-type, .markdown-preview pre code.hljs .hljs-symbol, .markdown-preview pre code.hljs .hljs-bullet, .markdown-preview pre code.hljs .hljs-link { color: #d2a8ff; } .markdown-preview pre code.hljs .hljs-addition { color: #7ee787; } }
         /* Print Styles */
         @media print { body > *:not(.print-container) { display: none !important; } .print-container, .print-container > * { display: block !important; width: 100% !important; height: auto !important; overflow: visible !important; } html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; } .markdown-preview { padding: 2cm !important; border: none !important; box-shadow: none !important; color: #000 !important; background-color: #fff !important; font-size: 12pt !important; line-height: 1.5 !important; } .markdown-preview h1, .markdown-preview h2, .markdown-preview h3, .markdown-preview h4, .markdown-preview h5, .markdown-preview h6 { color: #000 !important; border-bottom-color: #ccc !important; } .markdown-preview pre, .markdown-preview code { background-color: #f0f0f0 !important; color: #000 !important; border: 1px solid #ccc !important; } .markdown-preview pre code.hljs { color: #000 !important; } .markdown-preview blockquote { color: #333 !important; border-left-color: #ccc !important; } .markdown-preview tr:nth-child(2n) { background-color: #f6f8fa !important; } .markdown-preview th, .markdown-preview td { border-color: #ccc !important; } .copy-code-button { display: none !important; } .raw-text-print { margin: 0 !important; padding: 2cm !important; white-space: pre-wrap !important; word-wrap: break-word !important; font-family: 'Menlo', 'Monaco', 'Consolas', 'Courier New', monospace; font-size: 10pt !important; color: #000 !important; background: #fff !important; } pre, blockquote, table, img, h1, h2, h3, h4 { page-break-inside: avoid; } h1, h2, h3 { page-break-after: avoid; } }
-
         /* --- Modal Styles --- */
         .sn-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .sn-modal-content { background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-foreground-color, #333); padding: 20px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: flex; flex-direction: column; max-height: 90vh; }
@@ -146,7 +145,6 @@
         .sn-modal-footer { text-align: right; margin-top: 15px; border-top: 1px solid var(--sn-stylekit-border-color, #eee); padding-top: 15px; flex-shrink: 0; }
         .sn-modal-insert-btn { padding: 8px 16px; border-radius: 5px; border: none; background-color: var(--sn-stylekit-primary-color, #346df1); color: var(--sn-stylekit-primary-contrast-color, #fff); cursor: pointer; }
         .sn-modal-insert-btn:disabled { background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); color: var(--sn-stylekit-secondary-foreground-color, #a0a0a0); cursor: not-allowed; }
-
         /* --- Image Inserter Modal --- */
         .sn-modal-tabs { display: flex; border-bottom: 1px solid var(--sn-stylekit-border-color, #eee); margin-bottom: 15px; }
         .sn-modal-tab { padding: 10px 15px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
@@ -162,7 +160,6 @@
         .sn-modal-file-input[type="file"] { display: none; }
         .sn-modal-processing-indicator { margin-top: 10px; font-style: italic; color: var(--sn-stylekit-secondary-foreground-color, #888); text-align: center; }
         .sn-modal-image-preview { max-height: 150px; max-width: 100%; border: 1px solid var(--sn-stylekit-border-color, #ccc); border-radius: 4px; margin-top: 10px; }
-
         /* --- Interactive Table Editor Styles --- */
         .sn-modal-content-table .sn-modal-body { overflow: hidden; }
         .sn-table-editor-container { position: relative; height: 100%; display: flex; flex-direction: column; }
@@ -241,7 +238,6 @@
         const markdownTextarea = document.createElement('textarea'); markdownTextarea.className = originalTextarea.className + ' custom-markdown-textarea'; markdownTextarea.spellcheck = false;
         const dataTextarea = document.createElement('textarea'); dataTextarea.style.display = 'none';
 
-        // --- ADDED: Helper functions to manage content and definitions ---
         const combineContent = () => {
             const main = markdownTextarea.value;
             const defs = dataTextarea.value;
@@ -316,17 +312,12 @@
             const timestamp = new Date();
             const finalAltText = altText || `${T.pastedImageAltText} ${timestamp.toLocaleString(lang)}`;
             const refId = `image-ref-${timestamp.getTime()}`;
-
-            // Insert reference into main textarea
             const markdownImageRef = `![${finalAltText}][${refId}]`;
             applyMarkdown(markdownTextarea, markdownImageRef);
-
-            // Add definition to data textarea
             const markdownImageDef = `[${refId}]: ${base64data}`;
             dataTextarea.value = (dataTextarea.value.trim() ? dataTextarea.value.trim() + '\n' : '') + markdownImageDef;
-            dataTextarea.dispatchEvent(new Event('input', { bubbles: true })); // Trigger update
+            dataTextarea.dispatchEvent(new Event('input', { bubbles: true }));
         };
-
 
         const textToTable = (text) => {
             const rows = text.trim().split('\n').map(row => row.split('\t'));
@@ -355,9 +346,9 @@
             }
             const text = clipboardData.getData('text/plain');
             if (text.includes('\t') && text.includes('\n')) {
-                 event.preventDefault();
-                 const tableMd = textToTable(text);
-                 document.execCommand('insertText', false, tableMd);
+                event.preventDefault();
+                const tableMd = textToTable(text);
+                document.execCommand('insertText', false, tableMd);
             }
         };
 
@@ -471,7 +462,7 @@
                 insertBtn.disabled = true;
                 try {
                     base64data = await resizeAndEncodeImage(file);
-                    processingIndicator.innerHTML = ''; // Clear old text
+                    processingIndicator.innerHTML = '';
                     const imgPreview = document.createElement('img');
                     imgPreview.src = base64data;
                     imgPreview.className = 'sn-modal-image-preview';
@@ -490,12 +481,12 @@
                 if (currentTab === 'url') {
                     const url = urlInput.value.trim();
                     if (url) {
-                        onInsertCallback(url, altText, false); // URL, alt, isReference=false
+                        onInsertCallback(url, altText, false);
                         closeModal();
                     }
-                } else { // upload tab
+                } else {
                     if (base64data) {
-                        onInsertCallback(base64data, altText, true); // Base64, alt, isReference=true
+                        onInsertCallback(base64data, altText, true);
                         closeModal();
                     }
                 }
@@ -518,9 +509,7 @@
             const render = () => {
                 const colCount = tableData.rows[0]?.length || 0;
                 const rowCount = tableData.rows.length;
-
                 let tableHtml = `<table class="sn-table-editor"><thead><tr><th class="control-cell"></th>`;
-
                 for (let c = 0; c < colCount; c++) {
                     const align = tableData.alignments[c];
                     let alignIcon;
@@ -533,7 +522,6 @@
                 for (let r = 0; r < rowCount; r++) {
                     tableHtml += `<tr data-row="${r}">`;
                     tableHtml += `<td class="control-cell"><div class="delete-btn delete-row-btn" title="${T.deleteRow}">🗑️</div></td>`;
-
                     for (let c = 0; c < colCount; c++) {
                         const cellValue = tableData.rows[r][c] || '';
                         const placeholder = r === 0 ? 'Header' : 'Cell';
@@ -542,27 +530,14 @@
                     tableHtml += `<td class="control-cell"></td>`;
                     tableHtml += `</tr>`;
                 }
-                tableHtml += `<tr>
-                                  <td class="control-cell"></td>
-                                  <td colspan="${colCount}" class="control-cell"><div class="add-btn add-row-btn" title="${T.addRow}">+</div></td>
-                                  <td class="control-cell"></td>
-                               </tr>`;
+                tableHtml += `<tr><td class="control-cell"></td><td colspan="${colCount}" class="control-cell"><div class="add-btn add-row-btn" title="${T.addRow}">+</div></td><td class="control-cell"></td></tr>`;
                 tableHtml += `</tbody></table>`;
 
                 modalOverlay.innerHTML = `
                     <div class="sn-modal-content sn-modal-content-table">
-                        <div class="sn-modal-header">
-                            <h3>${T.tableEditor}</h3>
-                            <button class="sn-modal-close" title="${T.close}">&times;</button>
-                        </div>
-                        <div class="sn-modal-body">
-                           <div class="sn-table-editor-container">
-                               <div class="sn-table-scroll-container">${tableHtml}</div>
-                           </div>
-                        </div>
-                        <div class="sn-modal-footer">
-                            <button class="sn-modal-insert-btn">${T.insert}</button>
-                        </div>
+                        <div class="sn-modal-header"><h3>${T.tableEditor}</h3><button class="sn-modal-close" title="${T.close}">&times;</button></div>
+                        <div class="sn-modal-body"><div class="sn-table-editor-container"><div class="sn-table-scroll-container">${tableHtml}</div></div></div>
+                        <div class="sn-modal-footer"><button class="sn-modal-insert-btn">${T.insert}</button></div>
                     </div>`;
                 attachEventListeners();
             };
@@ -627,45 +602,23 @@
 
         markdownTextarea.addEventListener('paste', handlePaste);
 
-        const toolbarButtons = [ { type: 'select', name: 'heading', options: [ { value: 'p', text: T.paragraph }, { value: 'h1', text: T.heading1 }, { value: 'h2', text: T.heading2 }, { value: 'h3', text: T.heading3 }, { value: 'h4', text: T.heading4 } ], action: (prefix) => { const start = markdownTextarea.selectionStart; let lineStart = markdownTextarea.value.lastIndexOf('\n', start - 1) + 1; let lineEnd = markdownTextarea.value.indexOf('\n', start); if (lineEnd === -1) lineEnd = markdownTextarea.value.length; const originalLine = markdownTextarea.value.substring(lineStart, lineEnd); const cleanedLine = originalLine.replace(/^\s*#+\s*/, ''); const newText = prefix ? `${prefix} ${cleanedLine}` : cleanedLine; markdownTextarea.setRangeText(newText, lineStart, lineEnd, 'end'); markdownTextarea.dispatchEvent(new Event('input', { bubbles: true })); markdownTextarea.focus(); } }, { type: 'button', name: 'B', title: T.bold, action: () => applyMarkdown(markdownTextarea, '**', '**', T.boldPlaceholder) }, { type: 'button', name: 'I', title: T.italic, action: () => applyMarkdown(markdownTextarea, '*', '*', T.italicPlaceholder) }, { type: 'button', name: 'S', title: T.strikethrough, action: () => applyMarkdown(markdownTextarea, '~~', '~~', T.strikethroughPlaceholder) }, { type: 'button', name: '`', title: T.inlineCode, action: () => applyMarkdown(markdownTextarea, '`', '`', T.codePlaceholder) }, { type: 'button', name: '“ ”', title: T.quote, action: () => applyMarkdown(markdownTextarea, '> ', '', T.quotePlaceholder) }, { type: 'button', name: '•', title: T.list, action: () => applyMarkdown(markdownTextarea, '- ', '', T.listItemPlaceholder) }, { type: 'button', name: '1.', title: T.numberedList, action: () => applyMarkdown(markdownTextarea, '1. ', '', T.listItemPlaceholder) }, { type: 'button', name: '☑', title: T.checklist, action: () => applyMarkdown(markdownTextarea, '- [ ] ', '', T.taskPlaceholder) }, { type: 'button', name: '</>', title: T.codeBlock, action: () => applyMarkdown(markdownTextarea, '```\n', '\n```', T.codePlaceholder) }, { type: 'icon-button', name: 'Image', title: T.image, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"></path></svg>`, action: () => {
-            openImageInserterModal((data, altText, isReference) => {
-                if (isReference) {
-                    insertImageAsReference(data, altText);
-                } else {
-                    const markdown = `![${altText}](${data})`;
-                    applyMarkdown(markdownTextarea, markdown);
-                }
-            });
-        } }, { type: 'icon-button', name: 'Link', title: T.link, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"></path></svg>`, action: () => { const url = prompt(T.linkPrompt, 'https://'); if (url) applyMarkdown(markdownTextarea, '[', `](${url})`, T.linkTextPlaceholder); }}, { type: 'icon-button', name: T.insertTable, title: T.insertTable, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM8 10H4V6h4v4zm6 0h-4V6h4v4zm6 0h-4V6h4v4zM8 14H4v4h4v-4zm6 0h-4v4h4v-4zm6 0h-4v4h4v-4z"></path></svg>`, action: () => {
-        const start = markdownTextarea.selectionStart; const end = markdownTextarea.selectionEnd; const selectedText = markdownTextarea.value.substring(start, end);
-        const existingTableData = parseMarkdownTable(selectedText);
-        openTableEditorModal(existingTableData, (markdown) => {
-            markdownTextarea.setRangeText(markdown, start, end, 'select');
-            markdownTextarea.focus();
-            markdownTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-        });
-        } }, { type: 'button', name: '―', title: T.horizontalRule, action: () => applyMarkdown(markdownTextarea, '\n---\n') }, ];
+        const toolbarButtons = [ { type: 'select', name: 'heading', options: [ { value: 'p', text: T.paragraph }, { value: 'h1', text: T.heading1 }, { value: 'h2', text: T.heading2 }, { value: 'h3', text: T.heading3 }, { value: 'h4', text: T.heading4 } ], action: (prefix) => { const start = markdownTextarea.selectionStart; let lineStart = markdownTextarea.value.lastIndexOf('\n', start - 1) + 1; let lineEnd = markdownTextarea.value.indexOf('\n', start); if (lineEnd === -1) lineEnd = markdownTextarea.value.length; const originalLine = markdownTextarea.value.substring(lineStart, lineEnd); const cleanedLine = originalLine.replace(/^\s*#+\s*/, ''); const newText = prefix ? `${prefix} ${cleanedLine}` : cleanedLine; markdownTextarea.setRangeText(newText, lineStart, lineEnd, 'end'); markdownTextarea.dispatchEvent(new Event('input', { bubbles: true })); markdownTextarea.focus(); } }, { type: 'button', name: 'B', title: T.bold, action: () => applyMarkdown(markdownTextarea, '**', '**', T.boldPlaceholder) }, { type: 'button', name: 'I', title: T.italic, action: () => applyMarkdown(markdownTextarea, '*', '*', T.italicPlaceholder) }, { type: 'button', name: 'S', title: T.strikethrough, action: () => applyMarkdown(markdownTextarea, '~~', '~~', T.strikethroughPlaceholder) }, { type: 'button', name: '`', title: T.inlineCode, action: () => applyMarkdown(markdownTextarea, '`', '`', T.codePlaceholder) }, { type: 'button', name: '“ ”', title: T.quote, action: () => applyMarkdown(markdownTextarea, '> ', '', T.quotePlaceholder) }, { type: 'button', name: '•', title: T.list, action: () => applyMarkdown(markdownTextarea, '- ', '', T.listItemPlaceholder) }, { type: 'button', name: '1.', title: T.numberedList, action: () => applyMarkdown(markdownTextarea, '1. ', '', T.listItemPlaceholder) }, { type: 'button', name: '☑', title: T.checklist, action: () => applyMarkdown(markdownTextarea, '- [ ] ', '', T.taskPlaceholder) }, { type: 'button', name: '</>', title: T.codeBlock, action: () => applyMarkdown(markdownTextarea, '```\n', '\n```', T.codePlaceholder) }, { type: 'icon-button', name: 'Image', title: T.image, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"></path></svg>`, action: () => { openImageInserterModal((data, altText, isReference) => { if (isReference) { insertImageAsReference(data, altText); } else { const markdown = `![${altText}](${data})`; applyMarkdown(markdownTextarea, markdown); } }); } }, { type: 'icon-button', name: 'Link', title: T.link, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"></path></svg>`, action: () => { const url = prompt(T.linkPrompt, 'https://'); if (url) applyMarkdown(markdownTextarea, '[', `](${url})`, T.linkTextPlaceholder); }}, { type: 'icon-button', name: T.insertTable, title: T.insertTable, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM8 10H4V6h4v4zm6 0h-4V6h4v4zm6 0h-4V6h4v4zM8 14H4v4h4v-4zm6 0h-4v4h4v-4zm6 0h-4v4h4v-4z"></path></svg>`, action: () => { const start = markdownTextarea.selectionStart; const end = markdownTextarea.selectionEnd; const selectedText = markdownTextarea.value.substring(start, end); const existingTableData = parseMarkdownTable(selectedText); openTableEditorModal(existingTableData, (markdown) => { markdownTextarea.setRangeText(markdown, start, end, 'select'); markdownTextarea.focus(); markdownTextarea.dispatchEvent(new Event('input', { bubbles: true })); }); } }, { type: 'button', name: '―', title: T.horizontalRule, action: () => applyMarkdown(markdownTextarea, '\n---\n') }, ];
         toolbarButtons.forEach(item => { if (item.type === 'select') { const select = document.createElement('select'); select.className = 'toolbar-select heading-select'; item.options.forEach(opt => { const option = document.createElement('option'); option.value = opt.value; option.textContent = opt.text; select.appendChild(option); }); select.onchange = (e) => { let prefix = ''; switch (e.target.value) { case 'h1': prefix = '#'; break; case 'h2': prefix = '##'; break; case 'h3': prefix = '###'; break; case 'h4': prefix = '####'; break; } item.action(prefix); select.value = 'p'; }; toolbar.appendChild(select); } else { const button = document.createElement('button'); button.className = 'toolbar-button'; button.title = item.title; button.onclick = item.action; if (item.type === 'icon-button') { button.classList.add('icon-button'); button.innerHTML = item.icon; } else { button.textContent = item.name; } toolbar.appendChild(button); } });
 
         const headingSelect = toolbar.querySelector('.heading-select');
         const updateHeadingSelector = () => {
             if (!headingSelect) return;
-
             const pos = markdownTextarea.selectionStart;
             const text = markdownTextarea.value;
             const lineStart = text.lastIndexOf('\n', pos - 1) + 1;
             let lineEnd = text.indexOf('\n', lineStart);
-            if (lineEnd === -1) {
-                lineEnd = text.length;
-            }
+            if (lineEnd === -1) { lineEnd = text.length; }
             const line = text.substring(lineStart, lineEnd);
-
             let headingLevel = 'p';
             if (line.startsWith('#### ')) { headingLevel = 'h4'; }
             else if (line.startsWith('### ')) { headingLevel = 'h3'; }
             else if (line.startsWith('## ')) { headingLevel = 'h2'; }
             else if (line.startsWith('# ')) { headingLevel = 'h1'; }
-
             if (headingSelect.value !== headingLevel) {
                 headingSelect.value = headingLevel;
             }
@@ -688,7 +641,6 @@
                 const dirtyHtml = marked.parse(fullContent);
                 const sanitizedHtml = DOMPurify.sanitize(dirtyHtml, { USE_PROFILES: { html: true }, ADD_ATTR: ['class', 'type', 'disabled', 'checked', 'data-task-index'], ADD_TAGS: ['span', 'input'], });
                 previewPane.innerHTML = sanitizedHtml;
-
                 previewPane.querySelectorAll('pre code').forEach(hljs.highlightElement);
                 previewPane.querySelectorAll('pre').forEach(preEl => {
                     if (preEl.querySelector('.copy-code-button')) return;
@@ -705,7 +657,6 @@
                         });
                     });
                 });
-
                 const checkboxes = previewPane.querySelectorAll('.task-list-item-checkbox');
                 checkboxes.forEach((checkbox, index) => {
                     if (checkbox.checked) { checkbox.closest('.task-list-item')?.classList.add('completed'); }
@@ -713,7 +664,6 @@
                     checkbox.parentNode.replaceChild(newCheckbox, checkbox);
                     newCheckbox.addEventListener('click', () => handlePreviewChecklistToggle(index));
                 });
-
             } catch (e) {
                 console.error("Error updating preview:", e);
                 previewPane.innerHTML = `<div style="padding: 1rem; color: #d73a49; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: .25rem;"><strong>${T.previewErrorTitle}</strong><br><pre style="white-space: pre-wrap; word-break: break-all; margin-top: 0.5rem;">${e.stack}</pre></div>`;
@@ -768,10 +718,8 @@
             const text = textarea.value;
             const lineStart = text.lastIndexOf('\n', pos - 1) + 1;
             const line = text.substring(lineStart, pos);
-
             const listRegex = /^(\s*)((?:-|\*|\d+\.)\s(?:\[[ x]\]\s)?)(\s*.*)/;
             const match = line.match(listRegex);
-
             if (match) {
                 const content = match[3];
                 if (!content.trim()) {
@@ -780,7 +728,6 @@
                     textarea.dispatchEvent(new Event('input', { bubbles: true }));
                     return;
                 }
-
                 e.preventDefault();
                 const indent = match[1];
                 let listMarker = match[2];
@@ -794,7 +741,6 @@
                 textarea.dispatchEvent(new Event('input', { bubbles: true }));
             }
         };
-
         markdownTextarea.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
                 handleEnterKey(e);
@@ -805,20 +751,17 @@
             const contentValue = markdownTextarea.value;
             let dataValue = dataTextarea.value;
             const originalDataValue = dataValue;
-
             const usedRefs = new Set();
             const referenceRegex = /!\[.*?\]\[(image-ref-\d+)\]/g;
             let match;
             while ((match = referenceRegex.exec(contentValue)) !== null) {
                 usedRefs.add(match[1]);
             }
-
             const defLines = dataValue.split('\n');
             const keptDefLines = defLines.filter(line => {
                 const defMatch = line.match(/^\[(image-ref-\d+)\]:/);
                 return defMatch && usedRefs.has(defMatch[1]);
             });
-
             const cleanedDataValue = keptDefLines.join('\n');
             if (cleanedDataValue !== originalDataValue) {
                 dataTextarea.value = cleanedDataValue;
@@ -831,15 +774,13 @@
             if (!document.hidden) {
                 originalTextarea.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
             }
-             if (container.classList.contains('mode-split') || container.classList.contains('mode-preview')) {
+            if (container.classList.contains('mode-split') || container.classList.contains('mode-preview')) {
                 debounce(updatePreview, 250)();
             }
             cleanupOrphanedImageRefs();
         };
-
         markdownTextarea.addEventListener('input', handleInput);
         dataTextarea.addEventListener('input', handleInput);
-
 
         const observer = new MutationObserver(() => {
             if (originalTextarea.value !== combineContent() && document.activeElement !== markdownTextarea) {
@@ -886,8 +827,33 @@
         const savedMode = localStorage.getItem(STORAGE_KEY_MODE);
         switchMode(savedMode || 'split');
 
-        console.log('Markdown Editor for Standard Notes (Final Form v3.7.4) has been initialized.');
+        console.log('Markdown Editor for Standard Notes (v3.7.5) has been initialized.');
     }
+
+    /**
+     * 日本語化スクリプトから発行されるカスタムイベント 'sn:title:enter' をリッスンし、
+     * エディタへのフォーカス移動を実行する。
+     * @param {CustomEvent} e - 発行されたカスタムイベント
+     */
+    function handleFocusToEditor(e) {
+        console.log("イベント 'sn:title:enter' を受信。カスタムエディタにフォーカスします。");
+
+        // 我々が作成したカスタムMarkdownエディタのtextarea要素を取得
+        const customEditorTextarea = document.querySelector('.custom-markdown-textarea');
+
+        // カスタムエディタが存在すれば、そこにフォーカスを当てる
+        if (customEditorTextarea) {
+            customEditorTextarea.focus();
+
+            // UX向上のため、カーソルを本文の末尾に移動させる
+            const len = customEditorTextarea.value.length;
+            customEditorTextarea.setSelectionRange(len, len);
+        }
+    }
+
+    // document全体でカスタムイベントを待機。これにより、DOM構造に依存しない堅牢なリスニングが実現できる。
+    document.addEventListener('sn:title:enter', handleFocusToEditor);
+
 
     const mainObserver = new MutationObserver(() => {
         const editor = document.querySelector('#note-text-editor');
