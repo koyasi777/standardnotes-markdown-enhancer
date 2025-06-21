@@ -10,7 +10,7 @@
 // @name:de          Erweiterter Markdown-Editor für Standard Notes
 // @name:pt-BR       Editor Markdown avançado para Standard Notes
 // @name:ru          Улучшенный редактор Markdown для Standard Notes
-// @version          3.7.0
+// @version          3.7.4
 // @description         Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency.
 // @description:ja      Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップされます。
 // @description:zh-CN   非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。
@@ -103,7 +103,6 @@
         .mode-toggle-button { padding: 5px 12px; border: 1px solid var(--sn-stylekit-border-color, #ccc); border-radius: 6px; cursor: pointer; background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-foreground-color, #333); font-size: 13px; }
         .mode-toggle-button.active { background-color: var(--sn-stylekit-primary-color, #346df1); color: var(--sn-stylekit-primary-contrast-color, #fff); border-color: var(--sn-stylekit-primary-color, #346df1); }
         .toolbar-toggle-button { margin-left: auto; padding: 5px 8px; font-size: 13px; display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; }
-        .toolbar-toggle-button svg { width: 16px; height: 16px; fill: currentColor; }
         .toolbar-toggle-button.active { background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); }
         .pdf-export-button { padding: 4px 10px; font-size: 12px; }
         .markdown-toolbar { flex-shrink: 0; display: flex; flex-wrap: wrap; align-items: center; padding: 8px 10px; gap: 8px; background-color: var(--sn-stylekit-editor-background-color, #f9f9f9); border-bottom: 1px solid var(--sn-stylekit-border-color, #e0e0e0); transition: display 0.2s; }
@@ -139,7 +138,7 @@
         .sn-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .sn-modal-content { background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-foreground-color, #333); padding: 20px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: flex; flex-direction: column; max-height: 90vh; }
         .sn-modal-content-image { max-width: 500px; width: 90%; }
-        .sn-modal-content-table { max-width: 900px; width: 90%; }
+        .sn-modal-content-table { width: -moz-fit-content; width: fit-content; min-width: 360px; max-width: 90vw; }
         .sn-modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--sn-stylekit-border-color, #eee); padding-bottom: 10px; margin-bottom: 15px; flex-shrink: 0; }
         .sn-modal-header h3 { margin: 0; font-size: 18px; }
         .sn-modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--sn-stylekit-secondary-foreground-color, #888); padding: 0 8px; }
@@ -164,17 +163,16 @@
         .sn-modal-processing-indicator { margin-top: 10px; font-style: italic; color: var(--sn-stylekit-secondary-foreground-color, #888); text-align: center; }
         .sn-modal-image-preview { max-height: 150px; max-width: 100%; border: 1px solid var(--sn-stylekit-border-color, #ccc); border-radius: 4px; margin-top: 10px; }
 
-
         /* --- Interactive Table Editor Styles --- */
         .sn-modal-content-table .sn-modal-body { overflow: hidden; }
         .sn-table-editor-container { position: relative; height: 100%; display: flex; flex-direction: column; }
         .sn-table-scroll-container { overflow: auto; flex-grow: 1; padding: 40px 0 0 40px; }
-        .sn-table-editor { border-collapse: collapse; width: 100%; }
-        .sn-table-editor th, .sn-table-editor td { border: 1px solid var(--sn-stylekit-border-color, #ccc); padding: 2px; }
+        .sn-table-editor { border-collapse: collapse; }
+        .sn-table-editor th, .sn-table-editor td { border: 1px solid var(--sn-stylekit-border-color, #ccc); padding: 2px; position: relative; }
         .sn-table-editor .cell-input { width: 100%; height: 100%; border: none; outline: none; padding: 8px; background: transparent; color: var(--sn-stylekit-foreground-color, #333); font-size: 14px; box-sizing: border-box; min-height: 38px; }
         .sn-table-editor .cell-input::placeholder { color: var(--sn-stylekit-secondary-foreground-color, #a0a0a0); opacity: 1; }
-        .sn-table-editor .cell-input:focus { background-color: var(--sn-stylekit-info-color-background, #e7f3fe); }
-        .sn-table-editor th { background-color: var(--sn-stylekit-secondary-background-color, #f6f8fa); position: relative; }
+        .sn-table-editor .cell-input:focus { background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); }
+        .sn-table-editor th { background-color: var(--sn-stylekit-secondary-background-color, #f6f8fa); }
         .col-header { cursor: pointer; padding: 8px; display: flex; align-items: center; justify-content: center; gap: 4px; }
         .col-header:hover { background-color: var(--sn-stylekit-border-color, #e0e0e0); }
         .align-icon { font-size: 10px; font-weight: bold; }
@@ -184,9 +182,10 @@
         .delete-row-btn { left: -30px; top: 50%; transform: translateY(-50%); }
         .sn-table-editor tr:hover .delete-row-btn { opacity: 1; }
         .sn-table-editor th:hover .delete-col-btn { opacity: 1; }
-        .add-btn { position: absolute; cursor: pointer; background: var(--sn-stylekit-primary-color, #346df1); color: white; border: 1px solid white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; z-index: 10; }
-        .add-col-btn { top: 5px; right: 5px; }
-        .add-row-btn { bottom: 5px; left: 5px; }
+        .add-btn { position: relative; cursor: pointer; background: var(--sn-stylekit-primary-color, #346df1); color: white; border: 1px solid white; border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; line-height: 1; z-index: 10; }
+        .control-cell { border: none !important; background: transparent !important; text-align: center; vertical-align: middle; padding: 4px !important; }
+        .sn-table-editor thead .control-cell { position: -webkit-sticky; position: sticky; left: 0; background-color: var(--sn-stylekit-editor-background-color, #f9f9f9) !important; }
+        .sn-table-editor thead .control-cell:last-child { right: 0; left: auto; }
     `);
 
     function debounce(func, wait) {
@@ -206,15 +205,12 @@
         const textBefore = textarea.value.substring(start - prefix.length, start);
         const textAfter = textarea.value.substring(end, end + suffix.length);
 
-        // Case 1: Already wrapped (e.g., user selects 'text' inside '**text**')
         if (textBefore === prefix && textAfter === suffix) {
             textarea.setRangeText(selectedText, start - prefix.length, end + suffix.length, 'select');
-        // Case 2: Selection includes the wrappers (e.g., user selects '**text**')
         } else if (selectedText.startsWith(prefix) && selectedText.endsWith(suffix)) {
             const unwrappedText = selectedText.slice(prefix.length, -suffix.length || undefined);
             textarea.setRangeText(unwrappedText, start, end, 'select');
         } else {
-        // Case 3: Not wrapped, so wrap it
             if (selectedText) {
                 textarea.setRangeText(prefix + selectedText + suffix, start, end, 'select');
             } else {
@@ -240,6 +236,44 @@
         const editorWrapper = originalTextarea.parentElement;
         editorWrapper.style.display = 'none';
         editorWrapper.style.height = '100%';
+
+        const container = document.createElement('div'); container.className = 'markdown-editor-container';
+        const markdownTextarea = document.createElement('textarea'); markdownTextarea.className = originalTextarea.className + ' custom-markdown-textarea'; markdownTextarea.spellcheck = false;
+        const dataTextarea = document.createElement('textarea'); dataTextarea.style.display = 'none';
+
+        // --- ADDED: Helper functions to manage content and definitions ---
+        const combineContent = () => {
+            const main = markdownTextarea.value;
+            const defs = dataTextarea.value;
+            if (!defs.trim()) {
+                return main.trim();
+            }
+            return `${main.trim()}\n\n${defs.trim()}`;
+        };
+
+        const splitAndSetContent = (text) => {
+            const lines = text.split('\n');
+            let firstDefLineIndex = -1;
+
+            for (let i = lines.length - 1; i >= 0; i--) {
+                const line = lines[i].trim();
+                if (line.startsWith('[image-ref-')) {
+                    firstDefLineIndex = i;
+                } else if (line !== '' && firstDefLineIndex !== -1) {
+                    break;
+                }
+            }
+
+            if (firstDefLineIndex !== -1) {
+                const mainContent = lines.slice(0, firstDefLineIndex).join('\n').trimEnd();
+                const dataDefinitions = lines.slice(firstDefLineIndex).join('\n');
+                markdownTextarea.value = mainContent;
+                dataTextarea.value = dataDefinitions;
+            } else {
+                markdownTextarea.value = text;
+                dataTextarea.value = '';
+            }
+        };
 
         const resizeAndEncodeImage = (file) => {
             return new Promise((resolve, reject) => {
@@ -278,22 +312,21 @@
             });
         };
 
-        const insertImageAsReference = (base64data, altText, textarea) => {
+        const insertImageAsReference = (base64data, altText) => {
             const timestamp = new Date();
             const finalAltText = altText || `${T.pastedImageAltText} ${timestamp.toLocaleString(lang)}`;
             const refId = `image-ref-${timestamp.getTime()}`;
-            const markdownImageRef = `![${finalAltText}][${refId}]\n`;
-            const markdownImageDef = `\n\n[${refId}]: ${base64data}`;
-            const start = textarea.selectionStart;
-            const end = textarea.selectionEnd;
-            const textBefore = textarea.value.substring(0, start);
-            const textAfter = textarea.value.substring(end);
-            textarea.value = textBefore + markdownImageRef + textAfter + markdownImageDef;
-            const newCursorPos = start + markdownImageRef.length;
-            textarea.selectionStart = textarea.selectionEnd = newCursorPos;
-            textarea.dispatchEvent(new Event('input', { bubbles: true }));
-            textarea.focus();
+
+            // Insert reference into main textarea
+            const markdownImageRef = `![${finalAltText}][${refId}]`;
+            applyMarkdown(markdownTextarea, markdownImageRef);
+
+            // Add definition to data textarea
+            const markdownImageDef = `[${refId}]: ${base64data}`;
+            dataTextarea.value = (dataTextarea.value.trim() ? dataTextarea.value.trim() + '\n' : '') + markdownImageDef;
+            dataTextarea.dispatchEvent(new Event('input', { bubbles: true })); // Trigger update
         };
+
 
         const textToTable = (text) => {
             const rows = text.trim().split('\n').map(row => row.split('\t'));
@@ -315,7 +348,7 @@
                     event.preventDefault();
                     try {
                         const resizedBase64 = await resizeAndEncodeImage(file);
-                        insertImageAsReference(resizedBase64, null, event.target);
+                        insertImageAsReference(resizedBase64, null);
                     } catch (error) { console.error("Image processing failed:", error); }
                 }
                 return;
@@ -384,13 +417,13 @@
                             </div>
                         </div>
                         <div class="sn-modal-tab-content" data-tab-content="upload">
-                             <div class="sn-modal-form-group">
-                                 <label class="sn-modal-file-wrapper">
-                                     <span class="sn-modal-file-label">${T.chooseFile}</span>
-                                     <input type="file" class="sn-modal-file-input" accept="image/*">
-                                 </label>
-                                 <div class="sn-modal-processing-indicator"></div>
-                             </div>
+                                <div class="sn-modal-form-group">
+                                    <label class="sn-modal-file-wrapper">
+                                        <span class="sn-modal-file-label">${T.chooseFile}</span>
+                                        <input type="file" class="sn-modal-file-input" accept="image/*">
+                                    </label>
+                                    <div class="sn-modal-processing-indicator"></div>
+                                </div>
                         </div>
                          <div class="sn-modal-form-group">
                             <label for="sn-image-alt">${T.altText}</label>
@@ -478,31 +511,44 @@
             if (initialData && initialData.rows.length > 0) {
                 tableData = JSON.parse(JSON.stringify(initialData));
             } else {
-                tableData = { rows: [ ['', '', ''], ['', '', ''] ], alignments: ['left', 'left', 'left'] };
+                tableData = { rows: [ ['', ''], ['', ''] ], alignments: ['left', 'left'] };
             }
             const modalOverlay = document.createElement('div');
             modalOverlay.className = 'sn-modal-overlay';
             const render = () => {
                 const colCount = tableData.rows[0]?.length || 0;
                 const rowCount = tableData.rows.length;
-                let tableHtml = `<table class="sn-table-editor"><thead><tr>`;
+
+                let tableHtml = `<table class="sn-table-editor"><thead><tr><th class="control-cell"></th>`;
+
                 for (let c = 0; c < colCount; c++) {
                     const align = tableData.alignments[c];
                     let alignIcon;
                     switch(align) { case 'center': alignIcon = '⇌'; break; case 'right': alignIcon = '→'; break; default: alignIcon = '←'; }
                     tableHtml += `<th data-col="${c}"><div class="col-header" title="${T.alignLeft}/${T.alignCenter}/${T.alignRight}"><span class="align-icon">${alignIcon}</span></div><div class="delete-btn delete-col-btn" title="${T.deleteCol}">🗑️</div></th>`;
                 }
+                tableHtml += `<th class="control-cell"><div class="add-btn add-col-btn" title="${T.addCol}">+</div></th>`;
                 tableHtml += `</tr></thead><tbody>`;
+
                 for (let r = 0; r < rowCount; r++) {
                     tableHtml += `<tr data-row="${r}">`;
+                    tableHtml += `<td class="control-cell"><div class="delete-btn delete-row-btn" title="${T.deleteRow}">🗑️</div></td>`;
+
                     for (let c = 0; c < colCount; c++) {
                         const cellValue = tableData.rows[r][c] || '';
                         const placeholder = r === 0 ? 'Header' : 'Cell';
                         tableHtml += `<td><input class="cell-input" type="text" value="${cellValue.replace(/"/g, '&quot;')}" placeholder="${placeholder}" data-row="${r}" data-col="${c}"></td>`;
                     }
-                    tableHtml += `<td style="border:none; position:relative; width:0;"><div class="delete-btn delete-row-btn" title="${T.deleteRow}">🗑️</div></td></tr>`;
+                    tableHtml += `<td class="control-cell"></td>`;
+                    tableHtml += `</tr>`;
                 }
+                tableHtml += `<tr>
+                                  <td class="control-cell"></td>
+                                  <td colspan="${colCount}" class="control-cell"><div class="add-btn add-row-btn" title="${T.addRow}">+</div></td>
+                                  <td class="control-cell"></td>
+                               </tr>`;
                 tableHtml += `</tbody></table>`;
+
                 modalOverlay.innerHTML = `
                     <div class="sn-modal-content sn-modal-content-table">
                         <div class="sn-modal-header">
@@ -511,10 +557,8 @@
                         </div>
                         <div class="sn-modal-body">
                            <div class="sn-table-editor-container">
-                                <div class="add-btn add-col-btn" title="${T.addCol}">+</div>
-                                <div class="add-btn add-row-btn" title="${T.addRow}">+</div>
-                                <div class="sn-table-scroll-container">${tableHtml}</div>
-                            </div>
+                               <div class="sn-table-scroll-container">${tableHtml}</div>
+                           </div>
                         </div>
                         <div class="sn-modal-footer">
                             <button class="sn-modal-insert-btn">${T.insert}</button>
@@ -531,34 +575,37 @@
                 modalOverlay.querySelector('.sn-modal-insert-btn').onclick = () => {
                     let markdown = '';
                     const colCount = tableData.rows[0]?.length || 0;
-                    if (colCount > 0) {
-                        markdown += '| ' + tableData.rows[0].map(c => c.trim()).join(' | ') + ' |\n';
+                    if (colCount > 0 && tableData.rows.some(row => row.some(cell => cell.trim() !== ''))) {
+                        markdown += '| ' + tableData.rows[0].map(c => c.trim() || ' ').join(' | ') + ' |\n';
                         markdown += '|' + tableData.alignments.map(a => { if (a === 'center') return ' :---: '; if (a === 'right') return ' ---: '; return ' :--- '; }).join('|') + '|\n';
                         for (let i = 1; i < tableData.rows.length; i++) {
-                            markdown += '| ' + tableData.rows[i].map(c => c.trim()).join(' | ') + ' |\n';
+                            markdown += '| ' + tableData.rows[i].map(c => c.trim() || ' ').join(' | ') + ' |\n';
                         }
                     }
                     onInsertCallback(markdown);
                     closeModal();
                 };
-                modalOverlay.querySelector('.add-row-btn').onclick = () => { tableData.rows.push(new Array(tableData.rows[0]?.length || 1).fill('')); render(); };
-                modalOverlay.querySelector('.add-col-btn').onclick = () => { tableData.rows.forEach(row => row.push('')); tableData.alignments.push('left'); render(); };
-                modalOverlay.querySelectorAll('.delete-row-btn').forEach(btn => {
-                    btn.onclick = e => {
-                        const row = parseInt(e.target.closest('tr').dataset.row, 10);
-                        if (tableData.rows.length > 1) { tableData.rows.splice(row, 1); render(); }
-                    };
-                });
+                modalOverlay.querySelector('.add-row-btn').onclick = () => {
+                    if (tableData.rows.length === 0) { tableData.rows.push(['']); tableData.alignments = ['left']; }
+                    else { tableData.rows.push(new Array(tableData.rows[0]?.length || 1).fill('')); }
+                    render();
+                };
+                modalOverlay.querySelector('.add-col-btn').onclick = () => {
+                    if (tableData.rows.length === 0) { tableData.rows.push(['']); tableData.alignments = ['left']; }
+                    else { tableData.rows.forEach(row => row.push('')); tableData.alignments.push('left'); }
+                    render();
+                };
+                modalOverlay.querySelectorAll('.delete-row-btn').forEach(btn => { btn.onclick = e => { const row = parseInt(e.target.closest('tr').dataset.row, 10); if (tableData.rows.length > 1) { tableData.rows.splice(row, 1); render(); } }; });
                 modalOverlay.querySelectorAll('.delete-col-btn').forEach(btn => { btn.onclick = e => { const col = parseInt(e.target.closest('th').dataset.col, 10); if (tableData.rows[0].length > 1) { tableData.rows.forEach(row => row.splice(col, 1)); tableData.alignments.splice(col, 1); render(); } }; });
-                modalOverlay.querySelectorAll('.col-header').forEach(header => { header.onclick = e => { const col = parseInt(e.currentTarget.closest('th').dataset.col, 10); const currentAlign = tableData.alignments[col]; const aligns = ['left', 'center', 'right']; const nextIndex = (aligns.indexOf(currentAlign) + 1) % aligns.length; tableData.alignments[col] = aligns[nextIndex]; render(); }; });
+                modalOverlay.querySelectorAll('.col-header').forEach(header => { header.onclick = e => { const col = parseInt(e.currentTarget.closest('th').dataset.col, 10); const aligns = ['left', 'center', 'right']; tableData.alignments[col] = aligns[(aligns.indexOf(tableData.alignments[col]) + 1) % aligns.length]; render(); }; });
                 modalOverlay.querySelectorAll('.cell-input').forEach(input => {
                     input.oninput = e => { const { row, col } = e.target.dataset; tableData.rows[row][col] = e.target.value; };
                     input.onkeydown = e => {
                         const { row, col } = e.target.dataset; const r = parseInt(row, 10); const c = parseInt(col, 10); let nextCell = null;
                         if (e.key === 'Enter' || e.key === 'ArrowDown') { nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r + 1}"][data-col="${c}"]`); }
                         else if (e.key === 'ArrowUp') { nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r - 1}"][data-col="${c}"]`); }
-                        else if (e.key === 'Tab' && !e.shiftKey || e.key === 'ArrowRight') { nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r}"][data-col="${c + 1}"]`) || modalOverlay.querySelector(`.cell-input[data-row="${r + 1}"][data-col="0"]`); }
-                        else if (e.key === 'Tab' && e.shiftKey || e.key === 'ArrowLeft') { nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r}"][data-col="${c - 1}"]`) || modalOverlay.querySelector(`.cell-input[data-row="${r - 1}"][data-col="${(tableData.rows[0]?.length || 1) - 1}"]`); }
+                        else if ((e.key === 'Tab' && !e.shiftKey) || e.key === 'ArrowRight') { nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r}"][data-col="${c + 1}"]`) || modalOverlay.querySelector(`.cell-input[data-row="${r + 1}"][data-col="0"]`); }
+                        else if ((e.key === 'Tab' && e.shiftKey) || e.key === 'ArrowLeft') { nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r}"][data-col="${c - 1}"]`) || modalOverlay.querySelector(`.cell-input[data-row="${r - 1}"][data-col="${(tableData.rows[0]?.length || 1) - 1}"]`); }
                         if(nextCell) { e.preventDefault(); nextCell.focus(); }
                     };
                 });
@@ -568,15 +615,14 @@
             modalOverlay.querySelector('.cell-input')?.focus();
         };
 
-        const container = document.createElement('div'); container.className = 'markdown-editor-container';
         const modeBar = document.createElement('div'); modeBar.className = 'mode-toggle-bar';
         const editorButton = document.createElement('button'); editorButton.className = 'mode-toggle-button'; editorButton.textContent = T.editor;
         const splitButton = document.createElement('button'); splitButton.className = 'mode-toggle-button'; splitButton.textContent = T.split;
         const previewButton = document.createElement('button'); previewButton.className = 'mode-toggle-button'; previewButton.textContent = T.preview;
-        const toolbarToggleButton = document.createElement('button'); toolbarToggleButton.className = 'mode-toggle-button toolbar-toggle-button'; toolbarToggleButton.title = T.toggleToolbar; toolbarToggleButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path></svg>`;
+        const toolbarToggleButton = document.createElement('button'); toolbarToggleButton.className = 'mode-toggle-button toolbar-toggle-button'; toolbarToggleButton.title = T.toggleToolbar;
+        toolbarToggleButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path></svg>`;
         const printButton = document.createElement('button'); printButton.className = 'mode-toggle-button pdf-export-button'; printButton.textContent = T.printPDF; printButton.title = T.exportPDF;
         const toolbar = document.createElement('div'); toolbar.className = 'markdown-toolbar';
-        const markdownTextarea = document.createElement('textarea'); markdownTextarea.className = originalTextarea.className + ' custom-markdown-textarea'; markdownTextarea.value = originalTextarea.value; markdownTextarea.spellcheck = false;
         const previewPane = document.createElement('div'); previewPane.className = 'markdown-preview';
 
         markdownTextarea.addEventListener('paste', handlePaste);
@@ -584,32 +630,62 @@
         const toolbarButtons = [ { type: 'select', name: 'heading', options: [ { value: 'p', text: T.paragraph }, { value: 'h1', text: T.heading1 }, { value: 'h2', text: T.heading2 }, { value: 'h3', text: T.heading3 }, { value: 'h4', text: T.heading4 } ], action: (prefix) => { const start = markdownTextarea.selectionStart; let lineStart = markdownTextarea.value.lastIndexOf('\n', start - 1) + 1; let lineEnd = markdownTextarea.value.indexOf('\n', start); if (lineEnd === -1) lineEnd = markdownTextarea.value.length; const originalLine = markdownTextarea.value.substring(lineStart, lineEnd); const cleanedLine = originalLine.replace(/^\s*#+\s*/, ''); const newText = prefix ? `${prefix} ${cleanedLine}` : cleanedLine; markdownTextarea.setRangeText(newText, lineStart, lineEnd, 'end'); markdownTextarea.dispatchEvent(new Event('input', { bubbles: true })); markdownTextarea.focus(); } }, { type: 'button', name: 'B', title: T.bold, action: () => applyMarkdown(markdownTextarea, '**', '**', T.boldPlaceholder) }, { type: 'button', name: 'I', title: T.italic, action: () => applyMarkdown(markdownTextarea, '*', '*', T.italicPlaceholder) }, { type: 'button', name: 'S', title: T.strikethrough, action: () => applyMarkdown(markdownTextarea, '~~', '~~', T.strikethroughPlaceholder) }, { type: 'button', name: '`', title: T.inlineCode, action: () => applyMarkdown(markdownTextarea, '`', '`', T.codePlaceholder) }, { type: 'button', name: '“ ”', title: T.quote, action: () => applyMarkdown(markdownTextarea, '> ', '', T.quotePlaceholder) }, { type: 'button', name: '•', title: T.list, action: () => applyMarkdown(markdownTextarea, '- ', '', T.listItemPlaceholder) }, { type: 'button', name: '1.', title: T.numberedList, action: () => applyMarkdown(markdownTextarea, '1. ', '', T.listItemPlaceholder) }, { type: 'button', name: '☑', title: T.checklist, action: () => applyMarkdown(markdownTextarea, '- [ ] ', '', T.taskPlaceholder) }, { type: 'button', name: '</>', title: T.codeBlock, action: () => applyMarkdown(markdownTextarea, '```\n', '\n```', T.codePlaceholder) }, { type: 'icon-button', name: 'Image', title: T.image, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"></path></svg>`, action: () => {
             openImageInserterModal((data, altText, isReference) => {
                 if (isReference) {
-                    insertImageAsReference(data, altText, markdownTextarea);
+                    insertImageAsReference(data, altText);
                 } else {
                     const markdown = `![${altText}](${data})`;
                     applyMarkdown(markdownTextarea, markdown);
                 }
             });
         } }, { type: 'icon-button', name: 'Link', title: T.link, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"></path></svg>`, action: () => { const url = prompt(T.linkPrompt, 'https://'); if (url) applyMarkdown(markdownTextarea, '[', `](${url})`, T.linkTextPlaceholder); }}, { type: 'icon-button', name: T.insertTable, title: T.insertTable, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM8 10H4V6h4v4zm6 0h-4V6h4v4zm6 0h-4V6h4v4zM8 14H4v4h4v-4zm6 0h-4v4h4v-4zm6 0h-4v4h4v-4z"></path></svg>`, action: () => {
-            const start = markdownTextarea.selectionStart; const end = markdownTextarea.selectionEnd; const selectedText = markdownTextarea.value.substring(start, end);
-            const existingTableData = parseMarkdownTable(selectedText);
-            openTableEditorModal(existingTableData, (markdown) => {
-                markdownTextarea.setRangeText(markdown, start, end, 'select');
-                markdownTextarea.focus();
-                markdownTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            });
+        const start = markdownTextarea.selectionStart; const end = markdownTextarea.selectionEnd; const selectedText = markdownTextarea.value.substring(start, end);
+        const existingTableData = parseMarkdownTable(selectedText);
+        openTableEditorModal(existingTableData, (markdown) => {
+            markdownTextarea.setRangeText(markdown, start, end, 'select');
+            markdownTextarea.focus();
+            markdownTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+        });
         } }, { type: 'button', name: '―', title: T.horizontalRule, action: () => applyMarkdown(markdownTextarea, '\n---\n') }, ];
-        toolbarButtons.forEach(item => { if (item.type === 'select') { const select = document.createElement('select'); select.className = 'toolbar-select heading-select'; item.options.forEach(opt => { const option = document.createElement('option'); option.value = opt.value; option.textContent = opt.text; select.appendChild(option); }); select.onchange = (e) => { let prefix = ''; switch (e.target.value) { case 'h1': prefix = '#'; break; case 'h2': prefix = '##'; break; case 'h3': prefix = '###'; break; case 'h4': prefix = '####'; break; } item.action(prefix); }; toolbar.appendChild(select); } else { const button = document.createElement('button'); button.className = 'toolbar-button'; button.title = item.title; button.onclick = item.action; if (item.type === 'icon-button') { button.classList.add('icon-button'); button.innerHTML = item.icon; } else { button.textContent = item.name; } toolbar.appendChild(button); } });
+        toolbarButtons.forEach(item => { if (item.type === 'select') { const select = document.createElement('select'); select.className = 'toolbar-select heading-select'; item.options.forEach(opt => { const option = document.createElement('option'); option.value = opt.value; option.textContent = opt.text; select.appendChild(option); }); select.onchange = (e) => { let prefix = ''; switch (e.target.value) { case 'h1': prefix = '#'; break; case 'h2': prefix = '##'; break; case 'h3': prefix = '###'; break; case 'h4': prefix = '####'; break; } item.action(prefix); select.value = 'p'; }; toolbar.appendChild(select); } else { const button = document.createElement('button'); button.className = 'toolbar-button'; button.title = item.title; button.onclick = item.action; if (item.type === 'icon-button') { button.classList.add('icon-button'); button.innerHTML = item.icon; } else { button.textContent = item.name; } toolbar.appendChild(button); } });
+
+        const headingSelect = toolbar.querySelector('.heading-select');
+        const updateHeadingSelector = () => {
+            if (!headingSelect) return;
+
+            const pos = markdownTextarea.selectionStart;
+            const text = markdownTextarea.value;
+            const lineStart = text.lastIndexOf('\n', pos - 1) + 1;
+            let lineEnd = text.indexOf('\n', lineStart);
+            if (lineEnd === -1) {
+                lineEnd = text.length;
+            }
+            const line = text.substring(lineStart, lineEnd);
+
+            let headingLevel = 'p';
+            if (line.startsWith('#### ')) { headingLevel = 'h4'; }
+            else if (line.startsWith('### ')) { headingLevel = 'h3'; }
+            else if (line.startsWith('## ')) { headingLevel = 'h2'; }
+            else if (line.startsWith('# ')) { headingLevel = 'h1'; }
+
+            if (headingSelect.value !== headingLevel) {
+                headingSelect.value = headingLevel;
+            }
+        };
+
+        const debouncedUpdateHeadingSelector = debounce(updateHeadingSelector, 150);
+        markdownTextarea.addEventListener('keyup', debouncedUpdateHeadingSelector);
+        markdownTextarea.addEventListener('click', debouncedUpdateHeadingSelector);
+        markdownTextarea.addEventListener('focus', debouncedUpdateHeadingSelector);
 
         const contentWrapper = document.createElement('div'); contentWrapper.className = 'editor-preview-wrapper';
         contentWrapper.append(markdownTextarea, previewPane);
         modeBar.append(editorButton, splitButton, previewButton, toolbarToggleButton, printButton);
-        container.append(modeBar, toolbar, contentWrapper);
+        container.append(modeBar, toolbar, contentWrapper, dataTextarea);
         editorWrapper.after(container);
 
         const updatePreview = () => {
             try {
-                const dirtyHtml = marked.parse(markdownTextarea.value);
+                const fullContent = combineContent();
+                const dirtyHtml = marked.parse(fullContent);
                 const sanitizedHtml = DOMPurify.sanitize(dirtyHtml, { USE_PROFILES: { html: true }, ADD_ATTR: ['class', 'type', 'disabled', 'checked', 'data-task-index'], ADD_TAGS: ['span', 'input'], });
                 previewPane.innerHTML = sanitizedHtml;
 
@@ -657,10 +733,9 @@
             }
             if (markdownTextarea.value !== newText) {
                 const cursorPos = markdownTextarea.selectionStart;
-                markdownTextarea.value = newText; originalTextarea.value = newText;
+                markdownTextarea.value = newText;
                 markdownTextarea.selectionStart = markdownTextarea.selectionEnd = cursorPos;
-                originalTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-                if (container.classList.contains('mode-split') || container.classList.contains('mode-preview')) { updatePreview(); }
+                markdownTextarea.dispatchEvent(new Event('input', { bubbles: true }));
             }
         };
 
@@ -680,11 +755,9 @@
             if (match && pos - lineStart <= match[0].length) {
                 e.preventDefault();
                 const replacement = line.includes('[ ]') ? '[x]' : '[ ]'; const newLine = line.replace(/\[( |x)\]/, replacement);
-                const newText = text.substring(0, lineStart) + newLine + text.substring(effectiveLineEnd);
-                markdownTextarea.value = newText; originalTextarea.value = newText;
+                markdownTextarea.value = text.substring(0, lineStart) + newLine + text.substring(effectiveLineEnd);
                 textarea.selectionStart = textarea.selectionEnd = pos;
-                originalTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-                if (container.classList.contains('mode-split') || container.classList.contains('mode-preview')) { updatePreview(); }
+                markdownTextarea.dispatchEvent(new Event('input', { bubbles: true }));
             }
         };
         markdownTextarea.addEventListener('click', handleEditorClick);
@@ -700,8 +773,7 @@
             const match = line.match(listRegex);
 
             if (match) {
-                 const content = match[3];
-                // If the list item is empty (only marker and whitespace), remove it
+                const content = match[3];
                 if (!content.trim()) {
                     e.preventDefault();
                     textarea.setRangeText('', lineStart, pos, 'end');
@@ -709,19 +781,15 @@
                     return;
                 }
 
-                // If Enter is pressed on a non-empty list item, create a new one
                 e.preventDefault();
                 const indent = match[1];
                 let listMarker = match[2];
-
                 const numberedMatch = listMarker.match(/^(\d+)\.\s/);
                 if (numberedMatch) {
-                    const newNum = parseInt(numberedMatch[1], 10) + 1;
-                    listMarker = `${newNum}. `;
+                    listMarker = `${parseInt(numberedMatch[1], 10) + 1}. `;
                 } else if (listMarker.includes('[x]')) {
                     listMarker = listMarker.replace('[x]', '[ ]');
                 }
-
                 textarea.setRangeText(`\n${indent}${listMarker}`, pos, pos, 'end');
                 textarea.dispatchEvent(new Event('input', { bubbles: true }));
             }
@@ -733,68 +801,92 @@
             }
         });
 
-        const cleanupOrphanedImageRefs = debounce((textarea) => {
-            let value = textarea.value;
-            const originalValue = value;
-            const referenceRegex = /!\[.*?\]\[(image-ref-\d+)\]/g;
-            const usedRefs = new Set();
-            let match;
-            while ((match = referenceRegex.exec(value)) !== null) { usedRefs.add(match[1]); }
+        const cleanupOrphanedImageRefs = debounce(() => {
+            const contentValue = markdownTextarea.value;
+            let dataValue = dataTextarea.value;
+            const originalDataValue = dataValue;
 
-            const definitionRegex = /^\n?\[(image-ref-\d+)\]:\s*data:image\/.*$/gm;
-            let changed = false;
-            const cleanedValue = value.replace(definitionRegex, (fullMatch, refId) => {
-                if (usedRefs.has(refId)) { return fullMatch; }
-                changed = true;
-                return '';
+            const usedRefs = new Set();
+            const referenceRegex = /!\[.*?\]\[(image-ref-\d+)\]/g;
+            let match;
+            while ((match = referenceRegex.exec(contentValue)) !== null) {
+                usedRefs.add(match[1]);
+            }
+
+            const defLines = dataValue.split('\n');
+            const keptDefLines = defLines.filter(line => {
+                const defMatch = line.match(/^\[(image-ref-\d+)\]:/);
+                return defMatch && usedRefs.has(defMatch[1]);
             });
 
-            if (changed) {
-                const cursorPos = textarea.selectionStart;
-                textarea.value = cleanedValue.replace(/(\n\n\n+)/g, '\n\n').trim();
-                const diff = originalValue.length - textarea.value.length;
-                textarea.selectionStart = textarea.selectionEnd = Math.max(0, cursorPos - diff);
-                originalTextarea.value = textarea.value;
-                originalTextarea.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
-                 if (container.classList.contains('mode-split') || container.classList.contains('mode-preview')) {
-                    updatePreview();
-                }
+            const cleanedDataValue = keptDefLines.join('\n');
+            if (cleanedDataValue !== originalDataValue) {
+                dataTextarea.value = cleanedDataValue;
+                dataTextarea.dispatchEvent(new Event('input', { bubbles: true }));
             }
         }, 1500);
 
-        markdownTextarea.addEventListener('input', () => {
-            originalTextarea.value = markdownTextarea.value;
-            if (!document.hidden) { originalTextarea.dispatchEvent(new Event('input', { bubbles: true })); }
-            if (container.classList.contains('mode-split') || container.classList.contains('mode-preview')) { debounce(updatePreview, 250)(); }
-            cleanupOrphanedImageRefs(markdownTextarea);
-        });
+        const handleInput = () => {
+            originalTextarea.value = combineContent();
+            if (!document.hidden) {
+                originalTextarea.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+            }
+             if (container.classList.contains('mode-split') || container.classList.contains('mode-preview')) {
+                debounce(updatePreview, 250)();
+            }
+            cleanupOrphanedImageRefs();
+        };
+
+        markdownTextarea.addEventListener('input', handleInput);
+        dataTextarea.addEventListener('input', handleInput);
+
 
         const observer = new MutationObserver(() => {
-            if (originalTextarea.value !== markdownTextarea.value && document.activeElement !== markdownTextarea) {
-                const cursorPos = markdownTextarea.selectionStart;
-                markdownTextarea.value = originalTextarea.value;
-                markdownTextarea.selectionStart = markdownTextarea.selectionEnd = cursorPos;
-                if(container.classList.contains('mode-split') || container.classList.contains('mode-preview')) { updatePreview(); }
+            if (originalTextarea.value !== combineContent() && document.activeElement !== markdownTextarea) {
+                splitAndSetContent(originalTextarea.value);
+                if(container.classList.contains('mode-split') || container.classList.contains('mode-preview')) {
+                    updatePreview();
+                }
             }
         });
         observer.observe(originalTextarea, { attributes: true, childList: true, subtree: true, characterData: true });
 
         const modeButtons = { editor: editorButton, split: splitButton, preview: previewButton };
-        const switchMode = (mode) => { container.classList.remove('mode-editor', 'mode-split', 'mode-preview'); container.classList.add(`mode-${mode}`); Object.values(modeButtons).forEach(btn => btn.classList.remove('active')); modeButtons[mode].classList.add('active'); localStorage.setItem(STORAGE_KEY_MODE, mode); if (mode === 'preview' || mode === 'split') { updatePreview(); } if (mode !== 'preview') { markdownTextarea.focus(); } };
-        editorButton.addEventListener('click', () => switchMode('editor')); splitButton.addEventListener('click', () => switchMode('split')); previewButton.addEventListener('click', () => switchMode('preview'));
+        const switchMode = (mode) => {
+            container.classList.remove('mode-editor', 'mode-split', 'mode-preview');
+            container.classList.add(`mode-${mode}`);
+            Object.values(modeButtons).forEach(btn => btn.classList.remove('active'));
+            modeButtons[mode].classList.add('active');
+            localStorage.setItem(STORAGE_KEY_MODE, mode);
+            if (mode === 'preview' || mode === 'split') {
+                updatePreview();
+            }
+            if (mode !== 'preview') {
+                markdownTextarea.focus();
+            }
+            updateHeadingSelector();
+        };
+        editorButton.addEventListener('click', () => switchMode('editor'));
+        splitButton.addEventListener('click', () => switchMode('split'));
+        previewButton.addEventListener('click', () => switchMode('preview'));
 
-        const toggleToolbar = (visible) => { container.classList.toggle('toolbar-hidden', !visible); toolbarToggleButton.classList.toggle('active', visible); localStorage.setItem(STORAGE_KEY_TOOLBAR_VISIBLE, visible); };
+        const toggleToolbar = (visible) => {
+            container.classList.toggle('toolbar-hidden', !visible);
+            toolbarToggleButton.classList.toggle('active', visible);
+            localStorage.setItem(STORAGE_KEY_TOOLBAR_VISIBLE, visible);
+        };
         toolbarToggleButton.addEventListener('click', () => { const isVisible = container.classList.contains('toolbar-hidden'); toggleToolbar(isVisible); });
 
         const handlePrint = () => { const printContainer = document.createElement('div'); printContainer.className = 'print-container'; if (container.classList.contains('mode-editor')) { const pre = document.createElement('pre'); pre.className = 'raw-text-print'; pre.textContent = markdownTextarea.value; printContainer.appendChild(pre); } else { updatePreview(); const previewClone = previewPane.cloneNode(true); printContainer.appendChild(previewClone); } document.body.appendChild(printContainer); window.print(); document.body.removeChild(printContainer); };
         printButton.addEventListener('click', handlePrint);
 
+        splitAndSetContent(originalTextarea.value);
         const initialToolbarVisible = localStorage.getItem(STORAGE_KEY_TOOLBAR_VISIBLE) !== 'false';
         toggleToolbar(initialToolbarVisible);
         const savedMode = localStorage.getItem(STORAGE_KEY_MODE);
         switchMode(savedMode || 'split');
 
-        console.log('Markdown Editor for Standard Notes (Final Form v3.6) has been initialized.');
+        console.log('Markdown Editor for Standard Notes (Final Form v3.7.4) has been initialized.');
     }
 
     const mainObserver = new MutationObserver(() => {
