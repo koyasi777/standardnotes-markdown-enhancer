@@ -1,4 +1,4 @@
-# Enhanced Markdown Editor for Standard Notes ✨
+# Enhanced Markdown Editor for Standard Notes
 
 ## 📌 Overview
 
