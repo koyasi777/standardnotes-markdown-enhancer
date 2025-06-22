@@ -1,26 +1,27 @@
-# Add Markdown Editor to Standard Notes ✨
+# Enhanced Markdown Editor for Standard Notes ✨
 
 ## 📌 Overview
 
-This userscript enhances **Standard Notes** (web version) by seamlessly replacing the default editor with a **full-featured Markdown editor**. It offers a rich formatting toolbar, live preview, split view, image support, print-friendly styles, and PDF export—all client-side and privacy-safe.
+This userscript supercharges **Standard Notes (web)** by replacing its default plain-text editor with a **feature-rich, privacy-respecting Markdown editor**. It includes a live preview, customizable toolbar, advanced image handling, PDF export, and a visual table editor—all running 100% in your browser.
 
 ---
 
 ## ✨ Key Features
 
-- 🛠️ Toolbar buttons for **headings, bold, italic, lists, checkboxes, quotes, code blocks, links, tables, horizontal rules, and more**
-- 🔀 Switch between **Editor**, **Split**, and **Preview** modes
-- 🖨 One-click **Print / Export to PDF**
-- 🌙 **Dark mode–aware**, responsive design
-- 🖼 **Image insertion**:
-  - Paste from clipboard → automatically resizes (max 1280px) + base64 embed
-  - Upload via UI or insert via URL
-  - **Garbage-collector**: automatically removes unused pasted image data
-- 🧼 Clean print layout & syntax highlighting with copy-to-clipboard support
-- 🔐 Fully **client-side**, with no external data leaks (processed entirely in-browser)
-- 🧹 Uses `marked.js`, `DOMPurify`, and `highlight.js` for safe and rich Markdown rendering
+- 🛠️ **Rich formatting toolbar** for headings, bold, italic, strikethrough, quotes, lists, checklists, code blocks, links, images, tables, and horizontal rules
+- 🔀 **Editor / Split / Preview modes** with synchronized updates
+- 🧠 **Live preview** with `marked.js`, `DOMPurify`, and `highlight.js`—fully sanitized and syntax-highlighted
+- 🖼 **Smart image handling**:
+  - Paste from clipboard → auto-resize to max 1280px, embedded as base64
+  - Upload from file or insert via URL using a modal UI
+  - Unused embedded images are **auto-cleaned**
+- 📋 **Code block clipboard support** with "Copy" buttons
+- 🔠 **Interactive table editor** with cell editing, row/column control, and alignment settings
+- 🖨 **PDF export and print-friendly layout** with clean formatting
+- 🌙 Fully supports **dark mode** and integrates with Standard Notes theme variables
+- 💾 Remembers user preferences like view mode and toolbar visibility
 
-> ⚠️ **Unofficial enhancement**, not affiliated with Standard Notes, Inc.
+> ⚠️ This is an **unofficial userscript** not affiliated with Standard Notes, Inc.
 
 ---
 
@@ -31,63 +32,56 @@ This userscript enhances **Standard Notes** (web version) by seamlessly replacin
    - [Tampermonkey for Firefox](https://addons.mozilla.org/firefox/addon/tampermonkey/)
    - [Tampermonkey for Chrome](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)
 2. Install the userscript:
-   👉 **[Click to install](https://raw.githubusercontent.com/koyasi777/standardnotes-markdown-enhancer/main/standardnotes-markdown-enhancer.user.js)**
-3. Navigate to `https://app.standardnotes.com/` – the enhanced Markdown editor activates automatically.
+   👉 **[Click here to install](https://raw.githubusercontent.com/koyasi777/standardnotes-markdown-enhancer/main/standardnotes-markdown-enhancer.user.js)**
+3. Visit `https://app.standardnotes.com/` — the enhanced Markdown editor activates automatically.
 
-> 💡 The script detects the default plain‑text editor and injects the Markdown UI.
+> 💡 The script detects and upgrades the default editor without affecting other editors.
 
 ---
 
-## 🔍 Feature Overview
+## 🔍 Feature Summary
 
 | Feature | Description |
 |--------|-------------|
-| **Toolbar** | Insert headings, bold/italic, lists, checkboxes, quotes, code blocks, links, tables, HR |
-| **Modes** | Editor / Split / Preview views with live sync |
-| **Preview** | Sanitized HTML rendering with syntax highlighting and clipboard support |
-| **Image Handling** | Paste or upload → resized + embedded; unused images auto‑removed |
-| **PDF / Print** | Clean-page styles; copy-to-clipboard for code; print-friendly output |
-| **Performance** | Debounced image garbage collection and live rendering |
-| **Customizable** | Theme-aware CSS uses Standard Notes variables; no external dependencies |
+| **Toolbar** | One-click insertion of Markdown syntax |
+| **View Modes** | Toggle between Edit, Split, and Preview layouts |
+| **Preview** | Safe, real-time HTML rendering with copy-enabled code |
+| **Image Support** | Pasting, uploading, and reference insertion; automatic cleanup |
+| **Tables** | Visual Markdown table builder with cell navigation |
+| **Export / Print** | PDF-ready styles and layout for clean hardcopies |
+| **Performance** | Debounced rendering and efficient DOM interaction |
+| **Theme Integration** | Uses SN-provided CSS variables; dark mode aware |
 
 ---
 
 ## 🔐 Security & Privacy
 
-- ✋ 100% **local processing** — no external calls or data uploads
-- ✔ Syntax-safe and sanitized via `DOMPurify`
-- 🛡 Full control over image data—embedded only as base64, cleaned automatically
+- 🛡 **All processing is local** — no external APIs, uploads, or analytics
+- ✔ Sanitized Markdown via `DOMPurify`
+- 🔒 Base64 image data is embedded, stored only inside your notes
+- 🧹 Unused images are automatically deleted for cleanliness
 
-> Use at your own risk; no affiliation with Standard Notes, Inc.
-
----
-
-## 📝 Limitations & Notes
-
-- Supports **only the default plain-text editor** at `app.standardnotes.com`
-- Incompatible with other official editors (e.g. Bold, Code)
-- DOM changes in Standard Notes may require script updates
+> Use at your own risk; no official support or endorsement from Standard Notes.
 
 ---
 
-## 🌍 Community & Contribution
+## 📝 Compatibility & Notes
 
-- ⭐ **MIT License** — free to use, modify, distribute
-- Welcome feedback, issues, and pull requests via GitHub
+- ✔ Works with **default plain-text editor** only (`https://app.standardnotes.com/`)
+- ❌ Incompatible with official editors like Bold or Code
+- 🔄 Subject to breaking changes if Standard Notes updates its DOM structure
 
-🔗 **Repository**: https://github.com/koyasi777/standardnotes-markdown-enhancer
+---
+
+## 🌍 Contribution
+
+- 🧑‍💻 **MIT Licensed** — free to use, adapt, and distribute
+- ❤️ Feedback and pull requests welcome!
+
+🔗 [GitHub Repository](https://github.com/koyasi777/standardnotes-markdown-enhancer)
 
 ---
 
 ## 💡 Why Use This?
 
-> Transform Standard Notes into a powerful Markdown workspace with live preview, clean exports, and intuitive image workflows—all while preserving privacy and staying lightweight.
-
----
-
-## 🛠 Changelog Highlights (v2.6.0)
-
-- 📸 **Automatic image resizing** with quality control (max 1280px, JPEG quality 0.8)
-- 🧹 **Image garbage collection**: unused embedded images are removed automatically
-- 🖼 Added **image upload UI** and modal for URL/file insertion
-- 🧹 UI consistency improvements; tooltips and accessibility labels added
+> Elevate your Standard Notes experience with an intuitive, fast, and powerful Markdown editor—no extensions, no compromises, just pure productivity in your browser.
