@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name             Enhanced Markdown Editor for Standard Notes
-// @name:ja          Standard Notes用 高機能Markdownエディタ拡張
+// @name:ja          Standard Notes 高機能Markdownエディタ拡張
 // @name:en          Enhanced Markdown Editor for Standard Notes
 // @name:zh-CN       为Standard Notes增强Markdown编辑器
 // @name:zh-TW       為Standard Notes強化Markdown編輯器
