@@ -1,37 +1,37 @@
 // ==UserScript==
-// @name             Enhanced Markdown Editor for Standard Notes
-// @name:ja          Standard Notes 高機能Markdownエディタ拡張
-// @name:en          Enhanced Markdown Editor for Standard Notes
-// @name:zh-CN       为Standard Notes增强Markdown编辑器
-// @name:zh-TW       為Standard Notes強化Markdown編輯器
-// @name:ko          Standard Notes용 고급 Markdown 에디터 확장
-// @name:fr          Éditeur Markdown amélioré pour Standard Notes
-// @name:es          Editor Markdown mejorado para Standard Notes
-// @name:de          Erweiterter Markdown-Editor für Standard Notes
-// @name:pt-BR       Editor Markdown avançado para Standard Notes
-// @name:ru          Улучшенный редактор Markdown для Standard Notes
-// @version          3.7.8
-// @description      Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency.
-// @description:ja   Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップされます。
+// @name             Enhanced Markdown Editor for Standard Notes
+// @name:ja          Standard Notes 高機能Markdownエディタ拡張
+// @name:en          Enhanced Markdown Editor for Standard Notes
+// @name:zh-CN       为Standard Notes增强Markdown编辑器
+// @name:zh-TW       為Standard Notes強化Markdown編輯器
+// @name:ko          Standard Notes용 고급 Markdown 에디터 확장
+// @name:fr          Éditeur Markdown amélioré pour Standard Notes
+// @name:es          Editor Markdown mejorado para Standard Notes
+// @name:de          Erweiterter Markdown-Editor für Standard Notes
+// @name:pt-BR       Editor Markdown avançado para Standard Notes
+// @name:ru          Улучшенный редактор Markdown для Standard Notes
+// @version          3.7.9
+// @description      Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency.
+// @description:ja   Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップされます。
 // @description:zh-CN 非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。
 // @description:zh-TW 非官方強化Markdown編輯器，為Standard Notes新增即時預覽、工具列、自動縮放圖片貼上/上傳、PDF匯出等功能，並自動清除未使用圖片。
-// @description:ko   Standard Notes를 위한 강력한 비공식 Markdown 에디터! 실시간 미리보기, 서식 툴바, 이미지 붙여넣기/업로드(자동 리사이즈), PDF 내보내기 지원. 사용하지 않는 이미지는 자동 정리됩니다。
-// @description:fr   Améliorez Standard Notes avec un éditeur Markdown puissant et non officiel : aperçu en direct, barre d’outils, collage/téléversement d’images redimensionnées automatiquement, export PDF. Nettoyage automatique des images inutilisées.
-// @description:es   Mejora Standard Notes con un potente editor Markdown no oficial: vista previa en vivo, barra de herramientas, pegado/carga de imágenes con redimensionado automático y exportación a PDF. Las imágenes no usadas se eliminan automáticamente.
-// @description:de   Erweitern Sie Standard Notes mit einem leistungsstarken, inoffiziellen Markdown-Editor: Live-Vorschau, Formatierungsleiste, Bild-Einfügen/-Hochladen mit automatischer Größenanpassung und PDF-Export. Nicht verwendete Bilder werden automatisch bereinigt.
+// @description:ko   Standard Notes를 위한 강력한 비공식 Markdown 에디터! 실시간 미리보기, 서식 툴바, 이미지 붙여넣기/업로드(자동 리사이즈), PDF 내보내기 지원. 사용하지 않는 이미지는 자동 정리됩니다。
+// @description:fr   Améliorez Standard Notes avec un éditeur Markdown puissant et non officiel : aperçu en direct, barre d’outils, collage/téléversement d’images redimensionnées automatiquement, export PDF. Nettoyage automatique des images inutilisées.
+// @description:es   Mejora Standard Notes con un potente editor Markdown no oficial: vista previa en vivo, barra de herramientas, pegado/carga de imágenes con redimensionado automático y exportación a PDF. Las imágenes no usadas se eliminan automáticamente.
+// @description:de   Erweitern Sie Standard Notes mit einem leistungsstarken, inoffiziellen Markdown-Editor: Live-Vorschau, Formatierungsleiste, Bild-Einfügen/-Hochladen mit automatischer Größenanpassung und PDF-Export. Nicht verwendete Bilder werden automatisch bereinigt.
 // @description:pt-BR Potencialize o Standard Notes com um editor Markdown poderoso e não oficial: visualização ao vivo, barra de formatação, colagem/envio de imagens com redimensionamento automático e exportação para PDF. Imagens não utilizadas são removidas automaticamente.
-// @description:ru   Улучшите Standard Notes с помощью мощного неофициального редактора Markdown: живая превью, панель форматирования, вставка/загрузка изображений с автоизменением размера и экспорт в PDF. Неиспользуемые изображения автоматически удаляются.
-// @namespace        https://github.com/koyasi777/standardnotes-markdown-enhancer
-// @author           koyasi777
-// @match            https://app.standardnotes.com/*
-// @grant            GM_addStyle
-// @require          https://cdn.jsdelivr.net/npm/marked/marked.min.js
-// @require          https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js
-// @require          https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js
-// @license          MIT
-// @homepageURL      https://github.com/koyasi777/standardnotes-markdown-enhancer
-// @supportURL       https://github.com/koyasi777/standardnotes-markdown-enhancer/issues
-// @icon             https://app.standardnotes.com/favicon/favicon-32x32.png
+// @description:ru   Улучшите Standard Notes с помощью мощного неофициального редактора Markdown: живая превью, панель форматирования, вставка/загрузка изображений с автоизменением размера и экспорт в PDF. Неиспользуемые изображения автоматически удаляются.
+// @namespace        https://github.com/koyasi777/standardnotes-markdown-enhancer
+// @author           koyasi777
+// @match            https://app.standardnotes.com/*
+// @grant            GM_addStyle
+// @require          https://cdn.jsdelivr.net/npm/marked/marked.min.js
+// @require          https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js
+// @require          https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js
+// @license          MIT
+// @homepageURL      https://github.com/koyasi777/standardnotes-markdown-enhancer
+// @supportURL       https://github.com/koyasi777/standardnotes-markdown-enhancer/issues
+// @icon             https://app.standardnotes.com/favicon/favicon-32x32.png
 // ==/UserScript==
 
 (function() {
@@ -183,7 +183,15 @@
         .control-cell { border: none !important; background: transparent !important; text-align: center; vertical-align: middle; padding: 4px !important; }
         .sn-table-editor thead .control-cell { position: -webkit-sticky; position: sticky; left: 0; background-color: var(--sn-stylekit-editor-background-color, #f9f9f9) !important; }
         .sn-table-editor thead .control-cell:last-child { right: 0; left: auto; }
-    `);
+
+        /* --- Drag & Drop Styles for Table Editor --- */
+        .sn-table-editor .drag-handle { cursor: grab; color: var(--sn-stylekit-secondary-foreground-color, #888); padding: 0 8px; user-select: none; }
+        .sn-table-editor .drag-handle:active { cursor: grabbing; }
+        .sn-table-editor .dragging { opacity: 0.5; background: var(--sn-stylekit-secondary-background-color, #f0f0f0); }
+        .sn-table-editor tr.drag-over-row { box-shadow: inset 0 2px var(--sn-stylekit-primary-color, #346df1); }
+        .sn-table-editor th.drag-over-col { box-shadow: inset 2px 0 var(--sn-stylekit-primary-color, #346df1); }
+        .col-header-content { display: flex; align-items: center; justify-content: center; }
+     `);
 
     function debounce(func, wait) {
         let timeout;
@@ -457,28 +465,83 @@
             const modalOverlay = document.createElement('div');
             modalOverlay.className = 'sn-modal-overlay';
             const render = () => {
-                const colCount = tableData.rows[0]?.length || 0; const rowCount = tableData.rows.length;
-                let tableHtml = `<table class="sn-table-editor"><thead><tr><th class="control-cell"></th>`;
+                const colCount = tableData.rows[0]?.length || 0;
+                const rowCount = tableData.rows.length;
+                let headerHtml = '';
                 for (let c = 0; c < colCount; c++) {
-                    const align = tableData.alignments[c]; let alignIcon;
-                    switch(align) { case 'center': alignIcon = '⇌'; break; case 'right': alignIcon = '→'; break; default: alignIcon = '←'; }
-                    tableHtml += `<th data-col="${c}"><div class="col-header" title="${T.alignLeft}/${T.alignCenter}/${T.alignRight}"><span class="align-icon">${alignIcon}</span></div><div class="delete-btn delete-col-btn" title="${T.deleteCol}">🗑️</div></th>`;
-                }
-                tableHtml += `<th class="control-cell"><div class="add-btn add-col-btn" title="${T.addCol}">+</div></th></tr></thead><tbody>`;
-                for (let r = 0; r < rowCount; r++) {
-                    tableHtml += `<tr data-row="${r}"><td class="control-cell"><div class="delete-btn delete-row-btn" title="${T.deleteRow}">🗑️</div></td>`;
-                    for (let c = 0; c < colCount; c++) {
-                        const cellValue = tableData.rows[r][c] || ''; const placeholder = r === 0 ? 'Header' : 'Cell';
-                        tableHtml += `<td><input class="cell-input" type="text" value="${cellValue.replace(/"/g, '&quot;')}" placeholder="${placeholder}" data-row="${r}" data-col="${c}"></td>`;
+                    const align = tableData.alignments[c];
+                    let alignIcon;
+                    switch (align) {
+                        case 'center': alignIcon = '⇌'; break;
+                        case 'right': alignIcon = '→'; break;
+                        default: alignIcon = '←';
                     }
-                    tableHtml += `<td class="control-cell"></td></tr>`;
+                    headerHtml += `
+                        <th data-col="${c}">
+                            <div class="col-header-content" draggable="true">
+                                <span class="drag-handle">⁙</span>
+                                <div class="col-header" title="${T.alignLeft}/${T.alignCenter}/${T.alignRight}">
+                                    <span class="align-icon">${alignIcon}</span>
+                                </div>
+                            </div>
+                            <div class="delete-btn delete-col-btn" title="${T.deleteCol}">🗑️</div>
+                        </th>`;
                 }
-                tableHtml += `<tr><td class="control-cell"></td><td colspan="${colCount}" class="control-cell"><div class="add-btn add-row-btn" title="${T.addRow}">+</div></td><td class="control-cell"></td></tr></tbody></table>`;
-                modalOverlay.innerHTML = `<div class="sn-modal-content sn-modal-content-table"><div class="sn-modal-header"><h3>${T.tableEditor}</h3><button class="sn-modal-close" title="${T.close}">&times;</button></div><div class="sn-modal-body"><div class="sn-table-editor-container"><div class="sn-table-scroll-container">${tableHtml}</div></div></div><div class="sn-modal-footer"><button class="sn-modal-insert-btn">${T.insert}</button></div></div>`;
+                let bodyHtml = '';
+                for (let r = 0; r < rowCount; r++) {
+                    bodyHtml += `<tr data-row="${r}" draggable="true">
+                        <td class="control-cell">
+                            <span class="drag-handle">⁙</span>
+                            <div class="delete-btn delete-row-btn" title="${T.deleteRow}">🗑️</div>
+                        </td>`;
+                    for (let c = 0; c < colCount; c++) {
+                        const cellValue = tableData.rows[r][c] || '';
+                        const placeholder = r === 0 ? 'Header' : 'Cell';
+                        bodyHtml += `<td><input class="cell-input" type="text" value="${cellValue.replace(/"/g, '&quot;')}" placeholder="${placeholder}" data-row="${r}" data-col="${c}"></td>`;
+                    }
+                    bodyHtml += `<td class="control-cell"></td></tr>`;
+                }
+                const tableHtml = `
+                    <table class="sn-table-editor">
+                        <thead>
+                            <tr>
+                                <th class="control-cell"></th>
+                                ${headerHtml}
+                                <th class="control-cell"><div class="add-btn add-col-btn" title="${T.addCol}">+</div></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${bodyHtml}
+                            <tr>
+                                <td class="control-cell"></td>
+                                <td colspan="${colCount}" class="control-cell">
+                                    <div class="add-btn add-row-btn" title="${T.addRow}">+</div>
+                                </td>
+                                <td class="control-cell"></td>
+                            </tr>
+                        </tbody>
+                    </table>`;
+                modalOverlay.innerHTML = `
+                    <div class="sn-modal-content sn-modal-content-table">
+                        <div class="sn-modal-header">
+                            <h3>${T.tableEditor}</h3>
+                            <button class="sn-modal-close" title="${T.close}">&times;</button>
+                        </div>
+                        <div class="sn-modal-body">
+                            <div class="sn-table-editor-container">
+                                <div class="sn-table-scroll-container">${tableHtml}</div>
+                            </div>
+                        </div>
+                        <div class="sn-modal-footer">
+                            <button class="sn-modal-insert-btn">${T.insert}</button>
+                        </div>
+                    </div>`;
                 attachEventListeners();
             };
             const attachEventListeners = () => {
-                const content = modalOverlay.querySelector('.sn-modal-content'); const closeModal = () => document.body.contains(modalOverlay) && document.body.removeChild(modalOverlay);
+                const content = modalOverlay.querySelector('.sn-modal-content');
+                const closeModal = () => document.body.contains(modalOverlay) && document.body.removeChild(modalOverlay);
+                let draggedItem = null;
                 modalOverlay.querySelector('.sn-modal-close').onclick = closeModal;
                 content.onclick = e => e.stopPropagation();
                 modalOverlay.onclick = closeModal;
@@ -516,6 +579,88 @@
                         else if ((e.key === 'Tab' && e.shiftKey) || e.key === 'ArrowLeft') { nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r}"][data-col="${c - 1}"]`) || modalOverlay.querySelector(`.cell-input[data-row="${r - 1}"][data-col="${(tableData.rows[0]?.length || 1) - 1}"]`); }
                         if(nextCell) { e.preventDefault(); nextCell.focus(); }
                     };
+                });
+
+                // --- Drag & Drop Event Listeners ---
+                modalOverlay.querySelectorAll('tbody tr[draggable="true"]').forEach(row => {
+                    row.addEventListener('dragstart', (e) => {
+                        draggedItem = e.target;
+                        const rowIndex = parseInt(draggedItem.dataset.row, 10);
+                        e.dataTransfer.setData('text/plain', rowIndex);
+                        e.dataTransfer.effectAllowed = 'move';
+                        setTimeout(() => draggedItem.classList.add('dragging'), 0);
+                    });
+                    row.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        const targetRow = e.target.closest('tr[draggable="true"]');
+                        if (targetRow && targetRow !== draggedItem) {
+                            modalOverlay.querySelectorAll('.drag-over-row').forEach(el => el.classList.remove('drag-over-row'));
+                            targetRow.classList.add('drag-over-row');
+                        }
+                    });
+                    row.addEventListener('dragleave', (e) => {
+                        e.target.closest('tr[draggable="true"]')?.classList.remove('drag-over-row');
+                    });
+                    row.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        const targetRow = e.target.closest('tr[draggable="true"]');
+                        if (!targetRow || targetRow === draggedItem) return;
+                        const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
+                        const targetIndex = parseInt(targetRow.dataset.row, 10);
+                        const [removedRow] = tableData.rows.splice(sourceIndex, 1);
+                        tableData.rows.splice(targetIndex, 0, removedRow);
+                        render();
+                    });
+                    row.addEventListener('dragend', (e) => {
+                        draggedItem?.classList.remove('dragging');
+                        modalOverlay.querySelectorAll('.drag-over-row').forEach(el => el.classList.remove('drag-over-row'));
+                        draggedItem = null;
+                    });
+                });
+                modalOverlay.querySelectorAll('th .col-header-content[draggable="true"]').forEach(handle => {
+                    const headerCell = handle.closest('th');
+                    handle.addEventListener('dragstart', (e) => {
+                        e.stopPropagation();
+                        draggedItem = headerCell;
+                        const colIndex = parseInt(draggedItem.dataset.col, 10);
+                        e.dataTransfer.setData('text/plain', colIndex);
+                        e.dataTransfer.effectAllowed = 'move';
+                        setTimeout(() => draggedItem.classList.add('dragging'), 0);
+                    });
+                    handle.addEventListener('dragend', (e) => {
+                        e.stopPropagation();
+                        draggedItem?.classList.remove('dragging');
+                        modalOverlay.querySelectorAll('.drag-over-col').forEach(el => el.classList.remove('drag-over-col'));
+                        draggedItem = null;
+                    });
+                });
+                modalOverlay.querySelectorAll('thead th[data-col]').forEach(headerCell => {
+                    headerCell.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        const targetCol = e.target.closest('th[data-col]');
+                        if (targetCol && targetCol !== draggedItem) {
+                            modalOverlay.querySelectorAll('.drag-over-col').forEach(el => el.classList.remove('drag-over-col'));
+                            targetCol.classList.add('drag-over-col');
+                        }
+                    });
+                    headerCell.addEventListener('dragleave', (e) => {
+                        e.target.closest('th[data-col]')?.classList.remove('drag-over-col');
+                    });
+                    headerCell.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const targetCol = e.target.closest('th[data-col]');
+                        if (!targetCol || targetCol === draggedItem) return;
+                        const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
+                        const targetIndex = parseInt(targetCol.dataset.col, 10);
+                        const [removedAlign] = tableData.alignments.splice(sourceIndex, 1);
+                        tableData.alignments.splice(targetIndex, 0, removedAlign);
+                        tableData.rows.forEach(row => {
+                            const [removedCell] = row.splice(sourceIndex, 1);
+                            row.splice(targetIndex, 0, removedCell);
+                        });
+                        render();
+                    });
                 });
             };
             document.body.appendChild(modalOverlay);
@@ -728,7 +873,7 @@
         toggleToolbar(initialToolbarVisible);
         const savedMode = localStorage.getItem(STORAGE_KEY_MODE);
         switchMode(savedMode || 'split');
-        console.log('Markdown Editor for Standard Notes (v3.7.8) has been initialized.');
+        console.log('Markdown Editor for Standard Notes (v3.7.9) has been initialized.');
     }
 
     /**
