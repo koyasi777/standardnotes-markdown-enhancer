@@ -10,7 +10,7 @@
 // @name:de          Erweiterter Markdown-Editor für Standard Notes
 // @name:pt-BR       Editor Markdown avançado para Standard Notes
 // @name:ru          Улучшенный редактор Markdown для Standard Notes
-// @version          3.8.9
+// @version          3.9.0
 // @description      Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency.
 // @description:ja   Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップされます。
 // @description:zh-CN 非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。
