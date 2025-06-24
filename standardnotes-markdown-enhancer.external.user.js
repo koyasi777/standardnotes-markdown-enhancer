@@ -10,7 +10,7 @@
 // @name:de          Erweiterter Markdown-Editor für Standard Notes
 // @name:pt-BR       Editor Markdown avançado para Standard Notes
 // @name:ru          Улучшенный редактор Markdown для Standard Notes
-// @version          3.8.6
+// @version          3.8.8
 // @description      Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency.
 // @description:ja   Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップされます。
 // @description:zh-CN 非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。
@@ -904,6 +904,31 @@
             }
         });
         observer.observe(originalTextarea, { attributes: true, childList: true, subtree: true, characterData: true });
+
+        // --- スクロール同期のロジック ---
+        let scrollRequest;
+        const handleScroll = (source, target) => {
+            if (source.isSyncing) {
+                source.isSyncing = false;
+                return;
+            }
+
+            cancelAnimationFrame(scrollRequest);
+            scrollRequest = requestAnimationFrame(() => {
+                const sourceScrollableDist = source.scrollHeight - source.clientHeight;
+                if (sourceScrollableDist <= 0) return;
+
+                const scrollRatio = source.scrollTop / sourceScrollableDist;
+                const targetScrollableDist = target.scrollHeight - target.clientHeight;
+
+                target.isSyncing = true;
+                target.scrollTop = scrollRatio * targetScrollableDist;
+            });
+        };
+
+        const onEditorScroll = () => handleScroll(markdownTextarea, previewPane);
+        const onPreviewScroll = () => handleScroll(previewPane, markdownTextarea);
+
         const modeButtons = { editor: editorButton, split: splitButton, preview: previewButton };
         const switchMode = (mode, shouldFocus = true) => {
             container.classList.remove('mode-editor', 'mode-split', 'mode-preview');
@@ -911,12 +936,23 @@
             Object.values(modeButtons).forEach(btn => btn.classList.remove('active'));
             modeButtons[mode].classList.add('active');
             localStorage.setItem(STORAGE_KEY_MODE, mode);
+
+            // モードに応じてスクロール同期リスナーを追加・削除
+            if (mode === 'split') {
+                markdownTextarea.addEventListener('scroll', onEditorScroll, { passive: true });
+                previewPane.addEventListener('scroll', onPreviewScroll, { passive: true });
+            } else {
+                markdownTextarea.removeEventListener('scroll', onEditorScroll);
+                previewPane.removeEventListener('scroll', onPreviewScroll);
+            }
+
             if (mode === 'preview' || mode === 'split') { updatePreview(); }
             if (shouldFocus && mode !== 'preview') {
                 markdownTextarea.focus();
             }
             updateHeadingSelector();
         };
+
         editorButton.addEventListener('click', () => switchMode('editor'));
         splitButton.addEventListener('click', () => switchMode('split'));
         previewButton.addEventListener('click', () => switchMode('preview'));
@@ -938,8 +974,8 @@
             switchMode: switchMode
         };
 
-        switchMode(savedMode || 'split', false); // Do not focus on initial load
-        console.log('Markdown Editor for Standard Notes (v3.8.6) has been initialized.');
+        switchMode(savedMode || 'split', false); // 初回ロード時はフォーカスしない
+        console.log('Markdown Editor for Standard Notes (v3.8.8) has been initialized.');
     }
 
     /**
