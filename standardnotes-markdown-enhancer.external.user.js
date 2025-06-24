@@ -198,7 +198,7 @@
         .sn-table-editor tr.drag-over-row { box-shadow: inset 0 2px var(--sn-stylekit-primary-color, #346df1); }
         .sn-table-editor th.drag-over-col { box-shadow: inset 2px 0 var(--sn-stylekit-primary-color, #346df1); }
         .col-header-content { display: flex; align-items: center; justify-content: center; }
-     `);
+    `);
 
     function debounce(func, wait) {
         let timeout;
@@ -237,10 +237,20 @@
 
 
     function setupMarkdownEditor(originalTextarea, isNewNoteSetup = false) {
+        // [MODIFIED] 修正案1: DOM接続を最初に確認するガード節
+        // 処理開始時に要素がDOMツリーに存在するかをチェックし、存在しなければ安全に処理を中断する。
+        if (!originalTextarea || !originalTextarea.parentElement) {
+            console.warn('Markdown Editor: Setup aborted. Target textarea is not attached to the DOM.');
+            return;
+        }
+
         if (originalTextarea.dataset.markdownReady) return;
         originalTextarea.dataset.markdownReady = 'true';
         marked.setOptions({ gfm: true, breaks: true, smartLists: true, langPrefix: 'language-' });
+
+        // 上記のチェックにより、この時点での originalTextarea.parentElement は null ではないことが保証される。
         const editorWrapper = originalTextarea.parentElement;
+
         editorWrapper.style.display = 'none';
         editorWrapper.style.height = '100%';
         const container = document.createElement('div'); container.className = 'markdown-editor-container';
@@ -991,7 +1001,7 @@
         switchMode(savedMode || 'split', isNewNoteSetup);
         console.log(`Markdown Editor for Standard Notes (v${GM_info.script.version}) has been initialized.`);
         if (isNewNoteSetup) {
-             console.log('New note detected, focusing editor.');
+            console.log('New note detected, focusing editor.');
         }
     }
 
@@ -1024,7 +1034,7 @@
 
 
     /**
-     * エディタのセットアップを開始する関数。
+     * [MODIFIED] 修正案2: 堅牢性を高めたエディタセットアップ開始関数。
      * ネイティブエディタにコンテンツが読み込まれるのを待ってから実行する（ポーリング）。
      * @param {HTMLElement} editor - ネイティブのtextarea要素
      * @param {number} [attempts=0] - 再試行の回数
@@ -1032,6 +1042,13 @@
     function initiateEditorSetup(editor, attempts = 0) {
         const MAX_ATTEMPTS = 40; // 最大40回試行 (50ms * 40 = 2秒)
         const RETRY_INTERVAL = 50; // 50ミリ秒ごとに再試行
+
+        // ポーリングの各ステップで、そもそもエディタがDOMに存在するかを確認する。
+        // もし途中で削除されたら、無駄なポーリングを中止する。
+        if (!editor.isConnected) {
+            console.log('Markdown Editor: Polling stopped. Editor was detached from DOM during initialization.');
+            return;
+        }
 
         // 条件：ネイティブエディタに何らかの値が設定されているか、
         // または、5回(250ms)待っても値がなければ、空の新規ノートとみなしてセットアップを開始する
@@ -1049,17 +1066,41 @@
         }
     }
 
-    const mainObserver = new MutationObserver(() => {
-        const editor = document.querySelector('#note-text-editor');
+    /**
+     * [MODIFIED] 修正案3: より精密で堅牢なDOM監視ロジック。
+     * ノードの追加を直接検知し、エディタの出現・消失に正確に対応する。
+     */
+    const mainObserver = new MutationObserver((mutations) => {
+        // ノードが追加されたかどうかのチェック
+        for (const mutation of mutations) {
+            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                for (const node of mutation.addedNodes) {
+                    // 追加されたノードが要素でなければスキップ
+                    if (node.nodeType !== Node.ELEMENT_NODE) continue;
+
+                    // 追加されたノード自体、またはその子孫に #note-text-editor があるか探す
+                    const editor = node.matches('#note-text-editor') ? node : node.querySelector('#note-text-editor');
+
+                    if (editor && !editor.dataset.markdownReady) {
+                        // 以前のカスタムエディタがもし残っていれば安全のために削除
+                        const oldCustomEditor = document.querySelector('.markdown-editor-container');
+                        if (oldCustomEditor) oldCustomEditor.remove();
+
+                        // ポーリングを開始する関数を呼び出す
+                        initiateEditorSetup(editor);
+
+                        // このMutationRecordでの処理は完了したので、次のMutationRecordへ
+                        // （一つの変更で複数のエディタが見つかることはないと想定）
+                        return;
+                    }
+                }
+            }
+        }
+
+        // エディタがDOMから削除された場合のクリーンアップ処理
+        // （上記ループとは独立して毎回チェックする）
         const customEditor = document.querySelector('.markdown-editor-container');
-
-        if (editor && !editor.dataset.markdownReady) {
-            if (customEditor) customEditor.remove();
-
-            // 直接setupMarkdownEditorを呼ぶ代わりに、ポーリングを開始する関数を呼び出す
-            initiateEditorSetup(editor);
-
-        } else if (!editor && customEditor) {
+        if (customEditor && !document.querySelector('#note-text-editor')) {
             customEditor.remove();
             activeEditorInstance = null; // エディタが閉じられたら参照をクリア
             const hiddenWrapper = document.querySelector('#editor-content[style*="display: none"]');
