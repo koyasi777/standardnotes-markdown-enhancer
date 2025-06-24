@@ -174,7 +174,7 @@
         .sn-table-editor { border-collapse: collapse; }
         .sn-table-editor th, .sn-table-editor td { border: 1px solid var(--sn-stylekit-border-color, #ccc); padding: 2px; position: relative; }
         .sn-table-editor .cell-input { width: 100%; height: 100%; border: none; outline: none; padding: 8px; background: transparent; color: var(--sn-stylekit-foreground-color, #333); font-size: 14px; box-sizing: border-box; min-height: 38px; }
-        .sn-table-editor .cell-input::placeholder { color: var(--sn-stylekit-secondary-foreground-color, #e8e8e8); opacity: 1; }
+        .sn-table-editor .cell-input::placeholder { color: var(--sn-stylekit-secondary-foreground-color, #e8e8e8); opacity: 0.4; }
         .sn-table-editor .cell-input:focus { background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); }
         .sn-table-editor th { background-color: var(--sn-stylekit-secondary-background-color, #f6f8fa); }
         .col-header { cursor: pointer; padding: 8px; display: flex; align-items: center; justify-content: center; gap: 4px; }
