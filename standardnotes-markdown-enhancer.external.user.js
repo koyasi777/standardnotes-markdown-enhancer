@@ -10,7 +10,7 @@
 // @name:de          Erweiterter Markdown-Editor für Standard Notes
 // @name:pt-BR       Editor Markdown avançado para Standard Notes
 // @name:ru          Улучшенный редактор Markdown для Standard Notes
-// @version          3.8.8
+// @version          3.8.9
 // @description      Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency.
 // @description:ja   Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップされます。
 // @description:zh-CN 非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。
@@ -25,6 +25,7 @@
 // @author           koyasi777
 // @match            https://app.standardnotes.com/*
 // @grant            GM_addStyle
+// @grant            GM_info
 // @require          https://cdn.jsdelivr.net/npm/marked/marked.min.js
 // @require          https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js
 // @require          https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js
@@ -197,7 +198,7 @@
         .sn-table-editor tr.drag-over-row { box-shadow: inset 0 2px var(--sn-stylekit-primary-color, #346df1); }
         .sn-table-editor th.drag-over-col { box-shadow: inset 2px 0 var(--sn-stylekit-primary-color, #346df1); }
         .col-header-content { display: flex; align-items: center; justify-content: center; }
-    `);
+     `);
 
     function debounce(func, wait) {
         let timeout;
@@ -235,7 +236,7 @@
     }
 
 
-    function setupMarkdownEditor(originalTextarea) {
+    function setupMarkdownEditor(originalTextarea, isNewNoteSetup = false) {
         if (originalTextarea.dataset.markdownReady) return;
         originalTextarea.dataset.markdownReady = 'true';
         marked.setOptions({ gfm: true, breaks: true, smartLists: true, langPrefix: 'language-' });
@@ -974,8 +975,12 @@
             switchMode: switchMode
         };
 
-        switchMode(savedMode || 'split', false); // 初回ロード時はフォーカスしない
-        console.log('Markdown Editor for Standard Notes (v3.8.8) has been initialized.');
+        // isNewNoteSetupがtrueの場合のみ、初期フォーカスを当てる
+        switchMode(savedMode || 'split', isNewNoteSetup);
+        console.log(`Markdown Editor for Standard Notes (v${GM_info.script.version}) has been initialized.`);
+        if (isNewNoteSetup) {
+             console.log('New note detected, focusing editor.');
+        }
     }
 
     /**
@@ -1019,14 +1024,16 @@
         // 条件：ネイティブエディタに何らかの値が設定されているか、
         // または、5回(250ms)待っても値がなければ、空の新規ノートとみなしてセットアップを開始する
         if (editor.value || attempts > 5) {
-            setupMarkdownEditor(editor);
+            // attempts > 5 は、コンテンツの読み込みを待ったが空だった場合 (≒新規ノート)
+            const isNewNote = !editor.value && attempts > 5;
+            setupMarkdownEditor(editor, isNewNote);
         } else if (attempts < MAX_ATTEMPTS) {
             // まだ値がなく、試行回数が上限に達していない場合、再試行
             setTimeout(() => initiateEditorSetup(editor, attempts + 1), RETRY_INTERVAL);
         } else {
             // タイムアウトした場合でも、セットアップを試みる(フェイルセーフ)
             console.warn(`エディタのコンテンツ読み込みがタイムアウトしました。空の状態でセットアップを強制実行します。`);
-            setupMarkdownEditor(editor);
+            setupMarkdownEditor(editor, true); // タイムアウト時も新規ノートとみなし、フォーカスを当てる
         }
     }
 
