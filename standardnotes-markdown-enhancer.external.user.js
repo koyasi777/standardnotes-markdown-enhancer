@@ -401,7 +401,7 @@
                                     <div class="sn-modal-processing-indicator"></div>
                                 </div>
                         </div>
-                         <div class="sn-modal-form-group">
+                        <div class="sn-modal-form-group">
                             <label for="sn-image-alt">${T.altText}</label>
                             <input type="text" id="sn-image-alt" class="sn-modal-input" placeholder="A description of the image">
                         </div>
@@ -496,9 +496,10 @@
                 }
                 let bodyHtml = '';
                 for (let r = 0; r < rowCount; r++) {
-                    bodyHtml += `<tr data-row="${r}" draggable="true">
+                    // tr要素から draggable="true" を削除
+                    bodyHtml += `<tr data-row="${r}">
                         <td class="control-cell">
-                            <span class="drag-handle">⁙</span>
+                            <span class="drag-handle" draggable="true">⁙</span>
                             <div class="delete-btn delete-row-btn" title="${T.deleteRow}">🗑️</div>
                         </td>`;
                     for (let c = 0; c < colCount; c++) {
@@ -577,9 +578,6 @@
                 modalOverlay.querySelectorAll('.delete-col-btn').forEach(btn => { btn.onclick = e => { const col = parseInt(e.target.closest('th').dataset.col, 10); if (tableData.rows[0].length > 1) { tableData.rows.forEach(row => row.splice(col, 1)); tableData.alignments.splice(col, 1); render(); } }; });
                 modalOverlay.querySelectorAll('.col-header').forEach(header => { header.onclick = e => { const col = parseInt(e.currentTarget.closest('th').dataset.col, 10); const aligns = ['left', 'center', 'right']; tableData.alignments[col] = aligns[(aligns.indexOf(tableData.alignments[col]) + 1) % aligns.length]; render(); }; });
                 modalOverlay.querySelectorAll('.cell-input').forEach(input => {
-                    input.onmousedown = (e) => {
-                        e.stopPropagation();
-                    };
                     input.oninput = e => { const { row, col } = e.target.dataset; tableData.rows[row][col] = e.target.value; };
                     input.onkeydown = e => {
                         const { row, col } = e.target.dataset;
@@ -610,41 +608,55 @@
                 });
 
                 // --- Drag & Drop Event Listeners ---
-                modalOverlay.querySelectorAll('tbody tr[draggable="true"]').forEach(row => {
-                    row.addEventListener('dragstart', (e) => {
-                        draggedItem = e.target;
-                        const rowIndex = parseInt(draggedItem.dataset.row, 10);
-                        e.dataTransfer.setData('text/plain', rowIndex);
-                        e.dataTransfer.effectAllowed = 'move';
-                        setTimeout(() => draggedItem.classList.add('dragging'), 0);
-                    });
+                // ドラッグ操作の役割をハンドル(開始)と行(ドロップ先)に分離
+                modalOverlay.querySelectorAll('tbody tr').forEach(row => {
+                    const handle = row.querySelector('.drag-handle[draggable="true"]');
+
+                    // ドラッグ開始と終了のイベントはハンドル(.drag-handle)に設定
+                    if (handle) {
+                        handle.addEventListener('dragstart', (e) => {
+                            e.stopPropagation(); // 列のドラッグと競合しないように
+                            draggedItem = row; // ドラッグ対象はハンドルではなく行そのもの
+                            const rowIndex = parseInt(draggedItem.dataset.row, 10);
+                            e.dataTransfer.setData('text/plain', rowIndex);
+                            e.dataTransfer.effectAllowed = 'move';
+                            setTimeout(() => draggedItem.classList.add('dragging'), 0);
+                        });
+
+                        handle.addEventListener('dragend', (e) => {
+                            draggedItem?.classList.remove('dragging');
+                            modalOverlay.querySelectorAll('.drag-over-row').forEach(el => el.classList.remove('drag-over-row'));
+                            draggedItem = null;
+                        });
+                    }
+
+                    // ドロップターゲットとしてのイベントは行(tr)自体に設定
                     row.addEventListener('dragover', (e) => {
                         e.preventDefault();
-                        const targetRow = e.target.closest('tr[draggable="true"]');
+                        const targetRow = e.currentTarget;
                         if (targetRow && targetRow !== draggedItem) {
                             modalOverlay.querySelectorAll('.drag-over-row').forEach(el => el.classList.remove('drag-over-row'));
                             targetRow.classList.add('drag-over-row');
                         }
                     });
+
                     row.addEventListener('dragleave', (e) => {
-                        e.target.closest('tr[draggable="true"]')?.classList.remove('drag-over-row');
+                        e.currentTarget.classList.remove('drag-over-row');
                     });
+
                     row.addEventListener('drop', (e) => {
                         e.preventDefault();
-                        const targetRow = e.target.closest('tr[draggable="true"]');
+                        const targetRow = e.currentTarget;
+                        targetRow.classList.remove('drag-over-row');
                         if (!targetRow || targetRow === draggedItem) return;
                         const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
                         const targetIndex = parseInt(targetRow.dataset.row, 10);
-                        const [removedRow] = tableData.rows.splice(sourceIndex, 1);
-                        tableData.rows.splice(targetIndex, 0, removedRow);
+                        const [removedRowData] = tableData.rows.splice(sourceIndex, 1);
+                        tableData.rows.splice(targetIndex, 0, removedRowData);
                         render();
                     });
-                    row.addEventListener('dragend', (e) => {
-                        draggedItem?.classList.remove('dragging');
-                        modalOverlay.querySelectorAll('.drag-over-row').forEach(el => el.classList.remove('drag-over-row'));
-                        draggedItem = null;
-                    });
                 });
+
                 modalOverlay.querySelectorAll('th .col-header-content[draggable="true"]').forEach(handle => {
                     const headerCell = handle.closest('th');
                     handle.addEventListener('dragstart', (e) => {
@@ -705,7 +717,7 @@
         const toolbar = document.createElement('div'); toolbar.className = 'markdown-toolbar';
         const previewPane = document.createElement('div'); previewPane.className = 'markdown-preview';
         markdownTextarea.addEventListener('paste', handlePaste);
-        const toolbarButtons = [ { type: 'select', name: 'heading', options: [ { value: 'p', text: T.paragraph }, { value: 'h1', text: T.heading1 }, { value: 'h2', text: T.heading2 }, { value: 'h3', text: T.heading3 }, { value: 'h4', text: T.heading4 } ], action: (prefix) => { const start = markdownTextarea.selectionStart; let lineStart = markdownTextarea.value.lastIndexOf('\n', start - 1) + 1; let lineEnd = markdownTextarea.value.indexOf('\n', start); if (lineEnd === -1) lineEnd = markdownTextarea.value.length; const originalLine = markdownTextarea.value.substring(lineStart, lineEnd); const cleanedLine = originalLine.replace(/^\s*#+\s*/, ''); const newText = prefix ? `${prefix} ${cleanedLine}` : cleanedLine; markdownTextarea.setRangeText(newText, lineStart, lineEnd, 'end'); markdownTextarea.dispatchEvent(new Event('input', { bubbles: true })); markdownTextarea.focus(); } }, { type: 'button', name: 'B', title: T.bold, action: () => applyMarkdown(markdownTextarea, '**', '**', T.boldPlaceholder) }, { type: 'button', name: 'I', title: T.italic, action: () => applyMarkdown(markdownTextarea, '*', '*', T.italicPlaceholder) }, { type: 'button', name: 'S', title: T.strikethrough, action: () => applyMarkdown(markdownTextarea, '~~', '~~', T.strikethroughPlaceholder) }, { type: 'button', name: '`', title: T.inlineCode, action: () => applyMarkdown(markdownTextarea, '`', '`', T.codePlaceholder) }, { type: 'button', name: '“ ”', title: T.quote, action: () => applyMarkdown(markdownTextarea, '> ', '', T.quotePlaceholder) }, { type: 'button', name: '•', title: T.list, action: () => applyMarkdown(markdownTextarea, '- ', '', T.listItemPlaceholder) }, { type: 'button', name: '1.', title: T.numberedList, action: () => applyMarkdown(markdownTextarea, '1. ', '', T.listItemPlaceholder) }, { type: 'button', name: '☑', title: T.checklist, action: () => applyMarkdown(markdownTextarea, '- [ ] ', '', T.taskPlaceholder) }, { type: 'button', name: '</>', title: T.codeBlock, action: () => applyMarkdown(markdownTextarea, '```\n', '\n```', T.codePlaceholder) }, { type: 'icon-button', name: 'Image', title: T.image, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"></path></svg>`, action: () => { openImageInserterModal((data, altText, isReference) => { if (isReference) { insertImageAsReference(data, altText); } else { const markdown = `![${altText}](${data})`; applyMarkdown(markdownTextarea, markdown); } }); } }, { type: 'icon-button', name: 'Link', title: T.link, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"></path></svg>`, action: () => { const url = prompt(T.linkPrompt, 'https://'); if (url) applyMarkdown(markdownTextarea, '[', `](${url})`, T.linkTextPlaceholder); }}, { type: 'icon-button', name: T.insertTable, title: T.insertTable, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM8 10H4V6h4v4zm6 0h-4V6h4v4zm6 0h-4V6h4v4zM8 14H4v4h4v-4zm6 0h-4v4h4v-4zm6 0h-4v4h4v-4z"></path></svg>`, action: () => { const start = markdownTextarea.selectionStart; const end = markdownTextarea.selectionEnd; const selectedText = markdownTextarea.value.substring(start, end); const existingTableData = parseMarkdownTable(selectedText); openTableEditorModal(existingTableData, (markdown) => { markdownTextarea.setRangeText(markdown, start, end, 'select'); markdownTextarea.focus(); markdownTextarea.dispatchEvent(new Event('input', { bubbles: true })); }); } }, { type: 'button', name: '―', title: T.horizontalRule, action: () => applyMarkdown(markdownTextarea, '\n---\n') }, ];
+        const toolbarButtons = [ { type: 'select', name: 'heading', options: [ { value: 'p', text: T.paragraph }, { value: 'h1', text: T.heading1 }, { value: 'h2', text: T.heading2 }, { value: 'h3', text: T.heading3 }, { value: 'h4', text: T.heading4 } ], action: (prefix) => { const start = markdownTextarea.selectionStart; let lineStart = markdownTextarea.value.lastIndexOf('\n', start - 1) + 1; let lineEnd = markdownTextarea.value.indexOf('\n', start); if (lineEnd === -1) lineEnd = markdownTextarea.value.length; const originalLine = markdownTextarea.value.substring(lineStart, lineEnd); const cleanedLine = originalLine.replace(/^\s*#+\s*/, ''); const newText = prefix ? `${prefix} ${cleanedLine}` : cleanedLine; markdownTextarea.setRangeText(newText, lineStart, lineEnd, 'end'); markdownTextarea.dispatchEvent(new Event('input', { bubbles: true })); markdownTextarea.focus(); } }, { type: 'button', name: 'B', title: T.bold, action: () => applyMarkdown(markdownTextarea, '**', '**', T.boldPlaceholder) }, { type: 'button', name: 'I', title: T.italic, action: () => applyMarkdown(markdownTextarea, '*', '*', T.italicPlaceholder) }, { type: 'button', name: 'S', title: T.strikethrough, action: () => applyMarkdown(markdownTextarea, '~~', '~~', T.strikethroughPlaceholder) }, { type: 'button', name: '`', title: T.inlineCode, action: () => applyMarkdown(markdownTextarea, '`', '`', T.codePlaceholder) }, { type: 'button', name: '“ ”', title: T.quote, action: () => applyMarkdown(markdownTextarea, '> ', '', T.quotePlaceholder) }, { type: 'button', name: '•', title: T.list, action: () => applyMarkdown(markdownTextarea, '- ', '', T.listItemPlaceholder) }, { type: 'button', name: '1.', title: T.numberedList, action: () => applyMarkdown(markdownTextarea, '1. ', '', T.listItemPlaceholder) }, { type: 'button', name: '☑', title: T.checklist, action: () => applyMarkdown(markdownTextarea, '- [ ] ', '', T.taskPlaceholder) }, { type: 'button', name: '</>', title: T.codeBlock, action: () => applyMarkdown(markdownTextarea, '```\n', '\n```', T.codePlaceholder) }, { type: 'icon-button', name: 'Image', title: T.image, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"></path></svg>`, action: () => { openImageInserterModal((data, altText, isReference) => { if (isReference) { insertImageAsReference(data, altText); } else { const markdown = `![${altText}](${data})`; applyMarkdown(markdownTextarea, markdown); } }); } }, { type: 'icon-button', name: 'Link', title: T.link, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"></path></svg>`, action: () => { const url = prompt(T.linkPrompt, 'https://'); if (url) applyMarkdown(markdownTextarea, '[', `](${url})`, T.linkTextPlaceholder); }}, { type: 'icon-button', name: T.insertTable, title: T.insertTable, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2zM8 10H4V6h4v4zm6 0h-4V6h4v4zm6 0h-4V6h4v4zM8 14H4v4h4v-4zm6 0h-4v4h4v-4zm6 0h-4v4h4v-4z"></path></svg>`, action: () => { const start = markdownTextarea.selectionStart; const end = markdownTextarea.selectionEnd; const selectedText = markdownTextarea.value.substring(start, end); const existingTableData = parseMarkdownTable(selectedText); openTableEditorModal(existingTableData, (markdown) => { markdownTextarea.setRangeText(markdown, start, end, 'select'); markdownTextarea.focus(); markdownTextarea.dispatchEvent(new Event('input', { bubbles: true })); }); } }, { type: 'button', name: '―', title: T.horizontalRule, action: () => applyMarkdown(markdownTextarea, '\n---\n') }, ];
         toolbarButtons.forEach(item => { if (item.type === 'select') { const select = document.createElement('select'); select.className = 'toolbar-select heading-select'; item.options.forEach(opt => { const option = document.createElement('option'); option.value = opt.value; option.textContent = opt.text; select.appendChild(option); }); select.onchange = (e) => { let prefix = ''; switch (e.target.value) { case 'h1': prefix = '#'; break; case 'h2': prefix = '##'; break; case 'h3': prefix = '###'; break; case 'h4': prefix = '####'; break; } item.action(prefix); updateHeadingSelector(); }; toolbar.appendChild(select); } else { const button = document.createElement('button'); button.className = 'toolbar-button'; button.title = item.title; button.onclick = item.action; if (item.type === 'icon-button') { button.classList.add('icon-button'); button.innerHTML = item.icon; } else { button.textContent = item.name; } toolbar.appendChild(button); } });
         const headingSelect = toolbar.querySelector('.heading-select');
         const updateHeadingSelector = () => {
