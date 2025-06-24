@@ -1,37 +1,37 @@
 // ==UserScript==
-// @name             Enhanced Markdown Editor for Standard Notes
-// @name:ja          Standard Notes 高機能Markdownエディタ拡張
-// @name:en          Enhanced Markdown Editor for Standard Notes
-// @name:zh-CN       为Standard Notes增强Markdown编辑器
-// @name:zh-TW       為Standard Notes強化Markdown編輯器
-// @name:ko          Standard Notes용 고급 Markdown 에디터 확장
-// @name:fr          Éditeur Markdown amélioré pour Standard Notes
-// @name:es          Editor Markdown mejorado para Standard Notes
-// @name:de          Erweiterter Markdown-Editor für Standard Notes
-// @name:pt-BR       Editor Markdown avançado para Standard Notes
-// @name:ru          Улучшенный редактор Markdown для Standard Notes
-// @version          3.7.9
-// @description      Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency.
-// @description:ja   Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップされます。
+// @name             Enhanced Markdown Editor for Standard Notes
+// @name:ja          Standard Notes 高機能Markdownエディタ拡張
+// @name:en          Enhanced Markdown Editor for Standard Notes
+// @name:zh-CN       为Standard Notes增强Markdown编辑器
+// @name:zh-TW       為Standard Notes強化Markdown編輯器
+// @name:ko          Standard Notes용 고급 Markdown 에디터 확장
+// @name:fr          Éditeur Markdown amélioré pour Standard Notes
+// @name:es          Editor Markdown mejorado para Standard Notes
+// @name:de          Erweiterter Markdown-Editor für Standard Notes
+// @name:pt-BR       Editor Markdown avançado para Standard Notes
+// @name:ru          Улучшенный редактор Markdown для Standard Notes
+// @version          3.8.6
+// @description      Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency.
+// @description:ja   Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップされます。
 // @description:zh-CN 非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。
 // @description:zh-TW 非官方強化Markdown編輯器，為Standard Notes新增即時預覽、工具列、自動縮放圖片貼上/上傳、PDF匯出等功能，並自動清除未使用圖片。
-// @description:ko   Standard Notes를 위한 강력한 비공식 Markdown 에디터! 실시간 미리보기, 서식 툴바, 이미지 붙여넣기/업로드(자동 리사이즈), PDF 내보내기 지원. 사용하지 않는 이미지는 자동 정리됩니다。
-// @description:fr   Améliorez Standard Notes avec un éditeur Markdown puissant et non officiel : aperçu en direct, barre d’outils, collage/téléversement d’images redimensionnées automatiquement, export PDF. Nettoyage automatique des images inutilisées.
-// @description:es   Mejora Standard Notes con un potente editor Markdown no oficial: vista previa en vivo, barra de herramientas, pegado/carga de imágenes con redimensionado automático y exportación a PDF. Las imágenes no usadas se eliminan automáticamente.
-// @description:de   Erweitern Sie Standard Notes mit einem leistungsstarken, inoffiziellen Markdown-Editor: Live-Vorschau, Formatierungsleiste, Bild-Einfügen/-Hochladen mit automatischer Größenanpassung und PDF-Export. Nicht verwendete Bilder werden automatisch bereinigt.
+// @description:ko   Standard Notes를 위한 강력한 비공식 Markdown 에디터! 실시간 미리보기, 서식 툴바, 이미지 붙여넣기/업로드(자동 리사이즈), PDF 내보내기 지원. 사용하지 않는 이미지는 자동 정리됩니다。
+// @description:fr   Améliorez Standard Notes avec un éditeur Markdown puissant et non officiel : aperçu en direct, barre d’outils, collage/téléversement d’images redimensionnées automatiquement, export PDF. Nettoyage automatique des images inutilisées.
+// @description:es   Mejora Standard Notes con un potente editor Markdown no oficial: vista previa en vivo, barra de herramientas, pegado/carga de imágenes con redimensionado automático y exportación a PDF. Las imágenes no usadas se eliminan automáticamente.
+// @description:de   Erweitern Sie Standard Notes mit einem leistungsstarken, inoffiziellen Markdown-Editor: Live-Vorschau, Formatierungsleiste, Bild-Einfügen/-Hochladen mit automatischer Größenanpassung und PDF-Export. Nicht verwendete Bilder werden automatisch bereinigt.
 // @description:pt-BR Potencialize o Standard Notes com um editor Markdown poderoso e não oficial: visualização ao vivo, barra de formatação, colagem/envio de imagens com redimensionamento automático e exportação para PDF. Imagens não utilizadas são removidas automaticamente.
-// @description:ru   Улучшите Standard Notes с помощью мощного неофициального редактора Markdown: живая превью, панель форматирования, вставка/загрузка изображений с автоизменением размера и экспорт в PDF. Неиспользуемые изображения автоматически удаляются.
-// @namespace        https://github.com/koyasi777/standardnotes-markdown-enhancer
-// @author           koyasi777
-// @match            https://app.standardnotes.com/*
-// @grant            GM_addStyle
-// @require          https://cdn.jsdelivr.net/npm/marked/marked.min.js
-// @require          https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js
-// @require          https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js
-// @license          MIT
-// @homepageURL      https://github.com/koyasi777/standardnotes-markdown-enhancer
-// @supportURL       https://github.com/koyasi777/standardnotes-markdown-enhancer/issues
-// @icon             https://app.standardnotes.com/favicon/favicon-32x32.png
+// @description:ru   Улучшите Standard Notes с помощью мощного неофициального редактора Markdown: живая превью, панель форматирования, вставка/загрузка изображений с автоизменением размера и экспорт в PDF. Неиспользуемые изображения автоматически удаляются.
+// @namespace        https://github.com/koyasi777/standardnotes-markdown-enhancer
+// @author           koyasi777
+// @match            https://app.standardnotes.com/*
+// @grant            GM_addStyle
+// @require          https://cdn.jsdelivr.net/npm/marked/marked.min.js
+// @require          https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js
+// @require          https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js
+// @license          MIT
+// @homepageURL      https://github.com/koyasi777/standardnotes-markdown-enhancer
+// @supportURL       https://github.com/koyasi777/standardnotes-markdown-enhancer/issues
+// @icon             https://app.standardnotes.com/favicon/favicon-32x32.png
 // ==/UserScript==
 
 (function() {
@@ -41,6 +41,9 @@
     const MAX_IMAGE_DIMENSION = 1280;
     const JPEG_QUALITY = 0.8;
     const INDENT_SPACES = '  ';
+
+    // --- グローバル参照 ---
+    let activeEditorInstance = null;
 
     // --- 国際化 (i18n) ---
     const I18N = {
@@ -124,15 +127,18 @@
         .markdown-editor-container.mode-split .markdown-preview { border-left: 1px solid var(--sn-stylekit-border-color, #e0e0e0); }
         /* Markdown Content Styles */
         .markdown-preview h1, .markdown-preview h2, .markdown-preview h3, .markdown-preview h4, .markdown-preview h5, .markdown-preview h6 { margin-top: 24px; margin-bottom: 16px; font-weight: 600; line-height: 1.25; border-bottom: 1px solid var(--sn-stylekit-border-color, #eee); padding-bottom: .3em; } .markdown-preview h1 { font-size: 2em; } .markdown-preview h2 { font-size: 1.5em; } .markdown-preview h3 { font-size: 1.25em; }
-        .markdown-preview p { margin-bottom: 16px; } .markdown-preview ul, .markdown-preview ol { padding-left: 2em; margin-bottom: 16px; } .markdown-preview blockquote { padding: 0 1em; color: var(--sn-stylekit-secondary-foreground-color, #6a737d); border-left: .25em solid var(--sn-stylekit-border-color, #dfe2e5); margin: 0 0 16px 0; } .markdown-preview code { padding: .2em .4em; margin: 0; font-size: 85%; background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); border-radius: 3px; font-family: var(--sn-stylekit-font-code, monospace); } .markdown-preview pre { position: relative; padding: 16px; overflow: auto; font-size: 85%; line-height: 1.45; background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); border-radius: 6px; word-wrap: normal; margin-bottom: 16px; } .markdown-preview pre code { background-color: transparent; padding: 0; margin: 0; } .markdown-preview img { max-width: 100%; height: auto; border-radius: 6px; } .markdown-preview table { border-collapse: collapse; width: 100%; margin-bottom: 16px; display: block; overflow: auto; } .markdown-preview th, .markdown-preview td { border: 1px solid var(--sn-stylekit-border-color, #dfe2e5); padding: 6px 13px; } .markdown-preview tr:nth-child(2n) { background-color: var(--sn-stylekit-secondary-background-color, #f6f8fa); } .markdown-preview hr { height: .25em; padding: 0; margin: 24px 0; background-color: var(--sn-stylekit-border-color, #dfe2e5); border: 0; }
+        .markdown-preview p { margin-bottom: 16px; } .markdown-preview ul, .markdown-preview ol { padding-left: 2em; margin-bottom: 16px; } .markdown-preview blockquote { padding: 0 1em; color: var(--sn-stylekit-secondary-foreground-color, #6a737d); border-left: .25em solid var(--sn-stylekit-border-color, #dfe2e5); margin: 0 0 16px 0; } .markdown-preview code { padding: .2em .4em; margin: 0; font-size: 85%; background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); border-radius: 3px; font-family: var(--sn-stylekit-font-code, monospace); }
+        .markdown-preview pre { position: relative; padding: 16px; padding-top: 40px; overflow: auto; font-size: 85%; line-height: 1.45; background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); border-radius: 6px; word-wrap: normal; margin-bottom: 16px; }
+        .markdown-preview pre code { background-color: transparent; padding: 0; margin: 0; } .markdown-preview img { max-width: 100%; height: auto; border-radius: 6px; } .markdown-preview table { border-collapse: collapse; width: 100%; margin-bottom: 16px; display: block; overflow: auto; } .markdown-preview th, .markdown-preview td { border: 2px solid var(--sn-stylekit-border-color, #adb5bd); padding: 6px 13px; } .markdown-preview tr:nth-child(2n) { background-color: var(--sn-stylekit-secondary-background-color, #f6f8fa); } .markdown-preview hr { height: .25em; padding: 0; margin: 24px 0; background-color: var(--sn-stylekit-border-color, #dfe2e5); border: 0; }
         .markdown-preview li.task-list-item { list-style-type: none; } .markdown-preview .task-list-item-checkbox { margin: 0 .2em .25em -1.6em; vertical-align: middle; cursor: pointer; }
         .markdown-preview li.task-list-item.completed { color: var(--sn-stylekit-secondary-foreground-color, #6a737d); }
         .markdown-preview li.task-list-item.completed, .markdown-preview li.task-list-item.completed a { text-decoration: line-through; }
         .copy-code-button { position: absolute; top: 10px; right: 10px; padding: 5px 8px; font-size: 12px; border: 1px solid var(--sn-stylekit-border-color, #ccc); border-radius: 4px; background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-secondary-foreground-color, #555); cursor: pointer; opacity: 0; transition: opacity 0.2s, background-color 0.2s, color 0.2s; z-index: 1; } .markdown-preview pre:hover .copy-code-button { opacity: 1; } .copy-code-button:hover { background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); } .copy-code-button.copied { background-color: var(--sn-stylekit-primary-color, #346df1); color: var(--sn-stylekit-primary-contrast-color, #fff); border-color: var(--sn-stylekit-primary-color, #346df1); }
+        .code-language-label { position: absolute; top: 10px; left: 10px; padding: 3px 6px; font-size: 12px; color: var(--sn-stylekit-secondary-foreground-color, #6a737d); background-color: rgba(255, 255, 255, 0.7); border-radius: 4px; opacity: 0.7; z-index: 1; pointer-events: none; }
         .markdown-preview pre code.hljs { display: block; overflow-x: auto; padding: 0; color: var(--sn-stylekit-foreground-color, #333); background: transparent; } .hljs-comment, .hljs-quote { color: var(--sn-stylekit-secondary-foreground-color, #6a737d); font-style: italic; } .hljs-keyword, .hljs-selector-tag, .hljs-subst, .hljs-deletion, .hljs-meta, .hljs-selector-class { color: #d73a49; } .hljs-number, .hljs-literal, .hljs-variable, .hljs-template-variable, .hljs-tag .hljs-attr { color: var(--sn-stylekit-primary-color, #005cc5); } .hljs-string, .hljs-doctag { color: #032f62; } .hljs-title, .hljs-section, .hljs-selector-id, .hljs-type, .hljs-symbol, .hljs-bullet, .hljs-link { color: #6f42c1; } .hljs-addition { color: #22863a; } .hljs-emphasis { font-style: italic; } .hljs-strong { font-weight: bold; }
-        @media (prefers-color-scheme: dark) { .markdown-preview pre code.hljs .hljs-keyword, .markdown-preview pre code.hljs .hljs-selector-tag, .markdown-preview pre code.hljs .hljs-subst, .markdown-preview pre code.hljs .hljs-deletion, .markdown-preview pre code.hljs .hljs-meta, .markdown-preview pre code.hljs .hljs-selector-class { color: #ff7b72; } .markdown-preview pre code.hljs .hljs-string, .markdown-preview pre code.hljs .hljs-doctag { color: #a5d6ff; } .markdown-preview pre code.hljs .hljs-title, .markdown-preview pre code.hljs .hljs-section, .markdown-preview pre code.hljs .hljs-selector-id, .markdown-preview pre code.hljs .hljs-type, .markdown-preview pre code.hljs .hljs-symbol, .markdown-preview pre code.hljs .hljs-bullet, .markdown-preview pre code.hljs .hljs-link { color: #d2a8ff; } .markdown-preview pre code.hljs .hljs-addition { color: #7ee787; } }
+        @media (prefers-color-scheme: dark) { .markdown-preview pre code.hljs .hljs-keyword, .markdown-preview pre code.hljs .hljs-selector-tag, .markdown-preview pre code.hljs .hljs-subst, .markdown-preview pre code.hljs .hljs-deletion, .markdown-preview pre code.hljs .hljs-meta, .markdown-preview pre code.hljs .hljs-selector-class { color: #ff7b72; } .markdown-preview pre code.hljs .hljs-string, .markdown-preview pre code.hljs .hljs-doctag { color: #a5d6ff; } .markdown-preview pre code.hljs .hljs-title, .markdown-preview pre code.hljs .hljs-section, .markdown-preview pre code.hljs .hljs-selector-id, .markdown-preview pre code.hljs .hljs-type, .markdown-preview pre code.hljs .hljs-symbol, .markdown-preview pre code.hljs .hljs-bullet, .markdown-preview pre code.hljs .hljs-link { color: #d2a8ff; } .markdown-preview pre code.hljs .hljs-addition { color: #7ee787; } .code-language-label { background-color: rgba(0, 0, 0, 0.3); } }
         /* Print Styles */
-        @media print { body > *:not(.print-container) { display: none !important; } .print-container, .print-container > * { display: block !important; width: 100% !important; height: auto !important; overflow: visible !important; } html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; } .markdown-preview { padding: 2cm !important; border: none !important; box-shadow: none !important; color: #000 !important; background-color: #fff !important; font-size: 12pt !important; line-height: 1.5 !important; } .markdown-preview h1, .markdown-preview h2, .markdown-preview h3, .markdown-preview h4, .markdown-preview h5, .markdown-preview h6 { color: #000 !important; border-bottom-color: #ccc !important; } .markdown-preview pre, .markdown-preview code { background-color: #f0f0f0 !important; color: #000 !important; border: 1px solid #ccc !important; } .markdown-preview pre code.hljs { color: #000 !important; } .markdown-preview blockquote { color: #333 !important; border-left-color: #ccc !important; } .markdown-preview tr:nth-child(2n) { background-color: #f6f8fa !important; } .markdown-preview th, .markdown-preview td { border-color: #ccc !important; } .copy-code-button { display: none !important; } .raw-text-print { margin: 0 !important; padding: 2cm !important; white-space: pre-wrap !important; word-wrap: break-word !important; font-family: 'Menlo', 'Monaco', 'Consolas', 'Courier New', monospace; font-size: 10pt !important; color: #000 !important; background: #fff !important; } pre, blockquote, table, img, h1, h2, h3, h4 { page-break-inside: avoid; } h1, h2, h3 { page-break-after: avoid; } }
+        @media print { body > *:not(.print-container) { display: none !important; } .print-container, .print-container > * { display: block !important; width: 100% !important; height: auto !important; overflow: visible !important; } html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; } .markdown-preview { padding: 2cm !important; border: none !important; box-shadow: none !important; color: #000 !important; background-color: #fff !important; font-size: 12pt !important; line-height: 1.5 !important; } .markdown-preview h1, .markdown-preview h2, .markdown-preview h3, .markdown-preview h4, .markdown-preview h5, .markdown-preview h6 { color: #000 !important; border-bottom-color: #ccc !important; } .markdown-preview pre, .markdown-preview code { background-color: #f0f0f0 !important; color: #000 !important; border: 1px solid #ccc !important; } .markdown-preview pre code.hljs { color: #000 !important; } .markdown-preview blockquote { color: #333 !important; border-left-color: #ccc !important; } .markdown-preview tr:nth-child(2n) { background-color: #f6f8fa !important; } .markdown-preview th, .markdown-preview td { border-color: #ccc !important; } .copy-code-button, .code-language-label { display: none !important; } .raw-text-print { margin: 0 !important; padding: 2cm !important; white-space: pre-wrap !important; word-wrap: break-word !important; font-family: 'Menlo', 'Monaco', 'Consolas', 'Courier New', monospace; font-size: 10pt !important; color: #000 !important; background: #fff !important; } pre, blockquote, table, img, h1, h2, h3, h4 { page-break-inside: avoid; } h1, h2, h3 { page-break-after: avoid; } }
         /* --- Modal Styles --- */
         .sn-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .sn-modal-content { background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-foreground-color, #333); padding: 20px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: flex; flex-direction: column; max-height: 90vh; }
@@ -167,7 +173,7 @@
         .sn-table-editor { border-collapse: collapse; }
         .sn-table-editor th, .sn-table-editor td { border: 1px solid var(--sn-stylekit-border-color, #ccc); padding: 2px; position: relative; }
         .sn-table-editor .cell-input { width: 100%; height: 100%; border: none; outline: none; padding: 8px; background: transparent; color: var(--sn-stylekit-foreground-color, #333); font-size: 14px; box-sizing: border-box; min-height: 38px; }
-        .sn-table-editor .cell-input::placeholder { color: var(--sn-stylekit-secondary-foreground-color, #a0a0a0); opacity: 1; }
+        .sn-table-editor .cell-input::placeholder { color: var(--sn-stylekit-secondary-foreground-color, #e8e8e8); opacity: 1; }
         .sn-table-editor .cell-input:focus { background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); }
         .sn-table-editor th { background-color: var(--sn-stylekit-secondary-background-color, #f6f8fa); }
         .col-header { cursor: pointer; padding: 8px; display: flex; align-items: center; justify-content: center; gap: 4px; }
@@ -191,7 +197,7 @@
         .sn-table-editor tr.drag-over-row { box-shadow: inset 0 2px var(--sn-stylekit-primary-color, #346df1); }
         .sn-table-editor th.drag-over-col { box-shadow: inset 2px 0 var(--sn-stylekit-primary-color, #346df1); }
         .col-header-content { display: flex; align-items: center; justify-content: center; }
-     `);
+    `);
 
     function debounce(func, wait) {
         let timeout;
@@ -570,14 +576,35 @@
                 modalOverlay.querySelectorAll('.delete-col-btn').forEach(btn => { btn.onclick = e => { const col = parseInt(e.target.closest('th').dataset.col, 10); if (tableData.rows[0].length > 1) { tableData.rows.forEach(row => row.splice(col, 1)); tableData.alignments.splice(col, 1); render(); } }; });
                 modalOverlay.querySelectorAll('.col-header').forEach(header => { header.onclick = e => { const col = parseInt(e.currentTarget.closest('th').dataset.col, 10); const aligns = ['left', 'center', 'right']; tableData.alignments[col] = aligns[(aligns.indexOf(tableData.alignments[col]) + 1) % aligns.length]; render(); }; });
                 modalOverlay.querySelectorAll('.cell-input').forEach(input => {
+                    input.onmousedown = (e) => {
+                        e.stopPropagation();
+                    };
                     input.oninput = e => { const { row, col } = e.target.dataset; tableData.rows[row][col] = e.target.value; };
                     input.onkeydown = e => {
-                        const { row, col } = e.target.dataset; const r = parseInt(row, 10); const c = parseInt(col, 10); let nextCell = null;
-                        if (e.key === 'Enter' || e.key === 'ArrowDown') { nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r + 1}"][data-col="${c}"]`); }
-                        else if (e.key === 'ArrowUp') { nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r - 1}"][data-col="${c}"]`); }
-                        else if ((e.key === 'Tab' && !e.shiftKey) || e.key === 'ArrowRight') { nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r}"][data-col="${c + 1}"]`) || modalOverlay.querySelector(`.cell-input[data-row="${r + 1}"][data-col="0"]`); }
-                        else if ((e.key === 'Tab' && e.shiftKey) || e.key === 'ArrowLeft') { nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r}"][data-col="${c - 1}"]`) || modalOverlay.querySelector(`.cell-input[data-row="${r - 1}"][data-col="${(tableData.rows[0]?.length || 1) - 1}"]`); }
-                        if(nextCell) { e.preventDefault(); nextCell.focus(); }
+                        const { row, col } = e.target.dataset;
+                        const r = parseInt(row, 10);
+                        const c = parseInt(col, 10);
+                        let nextCell = null;
+
+                        if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                            e.preventDefault();
+                            nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r + 1}"][data-col="${c}"]`);
+                        } else if (e.key === 'ArrowUp') {
+                            e.preventDefault();
+                            nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r - 1}"][data-col="${c}"]`);
+                        } else if (e.key === 'Tab') {
+                            e.preventDefault();
+                            if (e.shiftKey) {
+                                nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r}"][data-col="${c - 1}"]`) ||
+                                           modalOverlay.querySelector(`.cell-input[data-row="${r - 1}"][data-col="${(tableData.rows[0]?.length || 1) - 1}"]`);
+                            } else {
+                                nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r}"][data-col="${c + 1}"]`) ||
+                                           modalOverlay.querySelector(`.cell-input[data-row="${r + 1}"][data-col="0"]`);
+                            }
+                        }
+                        if(nextCell) {
+                            nextCell.focus();
+                        }
                     };
                 });
 
@@ -708,13 +735,44 @@
             try {
                 const fullContent = combineContent();
                 const dirtyHtml = marked.parse(fullContent);
-                const sanitizedHtml = DOMPurify.sanitize(dirtyHtml, { USE_PROFILES: { html: true }, ADD_ATTR: ['class', 'type', 'disabled', 'checked', 'data-task-index'], ADD_TAGS: ['span', 'input'], });
+                const sanitizedHtml = DOMPurify.sanitize(dirtyHtml, { USE_PROFILES: { html: true }, ADD_ATTR: ['class', 'type', 'disabled', 'checked', 'data-task-index', 'data-processed', 'data-explicit-lang'], ADD_TAGS: ['span', 'input'], });
                 previewPane.innerHTML = sanitizedHtml;
+
+                // 1. Mark code blocks with explicitly set languages BEFORE highlighting
+                previewPane.querySelectorAll('pre > code[class*="language-"]').forEach(codeEl => {
+                    const langMatch = Array.from(codeEl.classList).find(cls => cls.startsWith('language-'));
+                    if (langMatch) {
+                        const lang = langMatch.replace('language-', '');
+                        if (lang) {
+                            // Use a data attribute on the parent <pre> for easier access later
+                            codeEl.parentElement.dataset.explicitLang = lang;
+                        }
+                    }
+                });
+
+                // 2. Run highlight.js on all code blocks
                 previewPane.querySelectorAll('pre code').forEach(hljs.highlightElement);
+
+                // 3. Add labels and buttons
                 previewPane.querySelectorAll('pre').forEach(preEl => {
-                    if (preEl.querySelector('.copy-code-button')) return;
-                    const codeEl = preEl.querySelector('code'); if (!codeEl) return;
-                    const copyButton = document.createElement('button'); copyButton.className = 'copy-code-button'; copyButton.textContent = T.copy; copyButton.setAttribute('aria-label', T.copyAriaLabel);
+                    if (preEl.dataset.processed) return;
+                    preEl.dataset.processed = 'true';
+
+                    const codeEl = preEl.querySelector('code');
+                    if (!codeEl) return;
+
+                    // 言語ラベルを追加
+                    const langLabel = document.createElement('div');
+                    langLabel.className = 'code-language-label';
+                    // 明示的に指定されていればその言語を、なければ 'code' を表示
+                    langLabel.textContent = preEl.dataset.explicitLang || 'code';
+                    preEl.appendChild(langLabel);
+
+                    // コピーボタンを追加
+                    const copyButton = document.createElement('button');
+                    copyButton.className = 'copy-code-button';
+                    copyButton.textContent = T.copy;
+                    copyButton.setAttribute('aria-label', T.copyAriaLabel);
                     preEl.appendChild(copyButton);
                     copyButton.addEventListener('click', (e) => {
                         e.stopPropagation();
@@ -847,14 +905,16 @@
         });
         observer.observe(originalTextarea, { attributes: true, childList: true, subtree: true, characterData: true });
         const modeButtons = { editor: editorButton, split: splitButton, preview: previewButton };
-        const switchMode = (mode) => {
+        const switchMode = (mode, shouldFocus = true) => {
             container.classList.remove('mode-editor', 'mode-split', 'mode-preview');
             container.classList.add(`mode-${mode}`);
             Object.values(modeButtons).forEach(btn => btn.classList.remove('active'));
             modeButtons[mode].classList.add('active');
             localStorage.setItem(STORAGE_KEY_MODE, mode);
             if (mode === 'preview' || mode === 'split') { updatePreview(); }
-            if (mode !== 'preview') { markdownTextarea.focus(); }
+            if (shouldFocus && mode !== 'preview') {
+                markdownTextarea.focus();
+            }
             updateHeadingSelector();
         };
         editorButton.addEventListener('click', () => switchMode('editor'));
@@ -872,8 +932,14 @@
         const initialToolbarVisible = localStorage.getItem(STORAGE_KEY_TOOLBAR_VISIBLE) !== 'false';
         toggleToolbar(initialToolbarVisible);
         const savedMode = localStorage.getItem(STORAGE_KEY_MODE);
-        switchMode(savedMode || 'split');
-        console.log('Markdown Editor for Standard Notes (v3.7.9) has been initialized.');
+
+        activeEditorInstance = {
+            textarea: markdownTextarea,
+            switchMode: switchMode
+        };
+
+        switchMode(savedMode || 'split', false); // Do not focus on initial load
+        console.log('Markdown Editor for Standard Notes (v3.8.6) has been initialized.');
     }
 
     /**
@@ -883,14 +949,26 @@
      */
     function handleFocusToEditor(e) {
         console.log("イベント 'sn:title:enter' を受信。カスタムエディタにフォーカスします。");
-        const customEditorTextarea = document.querySelector('.custom-markdown-textarea');
-        if (customEditorTextarea) {
-            customEditorTextarea.focus();
-            const len = customEditorTextarea.value.length;
-            customEditorTextarea.setSelectionRange(len, len);
+        if (activeEditorInstance) {
+            const { textarea, switchMode } = activeEditorInstance;
+            const currentMode = localStorage.getItem(STORAGE_KEY_MODE) || 'split';
+
+            // プレビューモードの場合は、分割モードに切り替えてエディタを表示させる
+            if (currentMode === 'preview') {
+                switchMode('split', true);
+            } else {
+                textarea.focus();
+            }
+
+            // フォーカスが当たった後、カーソルを末尾に移動させる
+            setTimeout(() => {
+                const len = textarea.value.length;
+                textarea.setSelectionRange(len, len);
+            }, 0);
         }
     }
     document.addEventListener('sn:title:enter', handleFocusToEditor);
+
 
     /**
      * エディタのセットアップを開始する関数。
@@ -928,6 +1006,7 @@
 
         } else if (!editor && customEditor) {
             customEditor.remove();
+            activeEditorInstance = null; // エディタが閉じられたら参照をクリア
             const hiddenWrapper = document.querySelector('#editor-content[style*="display: none"]');
             if(hiddenWrapper) hiddenWrapper.style.display = '';
         }
