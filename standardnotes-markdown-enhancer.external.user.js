@@ -10,7 +10,7 @@
 // @name:de          Erweiterter Markdown-Editor für Standard Notes
 // @name:pt-BR       Editor Markdown avançado para Standard Notes
 // @name:ru          Улучшенный редактор Markdown для Standard Notes
-// @version          3.9.0
+// @version          4.0.0
 // @description      Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency.
 // @description:ja   Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップされます。
 // @description:zh-CN 非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。
@@ -99,7 +99,67 @@
     const STORAGE_KEY_MODE = 'snMarkdownEditorMode';
     const STORAGE_KEY_TOOLBAR_VISIBLE = 'snMarkdownToolbarVisible';
 
-    // --- スタイル定義 ---
+    // --- [SHADOW DOM] プレビュー専用スタイル ---
+    // Shadow DOM内に注入することで、外部への影響と外部からの影響を完全に遮断する
+    const PREVIEW_STYLES = `
+        :host {
+            /* Shadow DOMのホスト要素自体がスクロールコンテナになるように設定 */
+            display: block;
+            overflow-y: auto;
+            height: 100%;
+            -webkit-overflow-scrolling: touch;
+        }
+        .markdown-preview {
+            padding: 16px;
+            line-height: 1.7;
+            font-size: 1.05rem;
+            color: var(--sn-stylekit-foreground-color, #333);
+        }
+        .markdown-preview h1, .markdown-preview h2, .markdown-preview h3, .markdown-preview h4, .markdown-preview h5, .markdown-preview h6 { margin-top: 24px; margin-bottom: 16px; font-weight: 600; line-height: 1.25; border-bottom: 1px solid var(--sn-stylekit-border-color, #eee); padding-bottom: .3em; }
+        .markdown-preview h1 { font-size: 2em; }
+        .markdown-preview h2 { font-size: 1.5em; }
+        .markdown-preview h3 { font-size: 1.25em; }
+        .markdown-preview p { margin-bottom: 16px; }
+        .markdown-preview ul, .markdown-preview ol { padding-left: 2em; margin-bottom: 16px; }
+        .markdown-preview blockquote { padding: 0 1em; color: var(--sn-stylekit-secondary-foreground-color, #6a737d); border-left: .25em solid var(--sn-stylekit-border-color, #dfe2e5); margin: 0 0 16px 0; }
+        .markdown-preview code { padding: .2em .4em; margin: 0; font-size: 85%; background-color: var(--sn-stylekit-secondary-background-color, rgba(200,200,200,0.3)); border-radius: 3px; font-family: var(--sn-stylekit-font-code, monospace); }
+        .markdown-preview pre { position: relative; padding: 16px; padding-top: 40px; overflow: auto; font-size: 85%; line-height: 1.45; background-color: var(--sn-stylekit-secondary-background-color, rgba(200,200,200,0.3)); border-radius: 6px; word-wrap: normal; margin-bottom: 16px; }
+        .markdown-preview pre code { background-color: transparent; padding: 0; margin: 0; }
+        .markdown-preview img { max-width: 100%; height: auto; border-radius: 6px; }
+        .markdown-preview table { border-collapse: collapse; width: 100%; margin-bottom: 16px; display: block; overflow: auto; }
+        .markdown-preview th, .markdown-preview td { border: 2px solid var(--sn-stylekit-border-color, #adb5bd); padding: 6px 13px; }
+        .markdown-preview tr:nth-child(2n) { background-color: var(--sn-stylekit-secondary-background-color, #f6f8fa); }
+        .markdown-preview hr { height: .25em; padding: 0; margin: 24px 0; background-color: var(--sn-stylekit-border-color, #dfe2e5); border: 0; }
+        .markdown-preview li.task-list-item { list-style-type: none; }
+        .markdown-preview .task-list-item-checkbox { margin: 0 .2em .25em -1.6em; vertical-align: middle; cursor: pointer; }
+        .markdown-preview li.task-list-item.completed { color: var(--sn-stylekit-secondary-foreground-color, #6a737d); }
+        .markdown-preview li.task-list-item.completed, .markdown-preview li.task-list-item.completed a { text-decoration: line-through; }
+        .copy-code-button { position: absolute; top: 10px; right: 10px; padding: 5px 8px; font-size: 12px; border: 1px solid var(--sn-stylekit-border-color, #ccc); border-radius: 4px; background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-secondary-foreground-color, #555); cursor: pointer; opacity: 0; transition: opacity 0.2s, background-color 0.2s, color 0.2s; z-index: 1; }
+        .markdown-preview pre:hover .copy-code-button { opacity: 1; }
+        .copy-code-button:hover { background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); }
+        .copy-code-button.copied { background-color: var(--sn-stylekit-primary-color, #346df1); color: var(--sn-stylekit-primary-contrast-color, #fff); border-color: var(--sn-stylekit-primary-color, #346df1); }
+        .code-language-label { position: absolute; top: 10px; left: 10px; padding: 3px 6px; font-size: 12px; color: var(--sn-stylekit-secondary-foreground-color, #6a737d); background-color: rgba(255, 255, 255, 0.7); border-radius: 4px; opacity: 0.7; z-index: 1; pointer-events: none; }
+        /* Highlight.js Styles */
+        .markdown-preview pre code.hljs { display: block; overflow-x: auto; padding: 0; color: var(--sn-stylekit-foreground-color, #333); background: transparent; }
+        .hljs-comment, .hljs-quote { color: var(--sn-stylekit-secondary-foreground-color, #6a737d); font-style: italic; }
+        .hljs-keyword, .hljs-selector-tag, .hljs-subst, .hljs-deletion, .hljs-meta, .hljs-selector-class { color: #d73a49; }
+        .hljs-number, .hljs-literal, .hljs-variable, .hljs-template-variable, .hljs-tag .hljs-attr { color: var(--sn-stylekit-primary-color, #005cc5); }
+        .hljs-string, .hljs-doctag { color: #032f62; }
+        .hljs-title, .hljs-section, .hljs-selector-id, .hljs-type, .hljs-symbol, .hljs-bullet, .hljs-link { color: #6f42c1; }
+        .hljs-addition { color: #22863a; }
+        .hljs-emphasis { font-style: italic; }
+        .hljs-strong { font-weight: bold; }
+        @media (prefers-color-scheme: dark) {
+            .markdown-preview pre code.hljs .hljs-keyword, .markdown-preview pre code.hljs .hljs-selector-tag, .markdown-preview pre code.hljs .hljs-subst, .markdown-preview pre code.hljs .hljs-deletion, .markdown-preview pre code.hljs .hljs-meta, .markdown-preview pre code.hljs .hljs-selector-class { color: #ff7b72; }
+            .markdown-preview pre code.hljs .hljs-string, .markdown-preview pre code.hljs .hljs-doctag { color: #a5d6ff; }
+            .markdown-preview pre code.hljs .hljs-title, .markdown-preview pre code.hljs .hljs-section, .markdown-preview pre code.hljs .hljs-selector-id, .markdown-preview pre code.hljs .hljs-type, .markdown-preview pre code.hljs .hljs-symbol, .markdown-preview pre code.hljs .hljs-bullet, .markdown-preview pre code.hljs .hljs-link { color: #d2a8ff; }
+            .markdown-preview pre code.hljs .hljs-addition { color: #7ee787; }
+            .code-language-label { background-color: rgba(0, 0, 0, 0.3); }
+        }
+    `;
+
+    // --- スタイル定義 (UI部分のみ) ---
+    // プレビューのスタイルは上記の定数に分離
     GM_addStyle(`
         /* General Styles */
         .markdown-editor-container { display: flex; flex-direction: column; height: 100%; overflow: hidden; border: 1px solid var(--sn-stylekit-border-color, #e0e0e0); border-radius: 4px; }
@@ -118,28 +178,15 @@
         .toolbar-select { font-weight: bold; -webkit-appearance: none; -moz-appearance: none; appearance: none; padding-right: 20px; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20fill%3D%22%23555%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M5%208l5%205%205-5z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 0px center; }
         .markdown-editor-container.toolbar-hidden .markdown-toolbar { display: none; }
         .editor-preview-wrapper { display: flex; flex-grow: 1; overflow: hidden; background-color: var(--sn-stylekit-editor-background-color, #fff); }
-        .custom-markdown-textarea, .markdown-preview { height: 100%; overflow-y: auto; flex-grow: 1; flex-shrink: 1; }
-        .custom-markdown-textarea { border: none !important; outline: none !important; resize: none !important; box-shadow: none !important; padding: 16px !important; margin: 0 !important; width: 100% !important; background-color: transparent !important; color: var(--sn-stylekit-foreground-color, #333) !important; font-family: var(--sn-stylekit-font-editor, sans-serif) !important; line-height: var(--sn-stylekit-line-height-editor, 1.7) !important; }
-        .markdown-preview { padding: 16px; line-height: 1.7; font-size: 1.05rem; color: var(--sn-stylekit-foreground-color, #333); }
-        .markdown-editor-container.mode-editor .markdown-preview { display: none; }
+        .custom-markdown-textarea, .markdown-preview-host { flex-grow: 1; flex-shrink: 1; }
+        .custom-markdown-textarea { border: none !important; outline: none !important; resize: none !important; box-shadow: none !important; padding: 16px !important; margin: 0 !important; width: 100% !important; background-color: transparent !important; color: var(--sn-stylekit-foreground-color, #333) !important; font-family: var(--sn-stylekit-font-editor, sans-serif) !important; line-height: var(--sn-stylekit-line-height-editor, 1.7) !important; height: 100%; overflow-y: auto; }
+        .markdown-editor-container.mode-editor .markdown-preview-host { display: none; }
         .markdown-editor-container.mode-preview .markdown-toolbar, .markdown-editor-container.mode-preview .custom-markdown-textarea { display: none; }
-        .markdown-editor-container.mode-preview .markdown-preview { display: block; }
-        .markdown-editor-container.mode-split .custom-markdown-textarea, .markdown-editor-container.mode-split .markdown-preview { display: block !important; flex-basis: 50%; width: 50%; }
-        .markdown-editor-container.mode-split .markdown-preview { border-left: 1px solid var(--sn-stylekit-border-color, #e0e0e0); }
-        /* Markdown Content Styles */
-        .markdown-preview h1, .markdown-preview h2, .markdown-preview h3, .markdown-preview h4, .markdown-preview h5, .markdown-preview h6 { margin-top: 24px; margin-bottom: 16px; font-weight: 600; line-height: 1.25; border-bottom: 1px solid var(--sn-stylekit-border-color, #eee); padding-bottom: .3em; } .markdown-preview h1 { font-size: 2em; } .markdown-preview h2 { font-size: 1.5em; } .markdown-preview h3 { font-size: 1.25em; }
-        .markdown-preview p { margin-bottom: 16px; } .markdown-preview ul, .markdown-preview ol { padding-left: 2em; margin-bottom: 16px; } .markdown-preview blockquote { padding: 0 1em; color: var(--sn-stylekit-secondary-foreground-color, #6a737d); border-left: .25em solid var(--sn-stylekit-border-color, #dfe2e5); margin: 0 0 16px 0; } .markdown-preview code { padding: .2em .4em; margin: 0; font-size: 85%; background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); border-radius: 3px; font-family: var(--sn-stylekit-font-code, monospace); }
-        .markdown-preview pre { position: relative; padding: 16px; padding-top: 40px; overflow: auto; font-size: 85%; line-height: 1.45; background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); border-radius: 6px; word-wrap: normal; margin-bottom: 16px; }
-        .markdown-preview pre code { background-color: transparent; padding: 0; margin: 0; } .markdown-preview img { max-width: 100%; height: auto; border-radius: 6px; } .markdown-preview table { border-collapse: collapse; width: 100%; margin-bottom: 16px; display: block; overflow: auto; } .markdown-preview th, .markdown-preview td { border: 2px solid var(--sn-stylekit-border-color, #adb5bd); padding: 6px 13px; } .markdown-preview tr:nth-child(2n) { background-color: var(--sn-stylekit-secondary-background-color, #f6f8fa); } .markdown-preview hr { height: .25em; padding: 0; margin: 24px 0; background-color: var(--sn-stylekit-border-color, #dfe2e5); border: 0; }
-        .markdown-preview li.task-list-item { list-style-type: none; } .markdown-preview .task-list-item-checkbox { margin: 0 .2em .25em -1.6em; vertical-align: middle; cursor: pointer; }
-        .markdown-preview li.task-list-item.completed { color: var(--sn-stylekit-secondary-foreground-color, #6a737d); }
-        .markdown-preview li.task-list-item.completed, .markdown-preview li.task-list-item.completed a { text-decoration: line-through; }
-        .copy-code-button { position: absolute; top: 10px; right: 10px; padding: 5px 8px; font-size: 12px; border: 1px solid var(--sn-stylekit-border-color, #ccc); border-radius: 4px; background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-secondary-foreground-color, #555); cursor: pointer; opacity: 0; transition: opacity 0.2s, background-color 0.2s, color 0.2s; z-index: 1; } .markdown-preview pre:hover .copy-code-button { opacity: 1; } .copy-code-button:hover { background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); } .copy-code-button.copied { background-color: var(--sn-stylekit-primary-color, #346df1); color: var(--sn-stylekit-primary-contrast-color, #fff); border-color: var(--sn-stylekit-primary-color, #346df1); }
-        .code-language-label { position: absolute; top: 10px; left: 10px; padding: 3px 6px; font-size: 12px; color: var(--sn-stylekit-secondary-foreground-color, #6a737d); background-color: rgba(255, 255, 255, 0.7); border-radius: 4px; opacity: 0.7; z-index: 1; pointer-events: none; }
-        .markdown-preview pre code.hljs { display: block; overflow-x: auto; padding: 0; color: var(--sn-stylekit-foreground-color, #333); background: transparent; } .hljs-comment, .hljs-quote { color: var(--sn-stylekit-secondary-foreground-color, #6a737d); font-style: italic; } .hljs-keyword, .hljs-selector-tag, .hljs-subst, .hljs-deletion, .hljs-meta, .hljs-selector-class { color: #d73a49; } .hljs-number, .hljs-literal, .hljs-variable, .hljs-template-variable, .hljs-tag .hljs-attr { color: var(--sn-stylekit-primary-color, #005cc5); } .hljs-string, .hljs-doctag { color: #032f62; } .hljs-title, .hljs-section, .hljs-selector-id, .hljs-type, .hljs-symbol, .hljs-bullet, .hljs-link { color: #6f42c1; } .hljs-addition { color: #22863a; } .hljs-emphasis { font-style: italic; } .hljs-strong { font-weight: bold; }
-        @media (prefers-color-scheme: dark) { .markdown-preview pre code.hljs .hljs-keyword, .markdown-preview pre code.hljs .hljs-selector-tag, .markdown-preview pre code.hljs .hljs-subst, .markdown-preview pre code.hljs .hljs-deletion, .markdown-preview pre code.hljs .hljs-meta, .markdown-preview pre code.hljs .hljs-selector-class { color: #ff7b72; } .markdown-preview pre code.hljs .hljs-string, .markdown-preview pre code.hljs .hljs-doctag { color: #a5d6ff; } .markdown-preview pre code.hljs .hljs-title, .markdown-preview pre code.hljs .hljs-section, .markdown-preview pre code.hljs .hljs-selector-id, .markdown-preview pre code.hljs .hljs-type, .markdown-preview pre code.hljs .hljs-symbol, .markdown-preview pre code.hljs .hljs-bullet, .markdown-preview pre code.hljs .hljs-link { color: #d2a8ff; } .markdown-preview pre code.hljs .hljs-addition { color: #7ee787; } .code-language-label { background-color: rgba(0, 0, 0, 0.3); } }
+        .markdown-editor-container.mode-preview .markdown-preview-host { display: block; }
+        .markdown-editor-container.mode-split .custom-markdown-textarea, .markdown-editor-container.mode-split .markdown-preview-host { display: block !important; flex-basis: 50%; width: 50%; }
+        .markdown-editor-container.mode-split .markdown-preview-host { border-left: 1px solid var(--sn-stylekit-border-color, #e0e0e0); }
         /* Print Styles */
-        @media print { body > *:not(.print-container) { display: none !important; } .print-container, .print-container > * { display: block !important; width: 100% !important; height: auto !important; overflow: visible !important; } html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; } .markdown-preview { padding: 2cm !important; border: none !important; box-shadow: none !important; color: #000 !important; background-color: #fff !important; font-size: 12pt !important; line-height: 1.5 !important; } .markdown-preview h1, .markdown-preview h2, .markdown-preview h3, .markdown-preview h4, .markdown-preview h5, .markdown-preview h6 { color: #000 !important; border-bottom-color: #ccc !important; } .markdown-preview pre, .markdown-preview code { background-color: #f0f0f0 !important; color: #000 !important; border: 1px solid #ccc !important; } .markdown-preview pre code.hljs { color: #000 !important; } .markdown-preview blockquote { color: #333 !important; border-left-color: #ccc !important; } .markdown-preview tr:nth-child(2n) { background-color: #f6f8fa !important; } .markdown-preview th, .markdown-preview td { border-color: #ccc !important; } .copy-code-button, .code-language-label { display: none !important; } .raw-text-print { margin: 0 !important; padding: 2cm !important; white-space: pre-wrap !important; word-wrap: break-word !important; font-family: 'Menlo', 'Monaco', 'Consolas', 'Courier New', monospace; font-size: 10pt !important; color: #000 !important; background: #fff !important; } pre, blockquote, table, img, h1, h2, h3, h4 { page-break-inside: avoid; } h1, h2, h3 { page-break-after: avoid; } }
+        @media print { body > *:not(.print-container) { display: none !important; } .print-container, .print-container > * { display: block !important; width: 100% !important; height: auto !important; overflow: visible !important; } html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; } .print-content { padding: 2cm !important; border: none !important; box-shadow: none !important; color: #000 !important; background-color: #fff !important; font-size: 12pt !important; line-height: 1.5 !important; } .print-content h1, .print-content h2, .print-content h3, .print-content h4, .print-content h5, .print-content h6 { color: #000 !important; border-bottom-color: #ccc !important; } .print-content pre, .print-content code { background-color: #f0f0f0 !important; color: #000 !important; border: 1px solid #ccc !important; } .print-content pre code.hljs { color: #000 !important; } .print-content blockquote { color: #333 !important; border-left-color: #ccc !important; } .print-content tr:nth-child(2n) { background-color: #f6f8fa !important; } .print-content th, .print-content td { border-color: #ccc !important; } .copy-code-button, .code-language-label { display: none !important; } .raw-text-print { margin: 0 !important; padding: 2cm !important; white-space: pre-wrap !important; word-wrap: break-word !important; font-family: 'Menlo', 'Monaco', 'Consolas', 'Courier New', monospace; font-size: 10pt !important; color: #000 !important; background: #fff !important; } pre, blockquote, table, img, h1, h2, h3, h4 { page-break-inside: avoid; } h1, h2, h3 { page-break-after: avoid; } }
         /* --- Modal Styles --- */
         .sn-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .sn-modal-content { background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-foreground-color, #333); padding: 20px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: flex; flex-direction: column; max-height: 90vh; }
@@ -190,7 +237,6 @@
         .control-cell { border: none !important; background: transparent !important; text-align: center; vertical-align: middle; padding: 4px !important; }
         .sn-table-editor thead .control-cell { position: -webkit-sticky; position: sticky; left: 0; background-color: var(--sn-stylekit-editor-background-color, #f9f9f9) !important; }
         .sn-table-editor thead .control-cell:last-child { right: 0; left: auto; }
-
         /* --- Drag & Drop Styles for Table Editor --- */
         .sn-table-editor .drag-handle { cursor: grab; color: var(--sn-stylekit-secondary-foreground-color, #888); padding: 0 8px; user-select: none; }
         .sn-table-editor .drag-handle:active { cursor: grabbing; }
@@ -235,27 +281,22 @@
         textarea.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
-
     function setupMarkdownEditor(originalTextarea, isNewNoteSetup = false) {
-        // [MODIFIED] 修正案1: DOM接続を最初に確認するガード節
-        // 処理開始時に要素がDOMツリーに存在するかをチェックし、存在しなければ安全に処理を中断する。
         if (!originalTextarea || !originalTextarea.parentElement) {
             console.warn('Markdown Editor: Setup aborted. Target textarea is not attached to the DOM.');
             return;
         }
-
         if (originalTextarea.dataset.markdownReady) return;
         originalTextarea.dataset.markdownReady = 'true';
         marked.setOptions({ gfm: true, breaks: true, smartLists: true, langPrefix: 'language-' });
 
-        // 上記のチェックにより、この時点での originalTextarea.parentElement は null ではないことが保証される。
         const editorWrapper = originalTextarea.parentElement;
-
         editorWrapper.style.display = 'none';
         editorWrapper.style.height = '100%';
         const container = document.createElement('div'); container.className = 'markdown-editor-container';
         const markdownTextarea = document.createElement('textarea'); markdownTextarea.className = originalTextarea.className + ' custom-markdown-textarea'; markdownTextarea.spellcheck = false;
         const dataTextarea = document.createElement('textarea'); dataTextarea.style.display = 'none';
+
         const combineContent = () => {
             const main = markdownTextarea.value;
             const defs = dataTextarea.value;
@@ -506,7 +547,6 @@
                 }
                 let bodyHtml = '';
                 for (let r = 0; r < rowCount; r++) {
-                    // tr要素から draggable="true" を削除
                     bodyHtml += `<tr data-row="${r}">
                         <td class="control-cell">
                             <span class="drag-handle" draggable="true">⁙</span>
@@ -590,133 +630,40 @@
                 modalOverlay.querySelectorAll('.cell-input').forEach(input => {
                     input.oninput = e => { const { row, col } = e.target.dataset; tableData.rows[row][col] = e.target.value; };
                     input.onkeydown = e => {
-                        const { row, col } = e.target.dataset;
-                        const r = parseInt(row, 10);
-                        const c = parseInt(col, 10);
+                        const { row, col } = e.target.dataset; const r = parseInt(row, 10); const c = parseInt(col, 10);
                         let nextCell = null;
-
-                        if (e.key === 'Enter' || e.key === 'ArrowDown') {
-                            e.preventDefault();
-                            nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r + 1}"][data-col="${c}"]`);
-                        } else if (e.key === 'ArrowUp') {
-                            e.preventDefault();
-                            nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r - 1}"][data-col="${c}"]`);
-                        } else if (e.key === 'Tab') {
-                            e.preventDefault();
-                            if (e.shiftKey) {
-                                nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r}"][data-col="${c - 1}"]`) ||
-                                           modalOverlay.querySelector(`.cell-input[data-row="${r - 1}"][data-col="${(tableData.rows[0]?.length || 1) - 1}"]`);
-                            } else {
-                                nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r}"][data-col="${c + 1}"]`) ||
-                                           modalOverlay.querySelector(`.cell-input[data-row="${r + 1}"][data-col="0"]`);
-                            }
-                        }
-                        if(nextCell) {
-                            nextCell.focus();
-                        }
+                        if (e.key === 'Enter' || e.key === 'ArrowDown') { e.preventDefault(); nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r + 1}"][data-col="${c}"]`); }
+                        else if (e.key === 'ArrowUp') { e.preventDefault(); nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r - 1}"][data-col="${c}"]`); }
+                        else if (e.key === 'Tab') { e.preventDefault(); if (e.shiftKey) { nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r}"][data-col="${c - 1}"]`) || modalOverlay.querySelector(`.cell-input[data-row="${r - 1}"][data-col="${(tableData.rows[0]?.length || 1) - 1}"]`); } else { nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r}"][data-col="${c + 1}"]`) || modalOverlay.querySelector(`.cell-input[data-row="${r + 1}"][data-col="0"]`); } }
+                        if (nextCell) { nextCell.focus(); }
                     };
                 });
-
-                // --- Drag & Drop Event Listeners ---
-                // ドラッグ操作の役割をハンドル(開始)と行(ドロップ先)に分離
-                modalOverlay.querySelectorAll('tbody tr').forEach(row => {
-                    const handle = row.querySelector('.drag-handle[draggable="true"]');
-
-                    // ドラッグ開始と終了のイベントはハンドル(.drag-handle)に設定
-                    if (handle) {
-                        handle.addEventListener('dragstart', (e) => {
-                            e.stopPropagation(); // 列のドラッグと競合しないように
-                            draggedItem = row; // ドラッグ対象はハンドルではなく行そのもの
-                            const rowIndex = parseInt(draggedItem.dataset.row, 10);
-                            e.dataTransfer.setData('text/plain', rowIndex);
-                            e.dataTransfer.effectAllowed = 'move';
-                            setTimeout(() => draggedItem.classList.add('dragging'), 0);
-                        });
-
-                        handle.addEventListener('dragend', (e) => {
-                            draggedItem?.classList.remove('dragging');
-                            modalOverlay.querySelectorAll('.drag-over-row').forEach(el => el.classList.remove('drag-over-row'));
-                            draggedItem = null;
-                        });
-                    }
-
-                    // ドロップターゲットとしてのイベントは行(tr)自体に設定
-                    row.addEventListener('dragover', (e) => {
-                        e.preventDefault();
-                        const targetRow = e.currentTarget;
-                        if (targetRow && targetRow !== draggedItem) {
-                            modalOverlay.querySelectorAll('.drag-over-row').forEach(el => el.classList.remove('drag-over-row'));
-                            targetRow.classList.add('drag-over-row');
-                        }
-                    });
-
-                    row.addEventListener('dragleave', (e) => {
-                        e.currentTarget.classList.remove('drag-over-row');
-                    });
-
-                    row.addEventListener('drop', (e) => {
-                        e.preventDefault();
-                        const targetRow = e.currentTarget;
-                        targetRow.classList.remove('drag-over-row');
-                        if (!targetRow || targetRow === draggedItem) return;
-                        const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
-                        const targetIndex = parseInt(targetRow.dataset.row, 10);
-                        const [removedRowData] = tableData.rows.splice(sourceIndex, 1);
-                        tableData.rows.splice(targetIndex, 0, removedRowData);
-                        render();
-                    });
+                modalOverlay.querySelectorAll('tbody tr .drag-handle[draggable="true"]').forEach(handle => {
+                    const row = handle.closest('tr');
+                    handle.addEventListener('dragstart', (e) => { e.stopPropagation(); draggedItem = row; const rowIndex = parseInt(draggedItem.dataset.row, 10); e.dataTransfer.setData('text/plain', rowIndex); e.dataTransfer.effectAllowed = 'move'; setTimeout(() => draggedItem.classList.add('dragging'), 0); });
+                    handle.addEventListener('dragend', () => { draggedItem?.classList.remove('dragging'); modalOverlay.querySelectorAll('.drag-over-row').forEach(el => el.classList.remove('drag-over-row')); draggedItem = null; });
                 });
-
+                modalOverlay.querySelectorAll('tbody tr').forEach(row => {
+                    row.addEventListener('dragover', (e) => { e.preventDefault(); const targetRow = e.currentTarget; if (targetRow && targetRow !== draggedItem) { modalOverlay.querySelectorAll('.drag-over-row').forEach(el => el.classList.remove('drag-over-row')); targetRow.classList.add('drag-over-row'); } });
+                    row.addEventListener('dragleave', (e) => { e.currentTarget.classList.remove('drag-over-row'); });
+                    row.addEventListener('drop', (e) => { e.preventDefault(); const targetRow = e.currentTarget; targetRow.classList.remove('drag-over-row'); if (!targetRow || targetRow === draggedItem) return; const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'), 10); const targetIndex = parseInt(targetRow.dataset.row, 10); const [removedRowData] = tableData.rows.splice(sourceIndex, 1); tableData.rows.splice(targetIndex, 0, removedRowData); render(); });
+                });
                 modalOverlay.querySelectorAll('th .col-header-content[draggable="true"]').forEach(handle => {
                     const headerCell = handle.closest('th');
-                    handle.addEventListener('dragstart', (e) => {
-                        e.stopPropagation();
-                        draggedItem = headerCell;
-                        const colIndex = parseInt(draggedItem.dataset.col, 10);
-                        e.dataTransfer.setData('text/plain', colIndex);
-                        e.dataTransfer.effectAllowed = 'move';
-                        setTimeout(() => draggedItem.classList.add('dragging'), 0);
-                    });
-                    handle.addEventListener('dragend', (e) => {
-                        e.stopPropagation();
-                        draggedItem?.classList.remove('dragging');
-                        modalOverlay.querySelectorAll('.drag-over-col').forEach(el => el.classList.remove('drag-over-col'));
-                        draggedItem = null;
-                    });
+                    handle.addEventListener('dragstart', (e) => { e.stopPropagation(); draggedItem = headerCell; const colIndex = parseInt(draggedItem.dataset.col, 10); e.dataTransfer.setData('text/plain', colIndex); e.dataTransfer.effectAllowed = 'move'; setTimeout(() => draggedItem.classList.add('dragging'), 0); });
+                    handle.addEventListener('dragend', (e) => { e.stopPropagation(); draggedItem?.classList.remove('dragging'); modalOverlay.querySelectorAll('.drag-over-col').forEach(el => el.classList.remove('drag-over-col')); draggedItem = null; });
                 });
                 modalOverlay.querySelectorAll('thead th[data-col]').forEach(headerCell => {
-                    headerCell.addEventListener('dragover', (e) => {
-                        e.preventDefault();
-                        const targetCol = e.target.closest('th[data-col]');
-                        if (targetCol && targetCol !== draggedItem) {
-                            modalOverlay.querySelectorAll('.drag-over-col').forEach(el => el.classList.remove('drag-over-col'));
-                            targetCol.classList.add('drag-over-col');
-                        }
-                    });
-                    headerCell.addEventListener('dragleave', (e) => {
-                        e.target.closest('th[data-col]')?.classList.remove('drag-over-col');
-                    });
-                    headerCell.addEventListener('drop', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        const targetCol = e.target.closest('th[data-col]');
-                        if (!targetCol || targetCol === draggedItem) return;
-                        const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
-                        const targetIndex = parseInt(targetCol.dataset.col, 10);
-                        const [removedAlign] = tableData.alignments.splice(sourceIndex, 1);
-                        tableData.alignments.splice(targetIndex, 0, removedAlign);
-                        tableData.rows.forEach(row => {
-                            const [removedCell] = row.splice(sourceIndex, 1);
-                            row.splice(targetIndex, 0, removedCell);
-                        });
-                        render();
-                    });
+                    headerCell.addEventListener('dragover', (e) => { e.preventDefault(); const targetCol = e.target.closest('th[data-col]'); if (targetCol && targetCol !== draggedItem) { modalOverlay.querySelectorAll('.drag-over-col').forEach(el => el.classList.remove('drag-over-col')); targetCol.classList.add('drag-over-col'); } });
+                    headerCell.addEventListener('dragleave', (e) => { e.target.closest('th[data-col]')?.classList.remove('drag-over-col'); });
+                    headerCell.addEventListener('drop', (e) => { e.preventDefault(); e.stopPropagation(); const targetCol = e.target.closest('th[data-col]'); if (!targetCol || targetCol === draggedItem) return; const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'), 10); const targetIndex = parseInt(targetCol.dataset.col, 10); const [removedAlign] = tableData.alignments.splice(sourceIndex, 1); tableData.alignments.splice(targetIndex, 0, removedAlign); tableData.rows.forEach(row => { const [removedCell] = row.splice(sourceIndex, 1); row.splice(targetIndex, 0, removedCell); }); render(); });
                 });
             };
             document.body.appendChild(modalOverlay);
             render();
             modalOverlay.querySelector('.cell-input')?.focus();
         };
+
         const modeBar = document.createElement('div'); modeBar.className = 'mode-toggle-bar';
         const editorButton = document.createElement('button'); editorButton.className = 'mode-toggle-button'; editorButton.textContent = T.editor;
         const splitButton = document.createElement('button'); splitButton.className = 'mode-toggle-button'; splitButton.textContent = T.split;
@@ -725,7 +672,16 @@
         toolbarToggleButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path></svg>`;
         const printButton = document.createElement('button'); printButton.className = 'mode-toggle-button pdf-export-button'; printButton.textContent = T.printPDF; printButton.title = T.exportPDF;
         const toolbar = document.createElement('div'); toolbar.className = 'markdown-toolbar';
-        const previewPane = document.createElement('div'); previewPane.className = 'markdown-preview';
+
+        // --- [SHADOW DOM] プレビュー要素のセットアップ ---
+        const previewHost = document.createElement('div');
+        previewHost.className = 'markdown-preview-host'; // CSSでスクロールコンテナとしてスタイリング
+        const shadow = previewHost.attachShadow({ mode: 'open' });
+        const shadowStyle = document.createElement('style');
+        const shadowContent = document.createElement('div');
+        shadowContent.className = 'markdown-preview'; // Shadow DOM内部のルート要素
+        shadow.append(shadowStyle, shadowContent);
+
         markdownTextarea.addEventListener('paste', handlePaste);
         const toolbarButtons = [ { type: 'select', name: 'heading', options: [ { value: 'p', text: T.paragraph }, { value: 'h1', text: T.heading1 }, { value: 'h2', text: T.heading2 }, { value: 'h3', text: T.heading3 }, { value: 'h4', text: T.heading4 } ], action: (prefix) => { const start = markdownTextarea.selectionStart; let lineStart = markdownTextarea.value.lastIndexOf('\n', start - 1) + 1; let lineEnd = markdownTextarea.value.indexOf('\n', start); if (lineEnd === -1) lineEnd = markdownTextarea.value.length; const originalLine = markdownTextarea.value.substring(lineStart, lineEnd); const cleanedLine = originalLine.replace(/^\s*#+\s*/, ''); const newText = prefix ? `${prefix} ${cleanedLine}` : cleanedLine; markdownTextarea.setRangeText(newText, lineStart, lineEnd, 'end'); markdownTextarea.dispatchEvent(new Event('input', { bubbles: true })); markdownTextarea.focus(); } }, { type: 'button', name: 'B', title: T.bold, action: () => applyMarkdown(markdownTextarea, '**', '**', T.boldPlaceholder) }, { type: 'button', name: 'I', title: T.italic, action: () => applyMarkdown(markdownTextarea, '*', '*', T.italicPlaceholder) }, { type: 'button', name: 'S', title: T.strikethrough, action: () => applyMarkdown(markdownTextarea, '~~', '~~', T.strikethroughPlaceholder) }, { type: 'button', name: '`', title: T.inlineCode, action: () => applyMarkdown(markdownTextarea, '`', '`', T.codePlaceholder) }, { type: 'button', name: '“ ”', title: T.quote, action: () => applyMarkdown(markdownTextarea, '> ', '', T.quotePlaceholder) }, { type: 'button', name: '•', title: T.list, action: () => applyMarkdown(markdownTextarea, '- ', '', T.listItemPlaceholder) }, { type: 'button', name: '1.', title: T.numberedList, action: () => applyMarkdown(markdownTextarea, '1. ', '', T.listItemPlaceholder) }, { type: 'button', name: '☑', title: T.checklist, action: () => applyMarkdown(markdownTextarea, '- [ ] ', '', T.taskPlaceholder) }, { type: 'button', name: '</>', title: T.codeBlock, action: () => applyMarkdown(markdownTextarea, '```\n', '\n```', T.codePlaceholder) }, { type: 'icon-button', name: 'Image', title: T.image, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"></path></svg>`, action: () => { openImageInserterModal((data, altText, isReference) => { if (isReference) { insertImageAsReference(data, altText); } else { const markdown = `![${altText}](${data})`; applyMarkdown(markdownTextarea, markdown); } }); } }, { type: 'icon-button', name: 'Link', title: T.link, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"></path></svg>`, action: () => { const url = prompt(T.linkPrompt, 'https://'); if (url) applyMarkdown(markdownTextarea, '[', `](${url})`, T.linkTextPlaceholder); }}, { type: 'icon-button', name: T.insertTable, title: T.insertTable, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2zM8 10H4V6h4v4zm6 0h-4V6h4v4zm6 0h-4V6h4v4zM8 14H4v4h4v-4zm6 0h-4v4h4v-4zm6 0h-4v4h4v-4z"></path></svg>`, action: () => { const start = markdownTextarea.selectionStart; const end = markdownTextarea.selectionEnd; const selectedText = markdownTextarea.value.substring(start, end); const existingTableData = parseMarkdownTable(selectedText); openTableEditorModal(existingTableData, (markdown) => { markdownTextarea.setRangeText(markdown, start, end, 'select'); markdownTextarea.focus(); markdownTextarea.dispatchEvent(new Event('input', { bubbles: true })); }); } }, { type: 'button', name: '―', title: T.horizontalRule, action: () => applyMarkdown(markdownTextarea, '\n---\n') }, ];
         toolbarButtons.forEach(item => { if (item.type === 'select') { const select = document.createElement('select'); select.className = 'toolbar-select heading-select'; item.options.forEach(opt => { const option = document.createElement('option'); option.value = opt.value; option.textContent = opt.text; select.appendChild(option); }); select.onchange = (e) => { let prefix = ''; switch (e.target.value) { case 'h1': prefix = '#'; break; case 'h2': prefix = '##'; break; case 'h3': prefix = '###'; break; case 'h4': prefix = '####'; break; } item.action(prefix); updateHeadingSelector(); }; toolbar.appendChild(select); } else { const button = document.createElement('button'); button.className = 'toolbar-button'; button.title = item.title; button.onclick = item.action; if (item.type === 'icon-button') { button.classList.add('icon-button'); button.innerHTML = item.icon; } else { button.textContent = item.name; } toolbar.appendChild(button); } });
@@ -749,49 +705,49 @@
         markdownTextarea.addEventListener('keyup', debouncedUpdateHeadingSelector);
         markdownTextarea.addEventListener('click', debouncedUpdateHeadingSelector);
         markdownTextarea.addEventListener('focus', debouncedUpdateHeadingSelector);
+
         const contentWrapper = document.createElement('div'); contentWrapper.className = 'editor-preview-wrapper';
-        contentWrapper.append(markdownTextarea, previewPane);
+        contentWrapper.append(markdownTextarea, previewHost); // previewPaneをpreviewHostに変更
         modeBar.append(editorButton, splitButton, previewButton, toolbarToggleButton, printButton);
         container.append(modeBar, toolbar, contentWrapper, dataTextarea);
         editorWrapper.after(container);
+
+        // --- [SHADOW DOM] プレビュー更新ロジック ---
         const updatePreview = () => {
             try {
+                // スタイルをShadow DOMに注入（初回または変更があった場合のみ）
+                if (shadowStyle.textContent !== PREVIEW_STYLES) {
+                    shadowStyle.textContent = PREVIEW_STYLES;
+                }
+
                 const fullContent = combineContent();
                 const dirtyHtml = marked.parse(fullContent);
                 const sanitizedHtml = DOMPurify.sanitize(dirtyHtml, { USE_PROFILES: { html: true }, ADD_ATTR: ['class', 'type', 'disabled', 'checked', 'data-task-index', 'data-processed', 'data-explicit-lang'], ADD_TAGS: ['span', 'input'], });
-                previewPane.innerHTML = sanitizedHtml;
 
-                // 1. Mark code blocks with explicitly set languages BEFORE highlighting
-                previewPane.querySelectorAll('pre > code[class*="language-"]').forEach(codeEl => {
+                // Shadow DOM内のコンテンツを更新
+                shadowContent.innerHTML = sanitizedHtml;
+
+                shadowContent.querySelectorAll('pre > code[class*="language-"]').forEach(codeEl => {
                     const langMatch = Array.from(codeEl.classList).find(cls => cls.startsWith('language-'));
                     if (langMatch) {
                         const lang = langMatch.replace('language-', '');
-                        if (lang) {
-                            // Use a data attribute on the parent <pre> for easier access later
-                            codeEl.parentElement.dataset.explicitLang = lang;
-                        }
+                        if (lang) { codeEl.parentElement.dataset.explicitLang = lang; }
                     }
                 });
 
-                // 2. Run highlight.js on all code blocks
-                previewPane.querySelectorAll('pre code').forEach(hljs.highlightElement);
+                // highlight.jsはShadow DOM内の要素を対象に実行
+                shadowContent.querySelectorAll('pre code').forEach(hljs.highlightElement);
 
-                // 3. Add labels and buttons
-                previewPane.querySelectorAll('pre').forEach(preEl => {
+                // ラベルとボタンもShadow DOM内に作成
+                shadowContent.querySelectorAll('pre').forEach(preEl => {
                     if (preEl.dataset.processed) return;
                     preEl.dataset.processed = 'true';
-
                     const codeEl = preEl.querySelector('code');
                     if (!codeEl) return;
-
-                    // 言語ラベルを追加
                     const langLabel = document.createElement('div');
                     langLabel.className = 'code-language-label';
-                    // 明示的に指定されていればその言語を、なければ 'code' を表示
                     langLabel.textContent = preEl.dataset.explicitLang || 'code';
                     preEl.appendChild(langLabel);
-
-                    // コピーボタンを追加
                     const copyButton = document.createElement('button');
                     copyButton.className = 'copy-code-button';
                     copyButton.textContent = T.copy;
@@ -808,18 +764,23 @@
                         });
                     });
                 });
-                const checkboxes = previewPane.querySelectorAll('.task-list-item-checkbox');
+
+                // チェックリストのイベントハンドラもShadow DOM内で完結
+                const checkboxes = shadowContent.querySelectorAll('.task-list-item-checkbox');
                 checkboxes.forEach((checkbox, index) => {
                     if (checkbox.checked) { checkbox.closest('.task-list-item')?.classList.add('completed'); }
-                    const newCheckbox = checkbox.cloneNode(true);
+                    const newCheckbox = checkbox.cloneNode(true); // イベントリスナーを再設定するため
                     checkbox.parentNode.replaceChild(newCheckbox, checkbox);
                     newCheckbox.addEventListener('click', () => handlePreviewChecklistToggle(index));
                 });
+
             } catch (e) {
                 console.error("Error updating preview:", e);
-                previewPane.innerHTML = `<div style="padding: 1rem; color: #d73a49; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: .25rem;"><strong>${T.previewErrorTitle}</strong><br><pre style="white-space: pre-wrap; word-break: break-all; margin-top: 0.5rem;">${e.stack}</pre></div>`;
+                // エラー表示もShadow DOM内で行う
+                shadowContent.innerHTML = `<div style="padding: 1rem; color: #d73a49; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: .25rem;"><strong>${T.previewErrorTitle}</strong><br><pre style="white-space: pre-wrap; word-break: break-all; margin-top: 0.5rem;">${e.stack}</pre></div>`;
             }
         };
+
         const handlePreviewChecklistToggle = (toggledIndex) => {
             const text = markdownTextarea.value; const regex = /-\s\[[ x]\]/g;
             let match; let currentIndex = 0; let newText = text;
@@ -931,26 +892,20 @@
         // --- スクロール同期のロジック ---
         let scrollRequest;
         const handleScroll = (source, target) => {
-            if (source.isSyncing) {
-                source.isSyncing = false;
-                return;
-            }
-
+            if (source.isSyncing) { source.isSyncing = false; return; }
             cancelAnimationFrame(scrollRequest);
             scrollRequest = requestAnimationFrame(() => {
                 const sourceScrollableDist = source.scrollHeight - source.clientHeight;
                 if (sourceScrollableDist <= 0) return;
-
                 const scrollRatio = source.scrollTop / sourceScrollableDist;
                 const targetScrollableDist = target.scrollHeight - target.clientHeight;
-
                 target.isSyncing = true;
                 target.scrollTop = scrollRatio * targetScrollableDist;
             });
         };
-
-        const onEditorScroll = () => handleScroll(markdownTextarea, previewPane);
-        const onPreviewScroll = () => handleScroll(previewPane, markdownTextarea);
+        // previewHostがスクロールコンテナになる
+        const onEditorScroll = () => handleScroll(markdownTextarea, previewHost);
+        const onPreviewScroll = () => handleScroll(previewHost, markdownTextarea);
 
         const modeButtons = { editor: editorButton, split: splitButton, preview: previewButton };
         const switchMode = (mode, shouldFocus = true) => {
@@ -960,19 +915,16 @@
             modeButtons[mode].classList.add('active');
             localStorage.setItem(STORAGE_KEY_MODE, mode);
 
-            // モードに応じてスクロール同期リスナーを追加・削除
+            // スクロール同期リスナーの付け外し
+            markdownTextarea.removeEventListener('scroll', onEditorScroll);
+            previewHost.removeEventListener('scroll', onPreviewScroll);
             if (mode === 'split') {
                 markdownTextarea.addEventListener('scroll', onEditorScroll, { passive: true });
-                previewPane.addEventListener('scroll', onPreviewScroll, { passive: true });
-            } else {
-                markdownTextarea.removeEventListener('scroll', onEditorScroll);
-                previewPane.removeEventListener('scroll', onPreviewScroll);
+                previewHost.addEventListener('scroll', onPreviewScroll, { passive: true });
             }
 
             if (mode === 'preview' || mode === 'split') { updatePreview(); }
-            if (shouldFocus && mode !== 'preview') {
-                markdownTextarea.focus();
-            }
+            if (shouldFocus && mode !== 'preview') { markdownTextarea.focus(); }
             updateHeadingSelector();
         };
 
@@ -985,8 +937,32 @@
             localStorage.setItem(STORAGE_KEY_TOOLBAR_VISIBLE, visible);
         };
         toolbarToggleButton.addEventListener('click', () => { const isVisible = container.classList.contains('toolbar-hidden'); toggleToolbar(isVisible); });
-        const handlePrint = () => { const printContainer = document.createElement('div'); printContainer.className = 'print-container'; if (container.classList.contains('mode-editor')) { const pre = document.createElement('pre'); pre.className = 'raw-text-print'; pre.textContent = markdownTextarea.value; printContainer.appendChild(pre); } else { updatePreview(); const previewClone = previewPane.cloneNode(true); printContainer.appendChild(previewClone); } document.body.appendChild(printContainer); window.print(); document.body.removeChild(printContainer); };
+
+        // --- [SHADOW DOM] 印刷機能の修正 ---
+        const handlePrint = () => {
+            const printContainer = document.createElement('div');
+            printContainer.className = 'print-container';
+
+            if (container.classList.contains('mode-editor')) {
+                const pre = document.createElement('pre');
+                pre.className = 'raw-text-print';
+                pre.textContent = markdownTextarea.value;
+                printContainer.appendChild(pre);
+            } else {
+                // Shadow DOMの内容を印刷するために、スタイルとHTMLを再構築
+                const printContent = document.createElement('div');
+                printContent.className = 'print-content';
+                const printStyle = document.createElement('style');
+                printStyle.textContent = PREVIEW_STYLES; // カプセル化されたスタイルを使用
+                printContent.innerHTML = shadowContent.innerHTML; // Shadow DOMの中身をコピー
+                printContainer.append(printStyle, printContent);
+            }
+            document.body.appendChild(printContainer);
+            window.print();
+            document.body.removeChild(printContainer);
+        };
         printButton.addEventListener('click', handlePrint);
+
         splitAndSetContent(originalTextarea.value);
         const initialToolbarVisible = localStorage.getItem(STORAGE_KEY_TOOLBAR_VISIBLE) !== 'false';
         toggleToolbar(initialToolbarVisible);
@@ -997,33 +973,21 @@
             switchMode: switchMode
         };
 
-        // isNewNoteSetupがtrueの場合のみ、初期フォーカスを当てる
         switchMode(savedMode || 'split', isNewNoteSetup);
-        console.log(`Markdown Editor for Standard Notes (v${GM_info.script.version}) has been initialized.`);
-        if (isNewNoteSetup) {
-            console.log('New note detected, focusing editor.');
-        }
+        console.log(`Markdown Editor for Standard Notes (v${GM_info.script.version}) has been initialized with Shadow DOM.`);
+        if (isNewNoteSetup) { console.log('New note detected, focusing editor.'); }
     }
 
-    /**
-     * 日本語化スクリプトから発行されるカスタムイベント 'sn:title:enter' をリッスンし、
-     * エディタへのフォーカス移動を実行する。
-     * @param {CustomEvent} e - 発行されたカスタムイベント
-     */
     function handleFocusToEditor(e) {
         console.log("イベント 'sn:title:enter' を受信。カスタムエディタにフォーカスします。");
         if (activeEditorInstance) {
             const { textarea, switchMode } = activeEditorInstance;
             const currentMode = localStorage.getItem(STORAGE_KEY_MODE) || 'split';
-
-            // プレビューモードの場合は、分割モードに切り替えてエディタを表示させる
             if (currentMode === 'preview') {
                 switchMode('split', true);
             } else {
                 textarea.focus();
             }
-
-            // フォーカスが当たった後、カーソルを末尾に移動させる
             setTimeout(() => {
                 const len = textarea.value.length;
                 textarea.setSelectionRange(len, len);
@@ -1032,77 +996,42 @@
     }
     document.addEventListener('sn:title:enter', handleFocusToEditor);
 
-
-    /**
-     * [MODIFIED] 修正案2: 堅牢性を高めたエディタセットアップ開始関数。
-     * ネイティブエディタにコンテンツが読み込まれるのを待ってから実行する（ポーリング）。
-     * @param {HTMLElement} editor - ネイティブのtextarea要素
-     * @param {number} [attempts=0] - 再試行の回数
-     */
     function initiateEditorSetup(editor, attempts = 0) {
-        const MAX_ATTEMPTS = 40; // 最大40回試行 (50ms * 40 = 2秒)
-        const RETRY_INTERVAL = 50; // 50ミリ秒ごとに再試行
-
-        // ポーリングの各ステップで、そもそもエディタがDOMに存在するかを確認する。
-        // もし途中で削除されたら、無駄なポーリングを中止する。
+        const MAX_ATTEMPTS = 40; const RETRY_INTERVAL = 50;
         if (!editor.isConnected) {
             console.log('Markdown Editor: Polling stopped. Editor was detached from DOM during initialization.');
             return;
         }
-
-        // 条件：ネイティブエディタに何らかの値が設定されているか、
-        // または、5回(250ms)待っても値がなければ、空の新規ノートとみなしてセットアップを開始する
         if (editor.value || attempts > 5) {
-            // attempts > 5 は、コンテンツの読み込みを待ったが空だった場合 (≒新規ノート)
             const isNewNote = !editor.value && attempts > 5;
             setupMarkdownEditor(editor, isNewNote);
         } else if (attempts < MAX_ATTEMPTS) {
-            // まだ値がなく、試行回数が上限に達していない場合、再試行
             setTimeout(() => initiateEditorSetup(editor, attempts + 1), RETRY_INTERVAL);
         } else {
-            // タイムアウトした場合でも、セットアップを試みる(フェイルセーフ)
             console.warn(`エディタのコンテンツ読み込みがタイムアウトしました。空の状態でセットアップを強制実行します。`);
-            setupMarkdownEditor(editor, true); // タイムアウト時も新規ノートとみなし、フォーカスを当てる
+            setupMarkdownEditor(editor, true);
         }
     }
 
-    /**
-     * [MODIFIED] 修正案3: より精密で堅牢なDOM監視ロジック。
-     * ノードの追加を直接検知し、エディタの出現・消失に正確に対応する。
-     */
     const mainObserver = new MutationObserver((mutations) => {
-        // ノードが追加されたかどうかのチェック
         for (const mutation of mutations) {
             if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
                 for (const node of mutation.addedNodes) {
-                    // 追加されたノードが要素でなければスキップ
                     if (node.nodeType !== Node.ELEMENT_NODE) continue;
-
-                    // 追加されたノード自体、またはその子孫に #note-text-editor があるか探す
                     const editor = node.matches('#note-text-editor') ? node : node.querySelector('#note-text-editor');
-
                     if (editor && !editor.dataset.markdownReady) {
-                        // 以前のカスタムエディタがもし残っていれば安全のために削除
                         const oldCustomEditor = document.querySelector('.markdown-editor-container');
                         if (oldCustomEditor) oldCustomEditor.remove();
-
-                        // ポーリングを開始する関数を呼び出す
                         initiateEditorSetup(editor);
-
-                        // このMutationRecordでの処理は完了したので、次のMutationRecordへ
-                        // （一つの変更で複数のエディタが見つかることはないと想定）
                         return;
                     }
                 }
             }
         }
-
-        // エディタがDOMから削除された場合のクリーンアップ処理
-        // （上記ループとは独立して毎回チェックする）
         const customEditor = document.querySelector('.markdown-editor-container');
         if (customEditor && !document.querySelector('#note-text-editor')) {
             customEditor.remove();
-            activeEditorInstance = null; // エディタが閉じられたら参照をクリア
+            activeEditorInstance = null;
             const hiddenWrapper = document.querySelector('#editor-content[style*="display: none"]');
             if(hiddenWrapper) hiddenWrapper.style.display = '';
         }
