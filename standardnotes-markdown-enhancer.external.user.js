@@ -1,16 +1,16 @@
 // ==UserScript==
 // @name                 Enhanced Markdown Editor for Standard Notes
-// @name:ja                Standard Notes 高機能Markdownエディタ拡張
-// @name:en                Enhanced Markdown Editor for Standard Notes
-// @name:zh-CN               为Standard Notes增强Markdown编辑器
-// @name:zh-TW               為Standard Notes強化Markdown編輯器
-// @name:ko                Standard Notes용 고급 Markdown 에디터 확장
-// @name:fr                Éditeur Markdown amélioré pour Standard Notes
-// @name:es                Editor Markdown mejorado para Standard Notes
-// @name:de                Erweiterter Markdown-Editor für Standard Notes
-// @name:pt-BR             Editor Markdown avançado para Standard Notes
-// @name:ru                Улучшенный редактор Markdown для Standard Notes
-// @version              5.0.2
+// @name:ja              Standard Notes 高機能Markdownエディタ拡張
+// @name:en              Enhanced Markdown Editor for Standard Notes
+// @name:zh-CN           为Standard Notes增强Markdown编辑器
+// @name:zh-TW           為Standard Notes強化Markdown編輯器
+// @name:ko              Standard Notes용 고급 Markdown 에디터 확장
+// @name:fr              Éditeur Markdown amélioré pour Standard Notes
+// @name:es              Editor Markdown mejorado para Standard Notes
+// @name:de              Erweiterter Markdown-Editor für Standard Notes
+// @name:pt-BR           Editor Markdown avançado para Standard Notes
+// @name:ru              Улучшенный редактор Markdown для Standard Notes
+// @version              5.0.5
 // @description          Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency. This version features a new architecture for rock-solid sync reliability.
 // @description:ja       Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップ。盤石な同期信頼性を実現する新アーキテクチャ版です。
 // @description:zh-CN    非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。此版本采用新架构，具有坚如磐石的同步可靠性。
@@ -48,14 +48,6 @@
     // --- グローバル参照 ---
     let activeEditorInstance = null;
     let debouncedInputHandler = () => {};
-    /**
-     * @type {boolean}
-     * @description
-     * 同期の中核を担うロックフラグ。
-     * trueの場合、スクリプトが内部的にoriginalTextareaを更新中であることを示す。
-     * MutationObserverはこのフラグを見て、スクリプト自身が引き起こした変更を無視する。
-     * これにより、ユーザーの入力とサーバーからの同期が衝突し、データが失われるのを防ぐ。
-     */
     let isInternallyUpdating = false;
 
     // --- 国際化 (i18n) ---
@@ -114,7 +106,6 @@
     // --- [SHADOW DOM] プレビュー専用スタイル ---
     const PREVIEW_STYLES = `
         :host {
-            /* Shadow DOMのホスト要素自体がスクロールコンテナになるように設定 */
             display: block;
             overflow-y: auto;
             height: 100%;
@@ -141,10 +132,17 @@
         .markdown-preview th, .markdown-preview td { border: 2px solid var(--sn-stylekit-border-color, #adb5bd); padding: 6px 13px; }
         .markdown-preview tr:nth-child(2n) { background-color: var(--sn-stylekit-secondary-background-color, #f6f8fa); }
         .markdown-preview hr { height: .25em; padding: 0; margin: 24px 0; background-color: var(--sn-stylekit-border-color, #dfe2e5); border: 0; }
-        .markdown-preview li.task-list-item { list-style-type: none; }
-        .markdown-preview .task-list-item-checkbox { margin: 0 .2em .25em -1.6em; vertical-align: middle; cursor: pointer; }
-        .markdown-preview li.task-list-item.completed { color: var(--sn-stylekit-secondary-foreground-color, #6a737d); }
-        .markdown-preview li.task-list-item.completed, .markdown-preview li.task-list-item.completed a { text-decoration: line-through; }
+
+        /* [v5.0.5 FIX] :has()の互換性問題を回避するため、JSでクラスを付与する方式に戻す */
+        .markdown-preview li.task-list-item {
+            list-style-type: none;
+        }
+        .markdown-preview li.task-list-item input[type="checkbox"] {
+            margin: 0 0.2em 0.25em -1.6em;
+            vertical-align: middle;
+            cursor: pointer;
+        }
+
         .copy-code-button { position: absolute; top: 10px; right: 10px; padding: 5px 8px; font-size: 12px; border: 1px solid var(--sn-stylekit-border-color, #ccc); border-radius: 4px; background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-secondary-foreground-color, #555); cursor: pointer; opacity: 0; transition: opacity 0.2s, background-color 0.2s, color 0.2s; z-index: 1; }
         .markdown-preview pre:hover .copy-code-button { opacity: 1; }
         .copy-code-button:hover { background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); }
@@ -171,7 +169,6 @@
 
     // --- スタイル定義 (UI部分のみ) ---
     GM_addStyle(`
-        /* General Styles */
         .markdown-editor-container { display: flex; flex-direction: column; height: 100%; overflow: hidden; border: 1px solid var(--sn-stylekit-border-color, #e0e0e0); border-radius: 4px; }
         .mode-toggle-bar { flex-shrink: 0; padding: 4px 10px; background-color: var(--sn-stylekit-editor-background-color, #f9f9f9); border-bottom: 1px solid var(--sn-stylekit-border-color, #e0e0e0); display: flex; align-items: center; gap: 5px; }
         .mode-toggle-button { padding: 5px 12px; border: 1px solid var(--sn-stylekit-border-color, #ccc); border-radius: 6px; cursor: pointer; background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-foreground-color, #333); font-size: 13px; }
@@ -195,12 +192,9 @@
         .markdown-editor-container.mode-preview .markdown-preview-host { display: block; }
         .markdown-editor-container.mode-split .custom-markdown-textarea, .markdown-editor-container.mode-split .markdown-preview-host { display: block !important; flex-basis: 50%; width: 50%; }
         .markdown-editor-container.mode-split .markdown-preview-host { border-left: 1px solid var(--sn-stylekit-border-color, #e0e0e0); }
-        /* Print Styles */
         @media print {
             body > *:not(.print-container) { display: none !important; }
-            /* [修正] 意図しない要素（<style>タグなど）が表示されるのを防ぐ */
             .print-container > style { display: none !important; }
-            /* [修正] 印刷したい要素のみを明示的に指定する */
             .print-container,
             .print-container > .print-content,
             .print-container > .raw-text-print {
@@ -222,7 +216,6 @@
             pre, blockquote, table, img, h1, h2, h3, h4 { page-break-inside: avoid; }
             h1, h2, h3 { page-break-after: avoid; }
         }
-        /* --- Modal Styles --- */
         .sn-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .sn-modal-content { background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-foreground-color, #333); padding: 20px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: flex; flex-direction: column; max-height: 90vh; }
         .sn-modal-content-image { max-width: 500px; width: 90%; }
@@ -234,7 +227,6 @@
         .sn-modal-footer { text-align: right; margin-top: 15px; border-top: 1px solid var(--sn-stylekit-border-color, #eee); padding-top: 15px; flex-shrink: 0; }
         .sn-modal-insert-btn { padding: 8px 16px; border-radius: 5px; border: none; background-color: var(--sn-stylekit-primary-color, #346df1); color: var(--sn-stylekit-primary-contrast-color, #fff); cursor: pointer; }
         .sn-modal-insert-btn:disabled { background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); color: var(--sn-stylekit-secondary-foreground-color, #a0a0a0); cursor: not-allowed; }
-        /* --- Image Inserter Modal --- */
         .sn-modal-tabs { display: flex; border-bottom: 1px solid var(--sn-stylekit-border-color, #eee); margin-bottom: 15px; }
         .sn-modal-tab { padding: 10px 15px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
         .sn-modal-tab.active { border-bottom-color: var(--sn-stylekit-primary-color, #346df1); font-weight: bold; }
@@ -249,7 +241,6 @@
         .sn-modal-file-input[type="file"] { display: none; }
         .sn-modal-processing-indicator { margin-top: 10px; font-style: italic; color: var(--sn-stylekit-secondary-foreground-color, #888); text-align: center; }
         .sn-modal-image-preview { max-height: 150px; max-width: 100%; border: 1px solid var(--sn-stylekit-border-color, #ccc); border-radius: 4px; margin-top: 10px; }
-        /* --- Interactive Table Editor Styles --- */
         .sn-modal-content-table .sn-modal-body { overflow: hidden; }
         .sn-table-editor-container { position: relative; height: 100%; display: flex; flex-direction: column; }
         .sn-table-scroll-container { overflow: auto; flex-grow: 1; padding: 40px 0 0 40px; }
@@ -272,7 +263,6 @@
         .control-cell { border: none !important; background: transparent !important; text-align: center; vertical-align: middle; padding: 4px !important; }
         .sn-table-editor thead .control-cell { position: -webkit-sticky; position: sticky; left: 0; background-color: var(--sn-stylekit-editor-background-color, #f9f9f9) !important; }
         .sn-table-editor thead .control-cell:last-child { right: 0; left: auto; }
-        /* --- Drag & Drop Styles for Table Editor --- */
         .sn-table-editor .drag-handle { cursor: grab; color: var(--sn-stylekit-secondary-foreground-color, #888); padding: 0 8px; user-select: none; }
         .sn-table-editor .drag-handle:active { cursor: grabbing; }
         .sn-table-editor .dragging { opacity: 0.5; background: var(--sn-stylekit-secondary-background-color, #f0f0f0); }
@@ -404,11 +394,9 @@
             const markdownImageRef = `![${finalAltText}][${refId}]`;
             applyMarkdown(markdownTextarea, markdownImageRef);
             const markdownImageDef = `[${refId}]: ${base64data}`;
-
             let currentDefs = definitionsText.replace(DEFINITIONS_HEADER, '').replace(DEFINITIONS_FOOTER, '').trim();
             currentDefs = (currentDefs ? currentDefs + '\n' : '') + markdownImageDef;
             definitionsText = `${DEFINITIONS_HEADER}\n${currentDefs}\n${DEFINITIONS_FOOTER}`;
-
             debouncedInputHandler();
         };
 
@@ -446,6 +434,7 @@
                 document.execCommand('insertText', false, tableMd);
             }
         };
+
         const parseMarkdownTable = (text) => {
             if (!text || typeof text !== 'string' || !text.includes('|')) return null;
             const lines = text.trim().split('\n').map(l => l.trim()).filter(l => l.includes('|'));
@@ -477,44 +466,11 @@
             })];
             return { rows, alignments };
         };
+
         const openImageInserterModal = (onInsertCallback) => {
             const modalOverlay = document.createElement('div');
             modalOverlay.className = 'sn-modal-overlay';
-            modalOverlay.innerHTML = `
-                <div class="sn-modal-content sn-modal-content-image">
-                    <div class="sn-modal-header">
-                        <h3>${T.insertImage}</h3>
-                        <button class="sn-modal-close" title="${T.close}">&times;</button>
-                    </div>
-                    <div class="sn-modal-body">
-                        <div class="sn-modal-tabs">
-                            <div class="sn-modal-tab active" data-tab="url">${T.fromURL}</div>
-                            <div class="sn-modal-tab" data-tab="upload">${T.uploadFile}</div>
-                        </div>
-                        <div class="sn-modal-tab-content active" data-tab-content="url">
-                            <div class="sn-modal-form-group">
-                                <label for="sn-image-url">${T.imageURL}</label>
-                                <input type="text" id="sn-image-url" class="sn-modal-input" placeholder="https://example.com/image.jpg">
-                            </div>
-                        </div>
-                        <div class="sn-modal-tab-content" data-tab-content="upload">
-                                <div class="sn-modal-form-group">
-                                    <label class="sn-modal-file-wrapper">
-                                        <span class="sn-modal-file-label">${T.chooseFile}</span>
-                                        <input type="file" class="sn-modal-file-input" accept="image/*">
-                                    </label>
-                                    <div class="sn-modal-processing-indicator"></div>
-                                </div>
-                        </div>
-                        <div class="sn-modal-form-group">
-                            <label for="sn-image-alt">${T.altText}</label>
-                            <input type="text" id="sn-image-alt" class="sn-modal-input" placeholder="A description of the image">
-                        </div>
-                    </div>
-                    <div class="sn-modal-footer">
-                        <button class="sn-modal-insert-btn">${T.insert}</button>
-                    </div>
-                </div>`;
+            modalOverlay.innerHTML = `<div class="sn-modal-content sn-modal-content-image"><div class="sn-modal-header"><h3>${T.insertImage}</h3><button class="sn-modal-close" title="${T.close}">&times;</button></div><div class="sn-modal-body"><div class="sn-modal-tabs"><div class="sn-modal-tab active" data-tab="url">${T.fromURL}</div><div class="sn-modal-tab" data-tab="upload">${T.uploadFile}</div></div><div class="sn-modal-tab-content active" data-tab-content="url"><div class="sn-modal-form-group"><label for="sn-image-url">${T.imageURL}</label><input type="text" id="sn-image-url" class="sn-modal-input" placeholder="https://example.com/image.jpg"></div></div><div class="sn-modal-tab-content" data-tab-content="upload"><div class="sn-modal-form-group"><label class="sn-modal-file-wrapper"><span class="sn-modal-file-label">${T.chooseFile}</span><input type="file" class="sn-modal-file-input" accept="image/*"></label><div class="sn-modal-processing-indicator"></div></div></div><div class="sn-modal-form-group"><label for="sn-image-alt">${T.altText}</label><input type="text" id="sn-image-alt" class="sn-modal-input" placeholder="A description of the image"></div></div><div class="sn-modal-footer"><button class="sn-modal-insert-btn">${T.insert}</button></div></div>`;
             document.body.appendChild(modalOverlay);
             const content = modalOverlay.querySelector('.sn-modal-content');
             const urlInput = modalOverlay.querySelector('#sn-image-url');
@@ -533,10 +489,7 @@
                     modalOverlay.querySelectorAll('.sn-modal-tab-content').forEach(c => c.classList.remove('active'));
                     tab.classList.add('active');
                     modalOverlay.querySelector(`.sn-modal-tab-content[data-tab-content="${currentTab}"]`).classList.add('active');
-                    base64data = null;
-                    fileInput.value = '';
-                    fileLabel.textContent = T.chooseFile;
-                    processingIndicator.innerHTML = '';
+                    base64data = null; fileInput.value = ''; fileLabel.textContent = T.chooseFile; processingIndicator.innerHTML = '';
                 };
             });
             fileInput.onchange = async (e) => {
@@ -564,15 +517,9 @@
                 const altText = altInput.value.trim();
                 if (currentTab === 'url') {
                     const url = urlInput.value.trim();
-                    if (url) {
-                        onInsertCallback(url, altText, false);
-                        closeModal();
-                    }
+                    if (url) { onInsertCallback(url, altText, false); closeModal(); }
                 } else {
-                    if (base64data) {
-                        onInsertCallback(base64data, altText, true);
-                        closeModal();
-                    }
+                    if (base64data) { onInsertCallback(base64data, altText, true); closeModal(); }
                 }
             };
             modalOverlay.querySelector('.sn-modal-close').onclick = closeModal;
@@ -580,16 +527,11 @@
             modalOverlay.onclick = closeModal;
             urlInput.focus();
         };
+
         const openTableEditorModal = (initialData, onInsertCallback) => {
             let tableData;
-            if (initialData && initialData.rows.length > 0) {
-                tableData = JSON.parse(JSON.stringify(initialData));
-            } else {
-                tableData = { rows: [
-                    ['', ''],
-                    ['', '']
-                ], alignments: ['left', 'left'] };
-            }
+            if (initialData && initialData.rows.length > 0) { tableData = JSON.parse(JSON.stringify(initialData)); }
+            else { tableData = { rows: [['', ''], ['', '']], alignments: ['left', 'left'] }; }
             const modalOverlay = document.createElement('div');
             modalOverlay.className = 'sn-modal-overlay';
             const render = () => {
@@ -599,34 +541,12 @@
                 for (let c = 0; c < colCount; c++) {
                     const align = tableData.alignments[c];
                     let alignIcon;
-                    switch (align) {
-                        case 'center':
-                            alignIcon = '⇌';
-                            break;
-                        case 'right':
-                            alignIcon = '→';
-                            break;
-                        default:
-                            alignIcon = '←';
-                    }
-                    headerHtml += `
-                        <th data-col="${c}">
-                            <div class="col-header-content" draggable="true">
-                                <span class="drag-handle">⁙</span>
-                                <div class="col-header" title="${T.alignLeft}/${T.alignCenter}/${T.alignRight}">
-                                    <span class="align-icon">${alignIcon}</span>
-                                </div>
-                            </div>
-                            <div class="delete-btn delete-col-btn" title="${T.deleteCol}">🗑️</div>
-                        </th>`;
+                    switch (align) { case 'center': alignIcon = '⇌'; break; case 'right': alignIcon = '→'; break; default: alignIcon = '←'; }
+                    headerHtml += `<th data-col="${c}"><div class="col-header-content" draggable="true"><span class="drag-handle">⁙</span><div class="col-header" title="${T.alignLeft}/${T.alignCenter}/${T.alignRight}"><span class="align-icon">${alignIcon}</span></div></div><div class="delete-btn delete-col-btn" title="${T.deleteCol}">🗑️</div></th>`;
                 }
                 let bodyHtml = '';
                 for (let r = 0; r < rowCount; r++) {
-                    bodyHtml += `<tr data-row="${r}">
-                        <td class="control-cell">
-                            <span class="drag-handle" draggable="true">⁙</span>
-                            <div class="delete-btn delete-row-btn" title="${T.deleteRow}">🗑️</div>
-                        </td>`;
+                    bodyHtml += `<tr data-row="${r}"><td class="control-cell"><span class="drag-handle" draggable="true">⁙</span><div class="delete-btn delete-row-btn" title="${T.deleteRow}">🗑️</div></td>`;
                     for (let c = 0; c < colCount; c++) {
                         const cellValue = tableData.rows[r][c] || '';
                         const placeholder = r === 0 ? 'Header' : 'Cell';
@@ -634,41 +554,8 @@
                     }
                     bodyHtml += `<td class="control-cell"></td></tr>`;
                 }
-                const tableHtml = `
-                    <table class="sn-table-editor">
-                        <thead>
-                            <tr>
-                                <th class="control-cell"></th>
-                                ${headerHtml}
-                                <th class="control-cell"><div class="add-btn add-col-btn" title="${T.addCol}">+</div></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${bodyHtml}
-                            <tr>
-                                <td class="control-cell"></td>
-                                <td colspan="${colCount}" class="control-cell">
-                                    <div class="add-btn add-row-btn" title="${T.addRow}">+</div>
-                                </td>
-                                <td class="control-cell"></td>
-                            </tr>
-                        </tbody>
-                    </table>`;
-                modalOverlay.innerHTML = `
-                    <div class="sn-modal-content sn-modal-content-table">
-                        <div class="sn-modal-header">
-                            <h3>${T.tableEditor}</h3>
-                            <button class="sn-modal-close" title="${T.close}">&times;</button>
-                        </div>
-                        <div class="sn-modal-body">
-                            <div class="sn-table-editor-container">
-                                <div class="sn-table-scroll-container">${tableHtml}</div>
-                            </div>
-                        </div>
-                        <div class="sn-modal-footer">
-                            <button class="sn-modal-insert-btn">${T.insert}</button>
-                        </div>
-                    </div>`;
+                const tableHtml = `<table class="sn-table-editor"><thead><tr><th class="control-cell"></th>${headerHtml}<th class="control-cell"><div class="add-btn add-col-btn" title="${T.addCol}">+</div></th></tr></thead><tbody>${bodyHtml}<tr><td class="control-cell"></td><td colspan="${colCount}" class="control-cell"><div class="add-btn add-row-btn" title="${T.addRow}">+</div></td><td class="control-cell"></td></tr></tbody></table>`;
+                modalOverlay.innerHTML = `<div class="sn-modal-content sn-modal-content-table"><div class="sn-modal-header"><h3>${T.tableEditor}</h3><button class="sn-modal-close" title="${T.close}">&times;</button></div><div class="sn-modal-body"><div class="sn-table-editor-container"><div class="sn-table-scroll-container">${tableHtml}</div></div></div><div class="sn-modal-footer"><button class="sn-modal-insert-btn">${T.insert}</button></div></div>`;
                 attachEventListeners();
             };
             const attachEventListeners = () => {
@@ -683,177 +570,53 @@
                     const colCount = tableData.rows[0]?.length || 0;
                     if (colCount > 0 && tableData.rows.some(row => row.some(cell => cell.trim() !== ''))) {
                         markdown += '| ' + tableData.rows[0].map(c => c.trim() || ' ').join(' | ') + ' |\n';
-                        markdown += '|' + tableData.alignments.map(a => {
-                            if (a === 'center') return ' :---: ';
-                            if (a === 'right') return ' ---: ';
-                            return ' :--- ';
-                        }).join('|') + '|\n';
-                        for (let i = 1; i < tableData.rows.length; i++) {
-                            markdown += '| ' + tableData.rows[i].map(c => c.trim() || ' ').join(' | ') + ' |\n';
-                        }
+                        markdown += '|' + tableData.alignments.map(a => { if (a === 'center') return ' :---: '; if (a === 'right') return ' ---: '; return ' :--- '; }).join('|') + '|\n';
+                        for (let i = 1; i < tableData.rows.length; i++) { markdown += '| ' + tableData.rows[i].map(c => c.trim() || ' ').join(' | ') + ' |\n'; }
                     }
-                    onInsertCallback(markdown);
-                    closeModal();
+                    onInsertCallback(markdown); closeModal();
                 };
                 modalOverlay.querySelector('.add-row-btn').onclick = () => {
-                    if (tableData.rows.length === 0) {
-                        tableData.rows.push(['']);
-                        tableData.alignments = ['left'];
-                    } else {
-                        tableData.rows.push(new Array(tableData.rows[0]?.length || 1).fill(''));
-                    }
+                    if (tableData.rows.length === 0) { tableData.rows.push(['']); tableData.alignments = ['left']; }
+                    else { tableData.rows.push(new Array(tableData.rows[0]?.length || 1).fill('')); }
                     render();
                 };
                 modalOverlay.querySelector('.add-col-btn').onclick = () => {
-                    if (tableData.rows.length === 0) {
-                        tableData.rows.push(['']);
-                        tableData.alignments = ['left'];
-                    } else {
-                        tableData.rows.forEach(row => row.push(''));
-                        tableData.alignments.push('left');
-                    }
+                    if (tableData.rows.length === 0) { tableData.rows.push(['']); tableData.alignments = ['left']; }
+                    else { tableData.rows.forEach(row => row.push('')); tableData.alignments.push('left'); }
                     render();
                 };
-                modalOverlay.querySelectorAll('.delete-row-btn').forEach(btn => {
-                    btn.onclick = e => {
-                        const row = parseInt(e.target.closest('tr').dataset.row, 10);
-                        if (tableData.rows.length > 1) {
-                            tableData.rows.splice(row, 1);
-                            render();
-                        }
-                    };
-                });
-                modalOverlay.querySelectorAll('.delete-col-btn').forEach(btn => {
-                    btn.onclick = e => {
-                        const col = parseInt(e.target.closest('th').dataset.col, 10);
-                        if (tableData.rows[0].length > 1) {
-                            tableData.rows.forEach(row => row.splice(col, 1));
-                            tableData.alignments.splice(col, 1);
-                            render();
-                        }
-                    };
-                });
-                modalOverlay.querySelectorAll('.col-header').forEach(header => {
-                    header.onclick = e => {
-                        const col = parseInt(e.currentTarget.closest('th').dataset.col, 10);
-                        const aligns = ['left', 'center', 'right'];
-                        tableData.alignments[col] = aligns[(aligns.indexOf(tableData.alignments[col]) + 1) % aligns.length];
-                        render();
-                    };
-                });
+                modalOverlay.querySelectorAll('.delete-row-btn').forEach(btn => { btn.onclick = e => { const row = parseInt(e.target.closest('tr').dataset.row, 10); if (tableData.rows.length > 1) { tableData.rows.splice(row, 1); render(); } }; });
+                modalOverlay.querySelectorAll('.delete-col-btn').forEach(btn => { btn.onclick = e => { const col = parseInt(e.target.closest('th').dataset.col, 10); if (tableData.rows[0].length > 1) { tableData.rows.forEach(row => row.splice(col, 1)); tableData.alignments.splice(col, 1); render(); } }; });
+                modalOverlay.querySelectorAll('.col-header').forEach(header => { header.onclick = e => { const col = parseInt(e.currentTarget.closest('th').dataset.col, 10); const aligns = ['left', 'center', 'right']; tableData.alignments[col] = aligns[(aligns.indexOf(tableData.alignments[col]) + 1) % aligns.length]; render(); }; });
                 modalOverlay.querySelectorAll('.cell-input').forEach(input => {
-                    input.oninput = e => {
-                        const { row, col } = e.target.dataset;
-                        tableData.rows[row][col] = e.target.value;
-                    };
+                    input.oninput = e => { const { row, col } = e.target.dataset; tableData.rows[row][col] = e.target.value; };
                     input.onkeydown = e => {
-                        const { row, col } = e.target.dataset;
-                        const r = parseInt(row, 10);
-                        const c = parseInt(col, 10);
-                        let nextCell = null;
-                        if (e.key === 'Enter' || e.key === 'ArrowDown') {
-                            e.preventDefault();
-                            nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r + 1}"][data-col="${c}"]`);
-                        } else if (e.key === 'ArrowUp') {
-                            e.preventDefault();
-                            nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r - 1}"][data-col="${c}"]`);
-                        } else if (e.key === 'Tab') {
-                            e.preventDefault();
-                            if (e.shiftKey) {
-                                nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r}"][data-col="${c - 1}"]`) || modalOverlay.querySelector(`.cell-input[data-row="${r - 1}"][data-col="${(tableData.rows[0]?.length || 1) - 1}"]`);
-                            } else {
-                                nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r}"][data-col="${c + 1}"]`) || modalOverlay.querySelector(`.cell-input[data-row="${r + 1}"][data-col="0"]`);
-                            }
-                        }
-                        if (nextCell) {
-                            nextCell.focus();
-                        }
+                        const { row, col } = e.target.dataset; const r = parseInt(row, 10); const c = parseInt(col, 10); let nextCell = null;
+                        if (e.key === 'Enter' || e.key === 'ArrowDown') { e.preventDefault(); nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r + 1}"][data-col="${c}"]`); }
+                        else if (e.key === 'ArrowUp') { e.preventDefault(); nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r - 1}"][data-col="${c}"]`); }
+                        else if (e.key === 'Tab') { e.preventDefault(); if (e.shiftKey) { nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r}"][data-col="${c - 1}"]`) || modalOverlay.querySelector(`.cell-input[data-row="${r - 1}"][data-col="${(tableData.rows[0]?.length || 1) - 1}"]`); } else { nextCell = modalOverlay.querySelector(`.cell-input[data-row="${r}"][data-col="${c + 1}"]`) || modalOverlay.querySelector(`.cell-input[data-row="${r + 1}"][data-col="0"]`); } }
+                        if (nextCell) { nextCell.focus(); }
                     };
                 });
                 modalOverlay.querySelectorAll('tbody tr .drag-handle[draggable="true"]').forEach(handle => {
                     const row = handle.closest('tr');
-                    handle.addEventListener('dragstart', (e) => {
-                        e.stopPropagation();
-                        draggedItem = row;
-                        const rowIndex = parseInt(draggedItem.dataset.row, 10);
-                        e.dataTransfer.setData('text/plain', rowIndex);
-                        e.dataTransfer.effectAllowed = 'move';
-                        setTimeout(() => draggedItem.classList.add('dragging'), 0);
-                    });
-                    handle.addEventListener('dragend', () => {
-                        draggedItem?.classList.remove('dragging');
-                        modalOverlay.querySelectorAll('.drag-over-row').forEach(el => el.classList.remove('drag-over-row'));
-                        draggedItem = null;
-                    });
+                    handle.addEventListener('dragstart', (e) => { e.stopPropagation(); draggedItem = row; const rowIndex = parseInt(draggedItem.dataset.row, 10); e.dataTransfer.setData('text/plain', rowIndex); e.dataTransfer.effectAllowed = 'move'; setTimeout(() => draggedItem.classList.add('dragging'), 0); });
+                    handle.addEventListener('dragend', () => { draggedItem?.classList.remove('dragging'); modalOverlay.querySelectorAll('.drag-over-row').forEach(el => el.classList.remove('drag-over-row')); draggedItem = null; });
                 });
                 modalOverlay.querySelectorAll('tbody tr').forEach(row => {
-                    row.addEventListener('dragover', (e) => {
-                        e.preventDefault();
-                        const targetRow = e.currentTarget;
-                        if (targetRow && targetRow !== draggedItem) {
-                            modalOverlay.querySelectorAll('.drag-over-row').forEach(el => el.classList.remove('drag-over-row'));
-                            targetRow.classList.add('drag-over-row');
-                        }
-                    });
-                    row.addEventListener('dragleave', (e) => {
-                        e.currentTarget.classList.remove('drag-over-row');
-                    });
-                    row.addEventListener('drop', (e) => {
-                        e.preventDefault();
-                        const targetRow = e.currentTarget;
-                        targetRow.classList.remove('drag-over-row');
-                        if (!targetRow || targetRow === draggedItem) return;
-                        const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
-                        const targetIndex = parseInt(targetRow.dataset.row, 10);
-                        const [removedRowData] = tableData.rows.splice(sourceIndex, 1);
-                        tableData.rows.splice(targetIndex, 0, removedRowData);
-                        render();
-                    });
+                    row.addEventListener('dragover', (e) => { e.preventDefault(); const targetRow = e.currentTarget; if (targetRow && targetRow !== draggedItem) { modalOverlay.querySelectorAll('.drag-over-row').forEach(el => el.classList.remove('drag-over-row')); targetRow.classList.add('drag-over-row'); } });
+                    row.addEventListener('dragleave', (e) => { e.currentTarget.classList.remove('drag-over-row'); });
+                    row.addEventListener('drop', (e) => { e.preventDefault(); const targetRow = e.currentTarget; targetRow.classList.remove('drag-over-row'); if (!targetRow || targetRow === draggedItem) return; const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'), 10); const targetIndex = parseInt(targetRow.dataset.row, 10); const [removedRowData] = tableData.rows.splice(sourceIndex, 1); tableData.rows.splice(targetIndex, 0, removedRowData); render(); });
                 });
                 modalOverlay.querySelectorAll('th .col-header-content[draggable="true"]').forEach(handle => {
                     const headerCell = handle.closest('th');
-                    handle.addEventListener('dragstart', (e) => {
-                        e.stopPropagation();
-                        draggedItem = headerCell;
-                        const colIndex = parseInt(draggedItem.dataset.col, 10);
-                        e.dataTransfer.setData('text/plain', colIndex);
-                        e.dataTransfer.effectAllowed = 'move';
-                        setTimeout(() => draggedItem.classList.add('dragging'), 0);
-                    });
-                    handle.addEventListener('dragend', (e) => {
-                        e.stopPropagation();
-                        draggedItem?.classList.remove('dragging');
-                        modalOverlay.querySelectorAll('.drag-over-col').forEach(el => el.classList.remove('drag-over-col'));
-                        draggedItem = null;
-                    });
+                    handle.addEventListener('dragstart', (e) => { e.stopPropagation(); draggedItem = headerCell; const colIndex = parseInt(draggedItem.dataset.col, 10); e.dataTransfer.setData('text/plain', colIndex); e.dataTransfer.effectAllowed = 'move'; setTimeout(() => draggedItem.classList.add('dragging'), 0); });
+                    handle.addEventListener('dragend', (e) => { e.stopPropagation(); draggedItem?.classList.remove('dragging'); modalOverlay.querySelectorAll('.drag-over-col').forEach(el => el.classList.remove('drag-over-col')); draggedItem = null; });
                 });
                 modalOverlay.querySelectorAll('thead th[data-col]').forEach(headerCell => {
-                    headerCell.addEventListener('dragover', (e) => {
-                        e.preventDefault();
-                        const targetCol = e.target.closest('th[data-col]');
-                        if (targetCol && targetCol !== draggedItem) {
-                            modalOverlay.querySelectorAll('.drag-over-col').forEach(el => el.classList.remove('drag-over-col'));
-                            targetCol.classList.add('drag-over-col');
-                        }
-                    });
-                    headerCell.addEventListener('dragleave', (e) => {
-                        e.target.closest('th[data-col]')?.classList.remove('drag-over-col');
-                    });
-                    headerCell.addEventListener('drop', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        const targetCol = e.target.closest('th[data-col]');
-                        if (!targetCol || targetCol === draggedItem) return;
-                        const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'), 10);
-                        const targetIndex = parseInt(targetCol.dataset.col, 10);
-                        const [removedAlign] = tableData.alignments.splice(sourceIndex, 1);
-                        tableData.alignments.splice(targetIndex, 0, removedAlign);
-                        tableData.rows.forEach(row => {
-                            const [removedCell] = row.splice(sourceIndex, 1);
-                            row.splice(targetIndex, 0, removedCell);
-                        });
-                        render();
-                    });
+                    headerCell.addEventListener('dragover', (e) => { e.preventDefault(); const targetCol = e.target.closest('th[data-col]'); if (targetCol && targetCol !== draggedItem) { modalOverlay.querySelectorAll('.drag-over-col').forEach(el => el.classList.remove('drag-over-col')); targetCol.classList.add('drag-over-col'); } });
+                    headerCell.addEventListener('dragleave', (e) => { e.target.closest('th[data-col]')?.classList.remove('drag-over-col'); });
+                    headerCell.addEventListener('drop', (e) => { e.preventDefault(); e.stopPropagation(); const targetCol = e.target.closest('th[data-col]'); if (!targetCol || targetCol === draggedItem) return; const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'), 10); const targetIndex = parseInt(targetCol.dataset.col, 10); const [removedAlign] = tableData.alignments.splice(sourceIndex, 1); tableData.alignments.splice(targetIndex, 0, removedAlign); tableData.rows.forEach(row => { const [removedCell] = row.splice(sourceIndex, 1); row.splice(targetIndex, 0, removedCell); }); render(); });
                 });
             };
             document.body.appendChild(modalOverlay);
@@ -863,23 +626,11 @@
 
         const modeBar = document.createElement('div');
         modeBar.className = 'mode-toggle-bar';
-        const editorButton = document.createElement('button');
-        editorButton.className = 'mode-toggle-button';
-        editorButton.textContent = T.editor;
-        const splitButton = document.createElement('button');
-        splitButton.className = 'mode-toggle-button';
-        splitButton.textContent = T.split;
-        const previewButton = document.createElement('button');
-        previewButton.className = 'mode-toggle-button';
-        previewButton.textContent = T.preview;
-        const toolbarToggleButton = document.createElement('button');
-        toolbarToggleButton.className = 'mode-toggle-button toolbar-toggle-button';
-        toolbarToggleButton.title = T.toggleToolbar;
-        toolbarToggleButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path></svg>`;
-        const printButton = document.createElement('button');
-        printButton.className = 'mode-toggle-button pdf-export-button';
-        printButton.textContent = T.printPDF;
-        printButton.title = T.exportPDF;
+        const editorButton = document.createElement('button'); editorButton.className = 'mode-toggle-button'; editorButton.textContent = T.editor;
+        const splitButton = document.createElement('button'); splitButton.className = 'mode-toggle-button'; splitButton.textContent = T.split;
+        const previewButton = document.createElement('button'); previewButton.className = 'mode-toggle-button'; previewButton.textContent = T.preview;
+        const toolbarToggleButton = document.createElement('button'); toolbarToggleButton.className = 'mode-toggle-button toolbar-toggle-button'; toolbarToggleButton.title = T.toggleToolbar; toolbarToggleButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path></svg>`;
+        const printButton = document.createElement('button'); printButton.className = 'mode-toggle-button pdf-export-button'; printButton.textContent = T.printPDF; printButton.title = T.exportPDF;
         const toolbar = document.createElement('div');
         toolbar.className = 'markdown-toolbar';
 
@@ -897,8 +648,7 @@
         const headingSelect = toolbar.querySelector('.heading-select');
         const updateHeadingSelector = () => {
             if (!headingSelect) return;
-            const pos = markdownTextarea.selectionStart;
-            const text = markdownTextarea.value;
+            const pos = markdownTextarea.selectionStart; const text = markdownTextarea.value;
             const lineStart = text.lastIndexOf('\n', pos - 1) + 1;
             let lineEnd = text.indexOf('\n', lineStart);
             if (lineEnd === -1) { lineEnd = text.length; }
@@ -925,21 +675,15 @@
                     shadowStyle.textContent = PREVIEW_STYLES;
                 }
                 const mainContent = markdownTextarea.value;
-                const unwrappedDefs = definitionsText
-                    .replace(DEFINITIONS_HEADER, '')
-                    .replace(DEFINITIONS_FOOTER, '')
-                    .trim();
-
+                const unwrappedDefs = definitionsText.replace(DEFINITIONS_HEADER, '').replace(DEFINITIONS_FOOTER, '').trim();
                 const contentForPreview = `${mainContent}\n\n${unwrappedDefs}`;
                 const dirtyHtml = marked.parse(contentForPreview);
                 const sanitizedHtml = DOMPurify.sanitize(dirtyHtml, { USE_PROFILES: { html: true }, ADD_ATTR: ['class', 'type', 'disabled', 'checked', 'data-task-index', 'data-processed', 'data-explicit-lang'], ADD_TAGS: ['span', 'input'], });
                 shadowContent.innerHTML = sanitizedHtml;
+
                 shadowContent.querySelectorAll('pre > code[class*="language-"]').forEach(codeEl => {
                     const langMatch = Array.from(codeEl.classList).find(cls => cls.startsWith('language-'));
-                    if (langMatch) {
-                        const lang = langMatch.replace('language-', '');
-                        if (lang) { codeEl.parentElement.dataset.explicitLang = lang; }
-                    }
+                    if (langMatch) { const lang = langMatch.replace('language-', ''); if (lang) { codeEl.parentElement.dataset.explicitLang = lang; } }
                 });
                 shadowContent.querySelectorAll('pre code').forEach(hljs.highlightElement);
                 shadowContent.querySelectorAll('pre').forEach(preEl => {
@@ -947,34 +691,39 @@
                     preEl.dataset.processed = 'true';
                     const codeEl = preEl.querySelector('code');
                     if (!codeEl) return;
-                    const langLabel = document.createElement('div');
-                    langLabel.className = 'code-language-label';
-                    langLabel.textContent = preEl.dataset.explicitLang || 'code';
-                    preEl.appendChild(langLabel);
-                    const copyButton = document.createElement('button');
-                    copyButton.className = 'copy-code-button';
-                    copyButton.textContent = T.copy;
-                    copyButton.setAttribute('aria-label', T.copyAriaLabel);
-                    preEl.appendChild(copyButton);
+                    const langLabel = document.createElement('div'); langLabel.className = 'code-language-label'; langLabel.textContent = preEl.dataset.explicitLang || 'code'; preEl.appendChild(langLabel);
+                    const copyButton = document.createElement('button'); copyButton.className = 'copy-code-button'; copyButton.textContent = T.copy; copyButton.setAttribute('aria-label', T.copyAriaLabel); preEl.appendChild(copyButton);
                     copyButton.addEventListener('click', (e) => {
                         e.stopPropagation();
                         navigator.clipboard.writeText(codeEl.innerText).then(() => {
-                            copyButton.textContent = T.copied;
-                            copyButton.classList.add('copied');
+                            copyButton.textContent = T.copied; copyButton.classList.add('copied');
                             setTimeout(() => { copyButton.textContent = T.copy; copyButton.classList.remove('copied'); }, 2000);
                         }).catch(err => {
-                            console.error('Failed to copy code block.', err);
-                            copyButton.textContent = T.copyError;
+                            console.error('Failed to copy code block.', err); copyButton.textContent = T.copyError;
                             setTimeout(() => { copyButton.textContent = T.copy; }, 2000);
                         });
                     });
                 });
-                const checkboxes = shadowContent.querySelectorAll('.task-list-item-checkbox');
-                checkboxes.forEach((checkbox, index) => {
-                    if (checkbox.checked) { checkbox.closest('.task-list-item')?.classList.add('completed'); }
-                    const newCheckbox = checkbox.cloneNode(true);
-                    checkbox.parentNode.replaceChild(newCheckbox, checkbox);
-                    newCheckbox.addEventListener('click', () => handlePreviewChecklistToggle(index));
+
+                // [v5.0.5 FIX] プレビュー内のチェックボックスを処理し、互換性の高い方法でスタイルを適用する
+                shadowContent.querySelectorAll('input[type="checkbox"]').forEach((checkbox, index) => {
+                    const listItem = checkbox.closest('li');
+                    if (listItem) {
+                        // スタイリング用のクラスを付与
+                        listItem.classList.add('task-list-item');
+                        if (checkbox.checked) {
+                            listItem.classList.add('completed');
+                        }
+
+                        // イベントハンドラを再設定
+                        const newCheckbox = checkbox.cloneNode(true);
+                        checkbox.parentNode.replaceChild(newCheckbox, checkbox);
+                        newCheckbox.addEventListener('click', (e) => {
+                            // 既定のチェック動作はさせず、Markdownソースの更新→再描画に任せる
+                            e.preventDefault();
+                            handlePreviewChecklistToggle(index);
+                        });
+                    }
                 });
             } catch (e) {
                 console.error("Error updating preview:", e);
@@ -986,20 +735,16 @@
 
         const handlePreviewChecklistToggle = (toggledIndex) => {
             const text = markdownTextarea.value;
-            const regex = /-\s\[[ x]\]/g;
-            let match;
+            const regex = /^\s*(?:-|\*|\d+\.)\s+\[( |x)\]/gm;
             let currentIndex = 0;
-            let newText = text;
-            while ((match = regex.exec(text)) !== null) {
+            const newText = text.replace(regex, (original) => {
                 if (currentIndex === toggledIndex) {
-                    const original = match[0];
-                    const replacement = original.includes('[ ]') ? '- [x]' : '- [ ]';
-                    const pos = match.index;
-                    newText = text.substring(0, pos) + replacement + text.substring(pos + original.length);
-                    break;
+                    currentIndex++;
+                    return original.includes('[ ]') ? original.replace('[ ]', '[x]') : original.replace('[x]', '[ ]');
                 }
                 currentIndex++;
-            }
+                return original;
+            });
             if (markdownTextarea.value !== newText) {
                 const cursorPos = markdownTextarea.selectionStart;
                 markdownTextarea.value = newText;
@@ -1007,12 +752,10 @@
                 debouncedInputHandler();
             }
         };
+
         let mouseDownTime = 0;
         let mouseDownPos = { x: 0, y: 0 };
-        markdownTextarea.addEventListener('mousedown', (e) => {
-            mouseDownTime = Date.now();
-            mouseDownPos = { x: e.clientX, y: e.clientY };
-        });
+        markdownTextarea.addEventListener('mousedown', (e) => { mouseDownTime = Date.now(); mouseDownPos = { x: e.clientX, y: e.clientY }; });
         const handleEditorClick = (e) => {
             const textarea = e.target;
             const mouseUpTime = Date.now();
@@ -1024,7 +767,7 @@
             const lineEnd = text.indexOf('\n', pos);
             const effectiveLineEnd = lineEnd === -1 ? text.length : lineEnd;
             const line = text.substring(lineStart, effectiveLineEnd);
-            const checklistRegex = /^(\s*)(-|\*|\d+\.)\s\[( |x)\]/;
+            const checklistRegex = /^(\s*)(?:-|\*|\d+\.)\s\[( |x)\]/;
             const match = line.match(checklistRegex);
             if (match && pos - lineStart <= match[0].length) {
                 e.preventDefault();
@@ -1036,6 +779,7 @@
             }
         };
         markdownTextarea.addEventListener('click', handleEditorClick);
+
         const handleEnterKey = (e) => {
             const textarea = e.target;
             const pos = textarea.selectionStart;
@@ -1056,18 +800,13 @@
                 const indent = match[1];
                 let listMarker = match[2];
                 const numberedMatch = listMarker.match(/^(\d+)\.\s/);
-                if (numberedMatch) {
-                    listMarker = `${parseInt(numberedMatch[1], 10) + 1}. `;
-                } else if (listMarker.includes('[x]')) {
-                    listMarker = listMarker.replace('[x]', '[ ]');
-                }
+                if (numberedMatch) { listMarker = `${parseInt(numberedMatch[1], 10) + 1}. `; }
+                else if (listMarker.includes('[x]')) { listMarker = listMarker.replace('[x]', '[ ]'); }
                 textarea.setRangeText(`\n${indent}${listMarker}`, pos, pos, 'end');
                 debouncedInputHandler();
             }
         };
-        markdownTextarea.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) { handleEnterKey(e); }
-        });
+        markdownTextarea.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) { handleEnterKey(e); } });
 
         const cleanupOrphanedImageRefs = () => {
             const contentValue = markdownTextarea.value;
@@ -1084,11 +823,8 @@
             });
             const newDefsContent = keptDefLines.join('\n');
             if (newDefsContent !== currentDefsContent) {
-                if (newDefsContent) {
-                    definitionsText = `${DEFINITIONS_HEADER}\n${newDefsContent}\n${DEFINITIONS_FOOTER}`;
-                } else {
-                    definitionsText = '';
-                }
+                if (newDefsContent) { definitionsText = `${DEFINITIONS_HEADER}\n${newDefsContent}\n${DEFINITIONS_FOOTER}`; }
+                else { definitionsText = ''; }
                 return true;
             }
             return false;
@@ -1104,35 +840,26 @@
             if (container.classList.contains('mode-split') || container.classList.contains('mode-preview')) {
                 debouncedUpdatePreview();
             }
-            requestAnimationFrame(() => {
-                isInternallyUpdating = false;
-            });
+            requestAnimationFrame(() => { isInternallyUpdating = false; });
         };
         debouncedInputHandler = debounce(handleInput, 300);
         markdownTextarea.addEventListener('input', debouncedInputHandler);
 
         const observer = new MutationObserver(() => {
-            if (isInternallyUpdating) {
-                return;
-            }
+            if (isInternallyUpdating) { return; }
             console.log('Markdown Editor: External change detected. Syncing to custom editor.');
             isInternallyUpdating = true;
             extractAndSetContent(originalTextarea.value);
             if (container.classList.contains('mode-split') || container.classList.contains('mode-preview')) {
                 updatePreview();
             }
-            requestAnimationFrame(() => {
-                isInternallyUpdating = false;
-            });
+            requestAnimationFrame(() => { isInternallyUpdating = false; });
         });
         observer.observe(originalTextarea, { attributes: true, childList: true, subtree: true, characterData: true });
 
         let scrollRequest;
         const handleScroll = (source, target) => {
-            if (source.isSyncing) {
-                source.isSyncing = false;
-                return;
-            }
+            if (source.isSyncing) { source.isSyncing = false; return; }
             cancelAnimationFrame(scrollRequest);
             scrollRequest = requestAnimationFrame(() => {
                 const sourceScrollableDist = source.scrollHeight - source.clientHeight;
@@ -1159,12 +886,8 @@
                 markdownTextarea.addEventListener('scroll', onEditorScroll, { passive: true });
                 previewHost.addEventListener('scroll', onPreviewScroll, { passive: true });
             }
-            if (mode === 'preview' || mode === 'split') {
-                updatePreview();
-            }
-            if (shouldFocus && mode !== 'preview') {
-                markdownTextarea.focus();
-            }
+            if (mode === 'preview' || mode === 'split') { updatePreview(); }
+            if (shouldFocus && mode !== 'preview') { markdownTextarea.focus(); }
             updateHeadingSelector();
         };
 
@@ -1209,10 +932,7 @@
         toggleToolbar(initialToolbarVisible);
         const savedMode = localStorage.getItem(STORAGE_KEY_MODE);
 
-        activeEditorInstance = {
-            textarea: markdownTextarea,
-            switchMode: switchMode
-        };
+        activeEditorInstance = { textarea: markdownTextarea, switchMode: switchMode };
 
         switchMode(savedMode || 'split', isNewNoteSetup);
         console.log(`Markdown Editor for Standard Notes (v${GM_info.script.version}, Reliability Enhanced) has been initialized.`);
@@ -1224,15 +944,9 @@
         if (activeEditorInstance) {
             const { textarea, switchMode } = activeEditorInstance;
             const currentMode = localStorage.getItem(STORAGE_KEY_MODE) || 'split';
-            if (currentMode === 'preview') {
-                switchMode('split', true);
-            } else {
-                textarea.focus();
-            }
-            setTimeout(() => {
-                const len = textarea.value.length;
-                textarea.setSelectionRange(len, len);
-            }, 0);
+            if (currentMode === 'preview') { switchMode('split', true); }
+            else { textarea.focus(); }
+            setTimeout(() => { const len = textarea.value.length; textarea.setSelectionRange(len, len); }, 0);
         }
     }
     document.addEventListener('sn:title:enter', handleFocusToEditor);
