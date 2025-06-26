@@ -1,38 +1,38 @@
 // ==UserScript==
-// @name              Enhanced Markdown Editor for Standard Notes
-// @name:ja             Standard Notes 高機能Markdownエディタ拡張
-// @name:en             Enhanced Markdown Editor for Standard Notes
-// @name:zh-CN            为Standard Notes增强Markdown编辑器
-// @name:zh-TW            為Standard Notes強化Markdown編輯器
-// @name:ko             Standard Notes용 고급 Markdown 에디터 확장
-// @name:fr             Éditeur Markdown amélioré pour Standard Notes
-// @name:es             Editor Markdown mejorado para Standard Notes
-// @name:de             Erweiterter Markdown-Editor für Standard Notes
-// @name:pt-BR          Editor Markdown avançado para Standard Notes
-// @name:ru             Улучшенный редактор Markdown для Standard Notes
-// @version           5.0.1
-// @description       Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency. This version features a new architecture for rock-solid sync reliability.
-// @description:ja    Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップ。盤石な同期信頼性を実現する新アーキテクチャ版です。
-// @description:zh-CN 非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。此版本采用新架构，具有坚如磐石的同步可靠性。
-// @description:zh-TW 非官方強化Markdown編輯器，為Standard Notes新增即時預覽、工具列、自動縮放圖片貼上/上傳、PDF匯出等功能，並自動清除未使用圖片。此版本採用新架構，具備堅如磐石的同步可靠性。
-// @description:ko    Standard Notes를 위한 강력한 비공식 Markdown 에디터! 실시간 미리보기, 서식 툴바, 이미지 붙여넣기/업로드(자동 리사이즈), PDF 내보내기 지원. 사용하지 않는 이미지는 자동 정리됩니다. 확고한 동기화 신뢰성을 위한 새로운 아키텍처 버전입니다。
-// @description:fr    Améliorez Standard Notes avec un éditeur Markdown puissant et non officiel : aperçu en direct, barre d’outils, collage/téléversement d’images redimensionnées automatiquement, export PDF. Nettoyage automatique des images inutilisées. Cette version présente une nouvelle architecture pour une fiabilité de synchronisation à toute épreuve.
-// @description:es    Mejora Standard Notes con un potente editor Markdown no oficial: vista previa en vivo, barra de herramientas, pegado/carga de imágenes con redimensionado automático y exportación a PDF. Las imágenes no usadas se eliminan automáticamente. Esta versión presenta una nueva arquitectura para una fiabilidad de sincronización sólida como una roca.
-// @description:de    Erweitern Sie Standard Notes mit einem leistungsstarken, inoffiziellen Markdown-Editor: Live-Vorschau, Formatierungsleiste, Bild-Einfügen/-Hochladen mit automatischer Größenanpassung und PDF-Export. Nicht verwendete Bilder werden automatisch bereinigt. Diese Version verfügt über eine neue Architektur für eine absolut zuverlässige Synchronisierung.
-// @description:pt-BR Potencialize o Standard Notes com um editor Markdown poderoso e não oficial: visualização ao vivo, barra de formatação, colagem/envio de imagens com redimensionamento automático e exportação para PDF. Imagens não utilizadas são removidas automaticamente. Esta versão apresenta uma nova arquitetura para uma confiabilidade de sincronização sólida.
-// @description:ru    Улучшите Standard Notes с помощью мощного неофициального редактора Markdown: живая превью, панель форматирования, вставка/загрузка изображений с автоизменением размера и экспорт в PDF. Неиспользуемые изображения автоматически удаляются. Эта версия имеет новую архитектуру для надежной синхронизации.
-// @namespace         https://github.com/koyasi777/standardnotes-markdown-enhancer
-// @author            koyasi777
-// @match             https://app.standardnotes.com/*
-// @grant             GM_addStyle
-// @grant             GM_info
-// @require           https://cdn.jsdelivr.net/npm/marked/marked.min.js
-// @require           https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js
-// @require           https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js
-// @license           MIT
-// @homepageURL       https://github.com/koyasi777/standardnotes-markdown-enhancer
-// @supportURL        https://github.com/koyasi777/standardnotes-markdown-enhancer/issues
-// @icon              https://app.standardnotes.com/favicon/favicon-32x32.png
+// @name                 Enhanced Markdown Editor for Standard Notes
+// @name:ja                Standard Notes 高機能Markdownエディタ拡張
+// @name:en                Enhanced Markdown Editor for Standard Notes
+// @name:zh-CN               为Standard Notes增强Markdown编辑器
+// @name:zh-TW               為Standard Notes強化Markdown編輯器
+// @name:ko                Standard Notes용 고급 Markdown 에디터 확장
+// @name:fr                Éditeur Markdown amélioré pour Standard Notes
+// @name:es                Editor Markdown mejorado para Standard Notes
+// @name:de                Erweiterter Markdown-Editor für Standard Notes
+// @name:pt-BR             Editor Markdown avançado para Standard Notes
+// @name:ru                Улучшенный редактор Markdown для Standard Notes
+// @version              5.0.2
+// @description          Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency. This version features a new architecture for rock-solid sync reliability.
+// @description:ja       Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップ。盤石な同期信頼性を実現する新アーキテクチャ版です。
+// @description:zh-CN    非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。此版本采用新架构，具有坚如磐石的同步可靠性。
+// @description:zh-TW    非官方強化Markdown編輯器，為Standard Notes新增即時預覽、工具列、自動縮放圖片貼上/上傳、PDF匯出等功能，並自動清除未使用圖片。此版本採用新架構，具備堅如磐石的同步可靠性。
+// @description:ko       Standard Notes를 위한 강력한 비공식 Markdown 에디터! 실시간 미리보기, 서식 툴바, 이미지 붙여넣기/업로드(자동 리사이즈), PDF 내보내기 지원. 사용하지 않는 이미지는 자동 정리됩니다. 확고한 동기화 신뢰성을 위한 새로운 아키텍처 버전입니다。
+// @description:fr       Améliorez Standard Notes avec un éditeur Markdown puissant et non officiel : aperçu en direct, barre d’outils, collage/téléversement d’images redimensionnées automatiquement, export PDF. Nettoyage automatique des images inutilisées. Cette version présente une nouvelle architecture pour une fiabilité de synchronisation à toute épreuve.
+// @description:es       Mejora Standard Notes con un potente editor Markdown no oficial: vista previa en vivo, barra de herramientas, pegado/carga de imágenes con redimensionado automático y exportación a PDF. Las imágenes no usadas se eliminan automáticamente. Esta versión presenta una nueva arquitectura para una fiabilidad de sincronización sólida como una roca.
+// @description:de       Erweitern Sie Standard Notes mit einem leistungsstarken, inoffiziellen Markdown-Editor: Live-Vorschau, Formatierungsleiste, Bild-Einfügen/-Hochladen mit automatischer Größenanpassung und PDF-Export. Nicht verwendete Bilder werden automatisch bereinigt. Diese Version verfügt über eine neue Architektur für eine absolut zuverlässige Synchronisierung.
+// @description:pt-BR    Potencialize o Standard Notes com um editor Markdown poderoso e não oficial: visualização ao vivo, barra de formatação, colagem/envio de imagens com redimensionamento automático e exportação para PDF. Imagens não utilizadas são removidas automaticamente. Esta versão apresenta uma nova arquitetura para uma confiabilidade de sincronização sólida.
+// @description:ru       Улучшите Standard Notes с помощью мощного неофициального редактора Markdown: живая превью, панель форматирования, вставка/загрузка изображений с автоизменением размера и экспорт в PDF. Неиспользуемые изображения автоматически удаляются. Эта версия имеет новую архитектуру для надежной синхронизации.
+// @namespace            https://github.com/koyasi777/standardnotes-markdown-enhancer
+// @author               koyasi777
+// @match                https://app.standardnotes.com/*
+// @grant                GM_addStyle
+// @grant                GM_info
+// @require              https://cdn.jsdelivr.net/npm/marked/marked.min.js
+// @require              https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js
+// @require              https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js
+// @license              MIT
+// @homepageURL          https://github.com/koyasi777/standardnotes-markdown-enhancer
+// @supportURL           https://github.com/koyasi777/standardnotes-markdown-enhancer/issues
+// @icon                 https://app.standardnotes.com/favicon/favicon-32x32.png
 // ==/UserScript==
 
 (function() {
@@ -196,7 +196,32 @@
         .markdown-editor-container.mode-split .custom-markdown-textarea, .markdown-editor-container.mode-split .markdown-preview-host { display: block !important; flex-basis: 50%; width: 50%; }
         .markdown-editor-container.mode-split .markdown-preview-host { border-left: 1px solid var(--sn-stylekit-border-color, #e0e0e0); }
         /* Print Styles */
-        @media print { body > *:not(.print-container) { display: none !important; } .print-container, .print-container > * { display: block !important; width: 100% !important; height: auto !important; overflow: visible !important; } html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; } .print-content { padding: 2cm !important; border: none !important; box-shadow: none !important; color: #000 !important; background-color: #fff !important; font-size: 12pt !important; line-height: 1.5 !important; } .print-content h1, .print-content h2, .print-content h3, .print-content h4, .print-content h5, .print-content h6 { color: #000 !important; border-bottom-color: #ccc !important; } .print-content pre, .print-content code { background-color: #f0f0f0 !important; color: #000 !important; border: 1px solid #ccc !important; } .print-content pre code.hljs { color: #000 !important; } .print-content blockquote { color: #333 !important; border-left-color: #ccc !important; } .print-content tr:nth-child(2n) { background-color: #f6f8fa !important; } .print-content th, .print-content td { border-color: #ccc !important; } .copy-code-button, .code-language-label { display: none !important; } .raw-text-print { margin: 0 !important; padding: 2cm !important; white-space: pre-wrap !important; word-wrap: break-word !important; font-family: 'Menlo', 'Monaco', 'Consolas', 'Courier New', monospace; font-size: 10pt !important; color: #000 !important; background: #fff !important; } pre, blockquote, table, img, h1, h2, h3, h4 { page-break-inside: avoid; } h1, h2, h3 { page-break-after: avoid; } }
+        @media print {
+            body > *:not(.print-container) { display: none !important; }
+            /* [修正] 意図しない要素（<style>タグなど）が表示されるのを防ぐ */
+            .print-container > style { display: none !important; }
+            /* [修正] 印刷したい要素のみを明示的に指定する */
+            .print-container,
+            .print-container > .print-content,
+            .print-container > .raw-text-print {
+                display: block !important;
+                width: 100% !important;
+                height: auto !important;
+                overflow: visible !important;
+            }
+            html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
+            .print-content { padding: 2cm !important; border: none !important; box-shadow: none !important; color: #000 !important; background-color: #fff !important; font-size: 12pt !important; line-height: 1.5 !important; }
+            .print-content h1, .print-content h2, .print-content h3, .print-content h4, .print-content h5, .print-content h6 { color: #000 !important; border-bottom-color: #ccc !important; }
+            .print-content pre, .print-content code { background-color: #f0f0f0 !important; color: #000 !important; border: 1px solid #ccc !important; }
+            .print-content pre code.hljs { color: #000 !important; }
+            .print-content blockquote { color: #333 !important; border-left-color: #ccc !important; }
+            .print-content tr:nth-child(2n) { background-color: #f6f8fa !important; }
+            .print-content th, .print-content td { border-color: #ccc !important; }
+            .copy-code-button, .code-language-label { display: none !important; }
+            .raw-text-print { margin: 0 !important; padding: 2cm !important; white-space: pre-wrap !important; word-wrap: break-word !important; font-family: 'Menlo', 'Monaco', 'Consolas', 'Courier New', monospace; font-size: 10pt !important; color: #000 !important; background: #fff !important; }
+            pre, blockquote, table, img, h1, h2, h3, h4 { page-break-inside: avoid; }
+            h1, h2, h3 { page-break-after: avoid; }
+        }
         /* --- Modal Styles --- */
         .sn-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); z-index: 9999; display: flex; align-items: center; justify-content: center; }
         .sn-modal-content { background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-foreground-color, #333); padding: 20px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: flex; flex-direction: column; max-height: 90vh; }
@@ -561,9 +586,9 @@
                 tableData = JSON.parse(JSON.stringify(initialData));
             } else {
                 tableData = { rows: [
-                        ['', ''],
-                        ['', '']
-                    ], alignments: ['left', 'left'] };
+                    ['', ''],
+                    ['', '']
+                ], alignments: ['left', 'left'] };
             }
             const modalOverlay = document.createElement('div');
             modalOverlay.className = 'sn-modal-overlay';
