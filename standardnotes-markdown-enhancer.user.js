@@ -26,9 +26,6 @@
 // @match                https://app.standardnotes.com/*
 // @grant                GM_addStyle
 // @grant                GM_info
-// @require              https://cdn.jsdelivr.net/npm/marked/marked.min.js
-// @require              https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js
-// @require              https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js
 // @license              MIT
 // @homepageURL          https://github.com/koyasi777/standardnotes-markdown-enhancer
 // @supportURL           https://github.com/koyasi777/standardnotes-markdown-enhancer/issues
