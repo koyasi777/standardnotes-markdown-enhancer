@@ -10,7 +10,7 @@
 // @name:de              Erweiterter Markdown-Editor für Standard Notes
 // @name:pt-BR           Editor Markdown avançado para Standard Notes
 // @name:ru              Улучшенный редактор Markdown для Standard Notes
-// @version              5.0.5
+// @version              5.2.1
 // @description          Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency. This version features a new architecture for rock-solid sync reliability.
 // @description:ja       Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップ。盤石な同期信頼性を実現する新アーキテクチャ版です。
 // @description:zh-CN    非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。此版本采用新架构，具有坚如磐石的同步可靠性。
@@ -38,17 +38,22 @@
 (function() {
     'use strict';
 
-    // --- 設定値 ---
+    // --- グローバル設定値 ---
     const MAX_IMAGE_DIMENSION = 1280;
     const JPEG_QUALITY = 0.8;
     const INDENT_SPACES = '  ';
-    const DEFINITIONS_HEADER = '<!-- sn-markdown-enhancer-definitions';
-    const DEFINITIONS_FOOTER = '-->';
+
+    // UserScriptエンジンの誤パースを避けるため、HTMLコメントに見える文字列を連結で生成
+    const DEFINITIONS_HEADER = '<' + '!-- sn-markdown-enhancer-definitions';
+    const DEFINITIONS_FOOTER = '--' + '>';
 
     // --- グローバル参照 ---
     let activeEditorInstance = null;
     let debouncedInputHandler = () => {};
     let isInternallyUpdating = false;
+
+    // Reactなどのフレームワークに確実に入力変更を伝えるため、textareaのネイティブなセッターを取得しておく
+    const nativeTextareaSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
 
     // --- 国際化 (i18n) ---
     const I18N = {
@@ -132,23 +137,16 @@
         .markdown-preview th, .markdown-preview td { border: 2px solid var(--sn-stylekit-border-color, #adb5bd); padding: 6px 13px; }
         .markdown-preview tr:nth-child(2n) { background-color: var(--sn-stylekit-secondary-background-color, #f6f8fa); }
         .markdown-preview hr { height: .25em; padding: 0; margin: 24px 0; background-color: var(--sn-stylekit-border-color, #dfe2e5); border: 0; }
-
-        /* [v5.0.5 FIX] :has()の互換性問題を回避するため、JSでクラスを付与する方式に戻す */
-        .markdown-preview li.task-list-item {
-            list-style-type: none;
-        }
-        .markdown-preview li.task-list-item input[type="checkbox"] {
-            margin: 0 0.2em 0.25em -1.6em;
-            vertical-align: middle;
-            cursor: pointer;
-        }
-
+        .markdown-preview li.task-list-item { list-style-type: none; }
+        .markdown-preview li.task-list-item input[type="checkbox"] { margin: 0 0.2em 0.25em -1.6em; vertical-align: middle; cursor: pointer; }
         .copy-code-button { position: absolute; top: 10px; right: 10px; padding: 5px 8px; font-size: 12px; border: 1px solid var(--sn-stylekit-border-color, #ccc); border-radius: 4px; background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-secondary-foreground-color, #555); cursor: pointer; opacity: 0; transition: opacity 0.2s, background-color 0.2s, color 0.2s; z-index: 1; }
         .markdown-preview pre:hover .copy-code-button { opacity: 1; }
         .copy-code-button:hover { background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); }
         .copy-code-button.copied { background-color: var(--sn-stylekit-primary-color, #346df1); color: var(--sn-stylekit-primary-contrast-color, #fff); border-color: var(--sn-stylekit-primary-color, #346df1); }
         .code-language-label { position: absolute; top: 10px; left: 10px; padding: 3px 6px; font-size: 12px; color: var(--sn-stylekit-secondary-foreground-color, #6a737d); background-color: rgba(255, 255, 255, 0.7); border-radius: 4px; opacity: 0.7; z-index: 1; pointer-events: none; }
-        /* Highlight.js Styles */
+        .preview-error { padding: 1rem; color: #d73a49; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: .25rem; }
+        .preview-error strong { font-weight: bold; }
+        .preview-error pre { white-space: pre-wrap; word-break: break-all; margin-top: 0.5rem; padding: 0; background: transparent; border: none; color: inherit; }
         .markdown-preview pre code.hljs { display: block; overflow-x: auto; padding: 0; color: var(--sn-stylekit-foreground-color, #333); background: transparent; }
         .hljs-comment, .hljs-quote { color: var(--sn-stylekit-secondary-foreground-color, #6a737d); font-style: italic; }
         .hljs-keyword, .hljs-selector-tag, .hljs-subst, .hljs-deletion, .hljs-meta, .hljs-selector-class { color: #d73a49; }
@@ -169,6 +167,8 @@
 
     // --- スタイル定義 (UI部分のみ) ---
     GM_addStyle(`
+        .sn-markdown-hidden { display: none !important; }
+        .sn-markdown-full-height { height: 100%; }
         .markdown-editor-container { display: flex; flex-direction: column; height: 100%; overflow: hidden; border: 1px solid var(--sn-stylekit-border-color, #e0e0e0); border-radius: 4px; }
         .mode-toggle-bar { flex-shrink: 0; padding: 4px 10px; background-color: var(--sn-stylekit-editor-background-color, #f9f9f9); border-bottom: 1px solid var(--sn-stylekit-border-color, #e0e0e0); display: flex; align-items: center; gap: 5px; }
         .mode-toggle-button { padding: 5px 12px; border: 1px solid var(--sn-stylekit-border-color, #ccc); border-radius: 6px; cursor: pointer; background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-foreground-color, #333); font-size: 13px; }
@@ -195,14 +195,7 @@
         @media print {
             body > *:not(.print-container) { display: none !important; }
             .print-container > style { display: none !important; }
-            .print-container,
-            .print-container > .print-content,
-            .print-container > .raw-text-print {
-                display: block !important;
-                width: 100% !important;
-                height: auto !important;
-                overflow: visible !important;
-            }
+            .print-container, .print-container > .print-content, .print-container > .raw-text-print { display: block !important; width: 100% !important; height: auto !important; overflow: visible !important; }
             html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
             .print-content { padding: 2cm !important; border: none !important; box-shadow: none !important; color: #000 !important; background-color: #fff !important; font-size: 12pt !important; line-height: 1.5 !important; }
             .print-content h1, .print-content h2, .print-content h3, .print-content h4, .print-content h5, .print-content h6 { color: #000 !important; border-bottom-color: #ccc !important; }
@@ -283,6 +276,18 @@
         };
     }
 
+    // SVGアイコンを安全に生成するヘルパー関数
+    function createIcon(pathData) {
+        const svgNS = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('viewBox', '0 0 24 24');
+        const path = document.createElementNS(svgNS, 'path');
+        path.setAttribute('d', pathData);
+        path.setAttribute('fill', 'currentColor');
+        svg.appendChild(path);
+        return svg;
+    }
+
     function setupMarkdownEditor(originalTextarea, isNewNoteSetup = false) {
         if (!originalTextarea || !originalTextarea.parentElement) {
             console.warn('Markdown Editor: Setup aborted. Target textarea is not attached to the DOM.');
@@ -292,9 +297,11 @@
         originalTextarea.dataset.markdownReady = 'true';
         marked.setOptions({ gfm: true, breaks: true, smartLists: true, langPrefix: 'language-' });
 
+        const definitionsRegex = new RegExp(`\\n*${DEFINITIONS_HEADER}[\\s\\S]*?${DEFINITIONS_FOOTER}`, 'g');
+
         const editorWrapper = originalTextarea.parentElement;
-        editorWrapper.style.display = 'none';
-        editorWrapper.style.height = '100%';
+        editorWrapper.classList.add('sn-markdown-hidden', 'sn-markdown-full-height');
+
         const container = document.createElement('div');
         container.className = 'markdown-editor-container';
         const markdownTextarea = document.createElement('textarea');
@@ -302,7 +309,6 @@
         markdownTextarea.spellcheck = false;
 
         let definitionsText = '';
-        const definitionsRegex = new RegExp(`\\n*${DEFINITIONS_HEADER}[\\s\\S]*?${DEFINITIONS_FOOTER}`, 'g');
 
         const extractAndSetContent = (fullText) => {
             const match = fullText.match(definitionsRegex);
@@ -629,7 +635,11 @@
         const editorButton = document.createElement('button'); editorButton.className = 'mode-toggle-button'; editorButton.textContent = T.editor;
         const splitButton = document.createElement('button'); splitButton.className = 'mode-toggle-button'; splitButton.textContent = T.split;
         const previewButton = document.createElement('button'); previewButton.className = 'mode-toggle-button'; previewButton.textContent = T.preview;
-        const toolbarToggleButton = document.createElement('button'); toolbarToggleButton.className = 'mode-toggle-button toolbar-toggle-button'; toolbarToggleButton.title = T.toggleToolbar; toolbarToggleButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path></svg>`;
+        const toolbarToggleButton = document.createElement('button');
+        toolbarToggleButton.className = 'mode-toggle-button toolbar-toggle-button';
+        toolbarToggleButton.title = T.toggleToolbar;
+        toolbarToggleButton.appendChild(createIcon('M3 18h18v-2H3v2z m0-5h18v-2H3v2z m0-7v2h18V6H3z'));
+
         const printButton = document.createElement('button'); printButton.className = 'mode-toggle-button pdf-export-button'; printButton.textContent = T.printPDF; printButton.title = T.exportPDF;
         const toolbar = document.createElement('div');
         toolbar.className = 'markdown-toolbar';
@@ -637,14 +647,82 @@
         const previewHost = document.createElement('div');
         previewHost.className = 'markdown-preview-host';
         const shadow = previewHost.attachShadow({ mode: 'open' });
-        const shadowStyle = document.createElement('style');
+
         const shadowContent = document.createElement('div');
         shadowContent.className = 'markdown-preview';
-        shadow.append(shadowStyle, shadowContent);
+
+        // Constructable Stylesheet を使ってCSPを回避し、スタイルを適用
+        try {
+            const sheet = new CSSStyleSheet();
+            sheet.replaceSync(PREVIEW_STYLES);
+            shadow.adoptedStyleSheets = [sheet];
+        } catch (e) {
+            // 古いブラウザなどで上記が失敗した場合のフォールバック
+            console.warn('Constructable Stylesheets not supported, falling back to <style> tag.', e);
+            const shadowStyle = document.createElement('style');
+            shadowStyle.textContent = PREVIEW_STYLES;
+            shadow.appendChild(shadowStyle);
+        }
+
+        shadow.appendChild(shadowContent);
 
         markdownTextarea.addEventListener('paste', handlePaste);
-        const toolbarButtons = [{ type: 'select', name: 'heading', options: [{ value: 'p', text: T.paragraph }, { value: 'h1', text: T.heading1 }, { value: 'h2', text: T.heading2 }, { value: 'h3', text: T.heading3 }, { value: 'h4', text: T.heading4 }], action: (prefix) => { const start = markdownTextarea.selectionStart; let lineStart = markdownTextarea.value.lastIndexOf('\n', start - 1) + 1; let lineEnd = markdownTextarea.value.indexOf('\n', start); if (lineEnd === -1) lineEnd = markdownTextarea.value.length; const originalLine = markdownTextarea.value.substring(lineStart, lineEnd); const cleanedLine = originalLine.replace(/^\s*#+\s*/, ''); const newText = prefix ? `${prefix} ${cleanedLine}` : cleanedLine; markdownTextarea.setRangeText(newText, lineStart, lineEnd, 'end'); debouncedInputHandler(); markdownTextarea.focus(); } }, { type: 'button', name: 'B', title: T.bold, action: () => applyMarkdown(markdownTextarea, '**', '**', T.boldPlaceholder) }, { type: 'button', name: 'I', title: T.italic, action: () => applyMarkdown(markdownTextarea, '*', '*', T.italicPlaceholder) }, { type: 'button', name: 'S', title: T.strikethrough, action: () => applyMarkdown(markdownTextarea, '~~', '~~', T.strikethroughPlaceholder) }, { type: 'button', name: '`', title: T.inlineCode, action: () => applyMarkdown(markdownTextarea, '`', '`', T.codePlaceholder) }, { type: 'button', name: '“ ”', title: T.quote, action: () => applyMarkdown(markdownTextarea, '> ', '', T.quotePlaceholder) }, { type: 'button', name: '•', title: T.list, action: () => applyMarkdown(markdownTextarea, '- ', '', T.listItemPlaceholder) }, { type: 'button', name: '1.', title: T.numberedList, action: () => applyMarkdown(markdownTextarea, '1. ', '', T.listItemPlaceholder) }, { type: 'button', name: '☑', title: T.checklist, action: () => applyMarkdown(markdownTextarea, '- [ ] ', '', T.taskPlaceholder) }, { type: 'button', name: '</>', title: T.codeBlock, action: () => applyMarkdown(markdownTextarea, '```\n', '\n```', T.codePlaceholder) }, { type: 'icon-button', name: 'Image', title: T.image, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"></path></svg>`, action: () => { openImageInserterModal((data, altText, isReference) => { if (isReference) { insertImageAsReference(data, altText); } else { const markdown = `![${altText}](${data})`; applyMarkdown(markdownTextarea, markdown); } }); } }, { type: 'icon-button', name: 'Link', title: T.link, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"></path></svg>`, action: () => { const url = prompt(T.linkPrompt, 'https://'); if (url) applyMarkdown(markdownTextarea, '[', `](${url})`, T.linkTextPlaceholder); } }, { type: 'icon-button', name: T.insertTable, title: T.insertTable, icon: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2zM8 10H4V6h4v4zm6 0h-4V6h4v4zm6 0h-4V6h4v4zM8 14H4v4h4v-4zm6 0h-4v4h4v-4zm6 0h-4v4h4v-4z"></path></svg>`, action: () => { const start = markdownTextarea.selectionStart; const end = markdownTextarea.selectionEnd; const selectedText = markdownTextarea.value.substring(start, end); const existingTableData = parseMarkdownTable(selectedText); openTableEditorModal(existingTableData, (markdown) => { markdownTextarea.setRangeText(markdown, start, end, 'select'); markdownTextarea.focus(); debouncedInputHandler(); }); } }, { type: 'button', name: '―', title: T.horizontalRule, action: () => applyMarkdown(markdownTextarea, '\n---\n') }, ];
-        toolbarButtons.forEach(item => { if (item.type === 'select') { const select = document.createElement('select'); select.className = 'toolbar-select heading-select'; item.options.forEach(opt => { const option = document.createElement('option'); option.value = opt.value; option.textContent = opt.text; select.appendChild(option); }); select.onchange = (e) => { let prefix = ''; switch (e.target.value) { case 'h1': prefix = '#'; break; case 'h2': prefix = '##'; break; case 'h3': prefix = '###'; break; case 'h4': prefix = '####'; break; } item.action(prefix); updateHeadingSelector(); }; toolbar.appendChild(select); } else { const button = document.createElement('button'); button.className = 'toolbar-button'; button.title = item.title; button.onclick = item.action; if (item.type === 'icon-button') { button.classList.add('icon-button'); button.innerHTML = item.icon; } else { button.textContent = item.name; } toolbar.appendChild(button); } });
+
+        // SVGを安全なパスデータとして定義
+        const toolbarButtons = [
+            { type: 'select', name: 'heading', options: [{ value: 'p', text: T.paragraph }, { value: 'h1', text: T.heading1 }, { value: 'h2', text: T.heading2 }, { value: 'h3', text: T.heading3 }, { value: 'h4', text: T.heading4 }], action: (prefix) => { const start = markdownTextarea.selectionStart; let lineStart = markdownTextarea.value.lastIndexOf('\n', start - 1) + 1; let lineEnd = markdownTextarea.value.indexOf('\n', start); if (lineEnd === -1) lineEnd = markdownTextarea.value.length; const originalLine = markdownTextarea.value.substring(lineStart, lineEnd); const cleanedLine = originalLine.replace(/^\s*#+\s*/, ''); const newText = prefix ? `${prefix} ${cleanedLine}` : cleanedLine; markdownTextarea.setRangeText(newText, lineStart, lineEnd, 'end'); debouncedInputHandler(); markdownTextarea.focus(); } },
+            { type: 'button', name: 'B', title: T.bold, action: () => applyMarkdown(markdownTextarea, '**', '**', T.boldPlaceholder) },
+            { type: 'button', name: 'I', title: T.italic, action: () => applyMarkdown(markdownTextarea, '*', '*', T.italicPlaceholder) },
+            { type: 'button', name: 'S', title: T.strikethrough, action: () => applyMarkdown(markdownTextarea, '~~', '~~', T.strikethroughPlaceholder) },
+            { type: 'button', name: '`', title: T.inlineCode, action: () => applyMarkdown(markdownTextarea, '`', '`', T.codePlaceholder) },
+            { type: 'button', name: '“ ”', title: T.quote, action: () => applyMarkdown(markdownTextarea, '> ', '', T.quotePlaceholder) },
+            { type: 'button', name: '•', title: T.list, action: () => applyMarkdown(markdownTextarea, '- ', '', T.listItemPlaceholder) },
+            { type: 'button', name: '1.', title: T.numberedList, action: () => applyMarkdown(markdownTextarea, '1. ', '', T.listItemPlaceholder) },
+            { type: 'button', name: '☑', title: T.checklist, action: () => applyMarkdown(markdownTextarea, '- [ ] ', '', T.taskPlaceholder) },
+            { type: 'button', name: '</>', title: T.codeBlock, action: () => applyMarkdown(markdownTextarea, '```\n', '\n```', T.codePlaceholder) },
+            { type: 'icon', title: T.image, path: 'M21 19V5 c 0 -1.1 -0.9 -2 -2 -2 H5 c -1.1 0 -2 0.9 -2 2 v14 c 0 1.1 0.9 2 2 2 h14 c 1.1 0 2 -0.9 2 -2 z M8.5 13.5 l 2.5 3.01 L14.5 12 l 4.5 6 H5 l 3.5 -4.5 z', action: () => { openImageInserterModal((data, altText, isReference) => { if (isReference) { insertImageAsReference(data, altText); } else { const markdown = `![${altText}](${data})`; applyMarkdown(markdownTextarea, markdown); } }); } },
+            { type: 'icon', title: T.link, path: 'M3.9 12 c 0 -1.71 1.39 -3.1 3.1 -3.1 h4 V7 H7 c -2.76 0 -5 2.24 -5 5 s2.24 5 5 5 h4 v-1.9 H7 c -1.71 0 -3.1 -1.39 -3.1 -3.1 z M8 13 h8 v-2 H8 v2 z m9 -6 h-4 v1.9 h4 c 1.71 0 3.1 1.39 3.1 3.1 s -1.39 3.1 -3.1 3.1 h-4 V17 h4 c 2.76 0 -5 -2.24 -5 -5 s -2.24 -5 -5 -5 z', action: () => { const url = prompt(T.linkPrompt, 'https://'); if (url) applyMarkdown(markdownTextarea, '[', `](${url})`, T.linkTextPlaceholder); } },
+            { type: 'icon', title: T.insertTable, path: 'M20 4 H4 c -1.1 0 -2 0.9 -2 2 v12 c 0 1.1 0.9 2 2 2 h16 c 1.1 0 2 -0.9 2 -2 V6 c 0 -1.1 -0.9 -2 -2 -2 z M8 10 H4 V6 h4 v4 z m6 0 h-4 V6 h4 v4 z m6 0 h-4 V6 h4 v4 z M8 14 H4 v4 h4 v-4 z m6 0 h-4 v4 h4 v-4 z m6 0 h-4 v4 h4 v-4 z', action: () => { const start = markdownTextarea.selectionStart; const end = markdownTextarea.selectionEnd; const selectedText = markdownTextarea.value.substring(start, end); const existingTableData = parseMarkdownTable(selectedText); openTableEditorModal(existingTableData, (markdown) => { markdownTextarea.setRangeText(markdown, start, end, 'select'); markdownTextarea.focus(); debouncedInputHandler(); }); } },
+            { type: 'button', name: '―', title: T.horizontalRule, action: () => applyMarkdown(markdownTextarea, '\n---\n') },
+        ];
+
+        toolbarButtons.forEach(item => {
+            if (item.type === 'select') {
+                const select = document.createElement('select');
+                select.className = 'toolbar-select heading-select';
+                item.options.forEach(opt => {
+                    const option = document.createElement('option');
+                    option.value = opt.value;
+                    option.textContent = opt.text;
+                    select.appendChild(option);
+                });
+                select.onchange = (e) => {
+                    let prefix = '';
+                    switch (e.target.value) {
+                        case 'h1': prefix = '#'; break;
+                        case 'h2': prefix = '##'; break;
+                        case 'h3': prefix = '###'; break;
+                        case 'h4': prefix = '####'; break;
+                    }
+                    item.action(prefix);
+                    updateHeadingSelector();
+                };
+                toolbar.appendChild(select);
+            } else {
+                const button = document.createElement('button');
+                button.className = 'toolbar-button';
+                button.title = item.title;
+                button.onclick = item.action;
+                if (item.type === 'icon') {
+                    button.classList.add('icon-button');
+                    button.appendChild(createIcon(item.path));
+                } else {
+                    button.textContent = item.name;
+                }
+                toolbar.appendChild(button);
+            }
+        });
+
         const headingSelect = toolbar.querySelector('.heading-select');
         const updateHeadingSelector = () => {
             if (!headingSelect) return;
@@ -671,9 +749,6 @@
 
         const updatePreview = () => {
             try {
-                if (shadowStyle.textContent !== PREVIEW_STYLES) {
-                    shadowStyle.textContent = PREVIEW_STYLES;
-                }
                 const mainContent = markdownTextarea.value;
                 const unwrappedDefs = definitionsText.replace(DEFINITIONS_HEADER, '').replace(DEFINITIONS_FOOTER, '').trim();
                 const contentForPreview = `${mainContent}\n\n${unwrappedDefs}`;
@@ -705,21 +780,16 @@
                     });
                 });
 
-                // [v5.0.5 FIX] プレビュー内のチェックボックスを処理し、互換性の高い方法でスタイルを適用する
                 shadowContent.querySelectorAll('input[type="checkbox"]').forEach((checkbox, index) => {
                     const listItem = checkbox.closest('li');
                     if (listItem) {
-                        // スタイリング用のクラスを付与
                         listItem.classList.add('task-list-item');
                         if (checkbox.checked) {
                             listItem.classList.add('completed');
                         }
-
-                        // イベントハンドラを再設定
                         const newCheckbox = checkbox.cloneNode(true);
                         checkbox.parentNode.replaceChild(newCheckbox, checkbox);
                         newCheckbox.addEventListener('click', (e) => {
-                            // 既定のチェック動作はさせず、Markdownソースの更新→再描画に任せる
                             e.preventDefault();
                             handlePreviewChecklistToggle(index);
                         });
@@ -727,7 +797,7 @@
                 });
             } catch (e) {
                 console.error("Error updating preview:", e);
-                shadowContent.innerHTML = `<div style="padding: 1rem; color: #d73a49; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: .25rem;"><strong>${T.previewErrorTitle}</strong><br><pre style="white-space: pre-wrap; word-break: break-all; margin-top: 0.5rem;">${e.stack}</pre></div>`;
+                shadowContent.innerHTML = `<div class="preview-error"><strong>${T.previewErrorTitle}</strong><br><pre>${e.stack || e}</pre></div>`;
             }
         };
 
@@ -833,7 +903,10 @@
         const handleInput = () => {
             cleanupOrphanedImageRefs();
             isInternallyUpdating = true;
-            originalTextarea.value = getFullContent();
+            // 直接 .value を設定するだけではReactなどのフレームワークに無視されることがある。
+            // ネイティブセッターを呼び出した上でinputイベントを発火させることで、確実な同期を実現する。
+            nativeTextareaSetter.call(originalTextarea, getFullContent());
+
             if (!document.hidden) {
                 originalTextarea.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
             }
@@ -935,7 +1008,7 @@
         activeEditorInstance = { textarea: markdownTextarea, switchMode: switchMode };
 
         switchMode(savedMode || 'split', isNewNoteSetup);
-        console.log(`Markdown Editor for Standard Notes (v${GM_info.script.version}, Reliability Enhanced) has been initialized.`);
+        console.log(`Markdown Editor for Standard Notes (v${GM_info.script.version}, Robust Edition) has been initialized.`);
         if (isNewNoteSetup) { console.log('New note detected, focusing editor.'); }
     }
 
@@ -988,8 +1061,10 @@
         if (customEditor && !document.querySelector('#note-text-editor')) {
             customEditor.remove();
             activeEditorInstance = null;
-            const hiddenWrapper = document.querySelector('#editor-content[style*="display: none"]');
-            if (hiddenWrapper) hiddenWrapper.style.display = '';
+            const hiddenWrapper = document.querySelector('#editor-content.sn-markdown-hidden');
+            if (hiddenWrapper) {
+                hiddenWrapper.classList.remove('sn-markdown-hidden');
+            }
         }
     });
 
