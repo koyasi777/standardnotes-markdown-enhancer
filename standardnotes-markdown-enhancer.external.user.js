@@ -10,7 +10,7 @@
 // @name:de              Erweiterter Markdown-Editor für Standard Notes
 // @name:pt-BR           Editor Markdown avançado para Standard Notes
 // @name:ru              Улучшенный редактор Markdown для Standard Notes
-// @version              5.2.5
+// @version              5.2.6
 // @description          Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency. This version features a new architecture for rock-solid sync reliability.
 // @description:ja       Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップ。盤石な同期信頼性を実現する新アーキテクチャ版です。
 // @description:zh-CN    非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。此版本采用新架构，具有坚如磐石的同步可靠性。
@@ -108,7 +108,6 @@
     const STORAGE_KEY_MODE = 'snMarkdownEditorMode';
     const STORAGE_KEY_TOOLBAR_VISIBLE = 'snMarkdownToolbarVisible';
 
-    // ★★★ START OF MODIFICATION ★★★
     // プレビューコンテナ用のユニークなクラス名
     const PREVIEW_CONTAINER_CLASS = 'sn-markdown-preview-container';
 
@@ -123,13 +122,17 @@
             font-size: 1.05rem;
             color: var(--sn-stylekit-foreground-color, #333);
         }
+        /* [BESTPRACTICE] コンテナ内の全要素に色の継承を強制し、本体CSSからの意図しない上書きを防ぐ */
+        .${PREVIEW_CONTAINER_CLASS} * {
+            color: inherit;
+        }
         .${PREVIEW_CONTAINER_CLASS} h1, .${PREVIEW_CONTAINER_CLASS} h2, .${PREVIEW_CONTAINER_CLASS} h3, .${PREVIEW_CONTAINER_CLASS} h4, .${PREVIEW_CONTAINER_CLASS} h5, .${PREVIEW_CONTAINER_CLASS} h6 { margin-top: 24px; margin-bottom: 16px; font-weight: 600; line-height: 1.25; border-bottom: 1px solid var(--sn-stylekit-border-color, #eee); padding-bottom: .3em; }
         .${PREVIEW_CONTAINER_CLASS} h1 { font-size: 2em; }
         .${PREVIEW_CONTAINER_CLASS} h2 { font-size: 1.5em; }
         .${PREVIEW_CONTAINER_CLASS} h3 { font-size: 1.25em; }
         .${PREVIEW_CONTAINER_CLASS} p { margin-bottom: 16px; }
         .${PREVIEW_CONTAINER_CLASS} ul, .${PREVIEW_CONTAINER_CLASS} ol { padding-left: 2em; margin-bottom: 16px; }
-        .${PREVIEW_CONTAINER_CLASS} blockquote { padding: 0 1em; color: var(--sn-stylekit-secondary-foreground-color, #6a737d); border-left: .25em solid var(--sn-stylekit-border-color, #dfe2e5); margin: 0 0 16px 0; }
+        .${PREVIEW_CONTAINER_CLASS} blockquote { padding: 0 1em; color: var(--sn-stylekit-secondary-foreground-color, #6a737d) !important; border-left: .25em solid var(--sn-stylekit-border-color, #dfe2e5); margin: 0 0 16px 0; }
         .${PREVIEW_CONTAINER_CLASS} code { padding: .2em .4em; margin: 0; font-size: 85%; background-color: var(--sn-stylekit-secondary-background-color, rgba(200,200,200,0.3)); border-radius: 3px; font-family: var(--sn-stylekit-font-code, monospace); }
         .${PREVIEW_CONTAINER_CLASS} pre { position: relative; padding: 16px; padding-top: 40px; overflow: auto; font-size: 85%; line-height: 1.45; background-color: var(--sn-stylekit-secondary-background-color, rgba(200,200,200,0.3)); border-radius: 6px; word-wrap: normal; margin-bottom: 16px; }
         .${PREVIEW_CONTAINER_CLASS} pre code { background-color: transparent; padding: 0; margin: 0; }
@@ -140,32 +143,31 @@
         .${PREVIEW_CONTAINER_CLASS} hr { height: .25em; padding: 0; margin: 24px 0; background-color: var(--sn-stylekit-border-color, #dfe2e5); border: 0; }
         .${PREVIEW_CONTAINER_CLASS} li.task-list-item { list-style-type: none; }
         .${PREVIEW_CONTAINER_CLASS} li.task-list-item input[type="checkbox"] { margin: 0 0.2em 0.25em -1.6em; vertical-align: middle; cursor: pointer; }
-        .${PREVIEW_CONTAINER_CLASS} .copy-code-button { position: absolute; top: 10px; right: 10px; padding: 5px 8px; font-size: 12px; border: 1px solid var(--sn-stylekit-border-color, #ccc); border-radius: 4px; background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-secondary-foreground-color, #555); cursor: pointer; opacity: 0; transition: opacity 0.2s, background-color 0.2s, color 0.2s; z-index: 1; }
+        .${PREVIEW_CONTAINER_CLASS} .copy-code-button { position: absolute; top: 10px; right: 10px; padding: 5px 8px; font-size: 12px; border: 1px solid var(--sn-stylekit-border-color, #ccc); border-radius: 4px; background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-secondary-foreground-color, #555) !important; cursor: pointer; opacity: 0; transition: opacity 0.2s, background-color 0.2s, color 0.2s; z-index: 1; }
         .${PREVIEW_CONTAINER_CLASS} pre:hover .copy-code-button { opacity: 1; }
         .${PREVIEW_CONTAINER_CLASS} .copy-code-button:hover { background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); }
-        .${PREVIEW_CONTAINER_CLASS} .copy-code-button.copied { background-color: var(--sn-stylekit-primary-color, #346df1); color: var(--sn-stylekit-primary-contrast-color, #fff); border-color: var(--sn-stylekit-primary-color, #346df1); }
-        .${PREVIEW_CONTAINER_CLASS} .code-language-label { position: absolute; top: 10px; left: 10px; padding: 3px 6px; font-size: 12px; color: var(--sn-stylekit-secondary-foreground-color, #6a737d); background-color: rgba(255, 255, 255, 0.7); border-radius: 4px; opacity: 0.7; z-index: 1; pointer-events: none; }
-        .${PREVIEW_CONTAINER_CLASS} .preview-error { padding: 1rem; color: #d73a49; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: .25rem; }
+        .${PREVIEW_CONTAINER_CLASS} .copy-code-button.copied { background-color: var(--sn-stylekit-primary-color, #346df1); color: var(--sn-stylekit-primary-contrast-color, #fff) !important; border-color: var(--sn-stylekit-primary-color, #346df1); }
+        .${PREVIEW_CONTAINER_CLASS} .code-language-label { position: absolute; top: 10px; left: 10px; padding: 3px 6px; font-size: 12px; color: var(--sn-stylekit-secondary-foreground-color, #6a737d) !important; background-color: rgba(255, 255, 255, 0.7); border-radius: 4px; opacity: 0.7; z-index: 1; pointer-events: none; }
+        .${PREVIEW_CONTAINER_CLASS} .preview-error { padding: 1rem; color: #d73a49 !important; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: .25rem; }
         .${PREVIEW_CONTAINER_CLASS} .preview-error strong { font-weight: bold; }
         .${PREVIEW_CONTAINER_CLASS} .preview-error pre { white-space: pre-wrap; word-break: break-all; margin-top: 0.5rem; padding: 0; background: transparent; border: none; color: inherit; }
-        .${PREVIEW_CONTAINER_CLASS} pre code.hljs { display: block; overflow-x: auto; padding: 0; color: var(--sn-stylekit-foreground-color, #333); background: transparent; }
-        .${PREVIEW_CONTAINER_CLASS} .hljs-comment, .${PREVIEW_CONTAINER_CLASS} .hljs-quote { color: var(--sn-stylekit-secondary-foreground-color, #6a737d); font-style: italic; }
-        .${PREVIEW_CONTAINER_CLASS} .hljs-keyword, .${PREVIEW_CONTAINER_CLASS} .hljs-selector-tag, .${PREVIEW_CONTAINER_CLASS} .hljs-subst, .${PREVIEW_CONTAINER_CLASS} .hljs-deletion, .${PREVIEW_CONTAINER_CLASS} .hljs-meta, .${PREVIEW_CONTAINER_CLASS} .hljs-selector-class { color: #d73a49; }
-        .${PREVIEW_CONTAINER_CLASS} .hljs-number, .${PREVIEW_CONTAINER_CLASS} .hljs-literal, .${PREVIEW_CONTAINER_CLASS} .hljs-variable, .${PREVIEW_CONTAINER_CLASS} .hljs-template-variable, .${PREVIEW_CONTAINER_CLASS} .hljs-tag .hljs-attr { color: var(--sn-stylekit-primary-color, #005cc5); }
-        .${PREVIEW_CONTAINER_CLASS} .hljs-string, .${PREVIEW_CONTAINER_CLASS} .hljs-doctag { color: #032f62; }
-        .${PREVIEW_CONTAINER_CLASS} .hljs-title, .${PREVIEW_CONTAINER_CLASS} .hljs-section, .${PREVIEW_CONTAINER_CLASS} .hljs-selector-id, .${PREVIEW_CONTAINER_CLASS} .hljs-type, .${PREVIEW_CONTAINER_CLASS} .hljs-symbol, .${PREVIEW_CONTAINER_CLASS} .hljs-bullet, .${PREVIEW_CONTAINER_CLASS} .hljs-link { color: #6f42c1; }
-        .${PREVIEW_CONTAINER_CLASS} .hljs-addition { color: #22863a; }
+        .${PREVIEW_CONTAINER_CLASS} pre code.hljs { display: block; overflow-x: auto; padding: 0; color: var(--sn-stylekit-foreground-color, #333) !important; background: transparent; }
+        .${PREVIEW_CONTAINER_CLASS} .hljs-comment, .${PREVIEW_CONTAINER_CLASS} .hljs-quote { color: var(--sn-stylekit-secondary-foreground-color, #6a737d) !important; font-style: italic; }
+        .${PREVIEW_CONTAINER_CLASS} .hljs-keyword, .${PREVIEW_CONTAINER_CLASS} .hljs-selector-tag, .${PREVIEW_CONTAINER_CLASS} .hljs-subst, .${PREVIEW_CONTAINER_CLASS} .hljs-deletion, .${PREVIEW_CONTAINER_CLASS} .hljs-meta, .${PREVIEW_CONTAINER_CLASS} .hljs-selector-class { color: #d73a49 !important; }
+        .${PREVIEW_CONTAINER_CLASS} .hljs-number, .${PREVIEW_CONTAINER_CLASS} .hljs-literal, .${PREVIEW_CONTAINER_CLASS} .hljs-variable, .${PREVIEW_CONTAINER_CLASS} .hljs-template-variable, .${PREVIEW_CONTAINER_CLASS} .hljs-tag .hljs-attr { color: var(--sn-stylekit-primary-color, #005cc5) !important; }
+        .${PREVIEW_CONTAINER_CLASS} .hljs-string, .${PREVIEW_CONTAINER_CLASS} .hljs-doctag { color: #032f62 !important; }
+        .${PREVIEW_CONTAINER_CLASS} .hljs-title, .${PREVIEW_CONTAINER_CLASS} .hljs-section, .${PREVIEW_CONTAINER_CLASS} .hljs-selector-id, .${PREVIEW_CONTAINER_CLASS} .hljs-type, .${PREVIEW_CONTAINER_CLASS} .hljs-symbol, .${PREVIEW_CONTAINER_CLASS} .hljs-bullet, .${PREVIEW_CONTAINER_CLASS} .hljs-link { color: #6f42c1 !important; }
+        .${PREVIEW_CONTAINER_CLASS} .hljs-addition { color: #22863a !important; }
         .${PREVIEW_CONTAINER_CLASS} .hljs-emphasis { font-style: italic; }
         .${PREVIEW_CONTAINER_CLASS} .hljs-strong { font-weight: bold; }
         @media (prefers-color-scheme: dark) {
-            .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-keyword, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-selector-tag, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-subst, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-deletion, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-meta, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-selector-class { color: #ff7b72; }
-            .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-string, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-doctag { color: #a5d6ff; }
-            .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-title, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-section, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-selector-id, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-type, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-symbol, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-bullet, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-link { color: #d2a8ff; }
-            .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-addition { color: #7ee787; }
+            .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-keyword, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-selector-tag, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-subst, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-deletion, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-meta, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-selector-class { color: #ff7b72 !important; }
+            .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-string, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-doctag { color: #a5d6ff !important; }
+            .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-title, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-section, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-selector-id, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-type, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-symbol, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-bullet, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-link { color: #d2a8ff !important; }
+            .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-addition { color: #7ee787 !important; }
             .${PREVIEW_CONTAINER_CLASS} .code-language-label { background-color: rgba(0, 0, 0, 0.3); }
         }
     `;
-    // ★★★ END OF MODIFICATION ★★★
 
     // --- スタイル定義 (UI部分とプレビュー部分) ---
     GM_addStyle(`
@@ -269,7 +271,6 @@
         /* PREVIEW STYLES (Scoped) */
         ${SCOPED_PREVIEW_STYLES}
     `);
-    // ★★★ END OF MODIFICATION ★★★
 
     function debounce(func, wait) {
         let timeout;
@@ -651,11 +652,8 @@
         const toolbar = document.createElement('div');
         toolbar.className = 'markdown-toolbar';
 
-        // ★★★ START OF MODIFICATION ★★★
-        // Shadow DOMを廃止し、通常のDIVをプレビューコンテナとして使用する
         const previewContainer = document.createElement('div');
         previewContainer.className = PREVIEW_CONTAINER_CLASS;
-        // ★★★ END OF MODIFICATION ★★★
 
         markdownTextarea.addEventListener('paste', handlePaste);
 
@@ -733,7 +731,7 @@
 
         const contentWrapper = document.createElement('div');
         contentWrapper.className = 'editor-preview-wrapper';
-        contentWrapper.append(markdownTextarea, previewContainer); // ★★★ MODIFICATION ★★★
+        contentWrapper.append(markdownTextarea, previewContainer);
         modeBar.append(editorButton, splitButton, previewButton, toolbarToggleButton, printButton);
         container.append(modeBar, toolbar, contentWrapper);
         editorWrapper.after(container);
@@ -745,14 +743,14 @@
                 const contentForPreview = `${mainContent}\n\n${unwrappedDefs}`;
                 const dirtyHtml = marked.parse(contentForPreview);
                 const sanitizedHtml = DOMPurify.sanitize(dirtyHtml, { USE_PROFILES: { html: true }, ADD_ATTR: ['class', 'type', 'disabled', 'checked', 'data-task-index', 'data-processed', 'data-explicit-lang'], ADD_TAGS: ['span', 'input'], });
-                previewContainer.innerHTML = sanitizedHtml; // ★★★ MODIFICATION ★★★
+                previewContainer.innerHTML = sanitizedHtml;
 
-                previewContainer.querySelectorAll('pre > code[class*="language-"]').forEach(codeEl => { // ★★★ MODIFICATION ★★★
+                previewContainer.querySelectorAll('pre > code[class*="language-"]').forEach(codeEl => {
                     const langMatch = Array.from(codeEl.classList).find(cls => cls.startsWith('language-'));
                     if (langMatch) { const lang = langMatch.replace('language-', ''); if (lang) { codeEl.parentElement.dataset.explicitLang = lang; } }
                 });
-                previewContainer.querySelectorAll('pre code').forEach(hljs.highlightElement); // ★★★ MODIFICATION ★★★
-                previewContainer.querySelectorAll('pre').forEach(preEl => { // ★★★ MODIFICATION ★★★
+                previewContainer.querySelectorAll('pre code').forEach(hljs.highlightElement);
+                previewContainer.querySelectorAll('pre').forEach(preEl => {
                     if (preEl.dataset.processed) return;
                     preEl.dataset.processed = 'true';
                     const codeEl = preEl.querySelector('code');
@@ -771,7 +769,7 @@
                     });
                 });
 
-                previewContainer.querySelectorAll('input[type="checkbox"]').forEach((checkbox, index) => { // ★★★ MODIFICATION ★★★
+                previewContainer.querySelectorAll('input[type="checkbox"]').forEach((checkbox, index) => {
                     const listItem = checkbox.closest('li');
                     if (listItem) {
                         listItem.classList.add('task-list-item');
@@ -786,7 +784,7 @@
                 });
             } catch (e) {
                 console.error("Error updating preview:", e);
-                previewContainer.innerHTML = `<div class="preview-error"><strong>${T.previewErrorTitle}</strong><br><pre>${e.stack || e}</pre></div>`; // ★★★ MODIFICATION ★★★
+                previewContainer.innerHTML = `<div class="preview-error"><strong>${T.previewErrorTitle}</strong><br><pre>${e.stack || e}</pre></div>`;
             }
         };
 
@@ -932,8 +930,8 @@
                 target.scrollTop = scrollRatio * targetScrollableDist;
             });
         };
-        const onEditorScroll = () => handleScroll(markdownTextarea, previewContainer); // ★★★ MODIFICATION ★★★
-        const onPreviewScroll = () => handleScroll(previewContainer, markdownTextarea); // ★★★ MODIFICATION ★★★
+        const onEditorScroll = () => handleScroll(markdownTextarea, previewContainer);
+        const onPreviewScroll = () => handleScroll(previewContainer, markdownTextarea);
 
         const modeButtons = { editor: editorButton, split: splitButton, preview: previewButton };
         const switchMode = (mode, shouldFocus = true) => {
@@ -943,10 +941,10 @@
             modeButtons[mode].classList.add('active');
             localStorage.setItem(STORAGE_KEY_MODE, mode);
             markdownTextarea.removeEventListener('scroll', onEditorScroll);
-            previewContainer.removeEventListener('scroll', onPreviewScroll); // ★★★ MODIFICATION ★★★
+            previewContainer.removeEventListener('scroll', onPreviewScroll);
             if (mode === 'split') {
                 markdownTextarea.addEventListener('scroll', onEditorScroll, { passive: true });
-                previewContainer.addEventListener('scroll', onPreviewScroll, { passive: true }); // ★★★ MODIFICATION ★★★
+                previewContainer.addEventListener('scroll', onPreviewScroll, { passive: true });
             }
             if (mode === 'preview' || mode === 'split') { updatePreview(); }
             if (shouldFocus && mode !== 'preview') { markdownTextarea.focus(); }
@@ -977,7 +975,6 @@
             } else {
                 const printContent = document.createElement('div');
                 printContent.className = 'print-content';
-                // ★★★ MODIFICATION: 印刷時もスコープ化されたスタイルを使う ★★★
                 const printStyle = document.createElement('style');
                 printStyle.textContent = SCOPED_PREVIEW_STYLES.replace(new RegExp(`\\.${PREVIEW_CONTAINER_CLASS}`, 'g'), '');
                 printContent.innerHTML = previewContainer.innerHTML;
