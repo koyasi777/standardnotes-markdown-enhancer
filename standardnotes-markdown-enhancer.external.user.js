@@ -10,7 +10,7 @@
 // @name:de              Erweiterter Markdown-Editor für Standard Notes
 // @name:pt-BR           Editor Markdown avançado para Standard Notes
 // @name:ru              Улучшенный редактор Markdown для Standard Notes
-// @version              5.2.6
+// @version              5.3.0
 // @description          Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency. This version features a new architecture for rock-solid sync reliability.
 // @description:ja       Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップ。盤石な同期信頼性を実現する新アーキテクチャ版です。
 // @description:zh-CN    非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。此版本采用新架构，具有坚如磐石的同步可靠性。
@@ -295,6 +295,75 @@
         svg.appendChild(path);
         return svg;
     }
+
+    // =========================================================================
+    // ▼▼▼ タイトルからエディタへのフォーカス移動に関するロジック ▼▼▼
+    // =========================================================================
+
+    /**
+     * ノートのタイトル入力欄を監視し、Enterキーでエディタにフォーカスを移すリスナーを設定する。
+     * この関数はMutationObserverによって繰り返し呼ばれることを想定しており、
+     * 冪等性（べきとうせい）を担保するため、既にリスナーが設定されていれば何もしない。
+     */
+    function setupTitleEnterListener() {
+        // [BESTPRACTICE] 複数のセレクタ候補に対応し、UI変更に対する堅牢性を高める
+        const titleSelector = 'textarea[aria-label*="Note title"], #note-title-editor';
+        const titleInput = document.querySelector(titleSelector);
+
+        // タイトル入力欄が存在し、かつ未処理の場合のみ実行
+        if (titleInput && !titleInput.dataset.enterKeyHandlerAttached) {
+            console.log('Markdown Editor: Attaching Enter key handler to title input.');
+            titleInput.dataset.enterKeyHandlerAttached = 'true'; // 処理済みのマークを付ける
+
+            // IME（日本語入力など）の変換状態を追跡するためのフラグ
+            let isComposing = false;
+            titleInput.addEventListener('compositionstart', () => { isComposing = true; });
+            titleInput.addEventListener('compositionend', () => { isComposing = false; });
+
+            titleInput.addEventListener('keydown', (e) => {
+                // [IMPORTANT] IME変換確定のEnterキーを無視し、直接のEnterキー押下のみを捕捉する
+                if (e.key === 'Enter' && !isComposing && !e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey) {
+                    // 本来の改行動作（もしあれば）をキャンセルする
+                    e.preventDefault();
+
+                    // エディタにフォーカスを移動するメインの関数を呼び出す
+                    handleFocusToEditor();
+                }
+            });
+        }
+    }
+
+    /**
+     * エディタにフォーカスを移動し、カーソルを末尾に設定する。
+     */
+    function handleFocusToEditor() {
+        console.log("Request received to focus custom editor.");
+        if (activeEditorInstance) {
+            const { textarea, switchMode } = activeEditorInstance;
+            const currentMode = localStorage.getItem(STORAGE_KEY_MODE) || 'split';
+
+            // プレビューモードの場合は、分割モードに切り替えてからフォーカスする
+            if (currentMode === 'preview') {
+                switchMode('split', true);
+            } else {
+                textarea.focus();
+            }
+
+            // [BESTPRACTICE] フォーカスとカーソル移動を確実に実行するため、次の描画サイクルに処理を遅延させる
+            requestAnimationFrame(() => {
+                const len = textarea.value.length;
+                textarea.setSelectionRange(len, len);
+                // 文末が表示されるようにスクロールも調整
+                textarea.scrollTop = textarea.scrollHeight;
+            });
+        } else {
+            console.warn("Could not focus editor: activeEditorInstance is not available.");
+        }
+    }
+
+    // =========================================================================
+    // ▲▲▲ ここまでがフォーカス移動関連ロジック ▲▲▲
+    // =========================================================================
 
     function setupMarkdownEditor(originalTextarea, isNewNoteSetup = false) {
         if (!originalTextarea || !originalTextarea.parentElement) {
@@ -999,18 +1068,6 @@
         if (isNewNoteSetup) { console.log('New note detected, focusing editor.'); }
     }
 
-    function handleFocusToEditor() {
-        console.log("Event 'sn:title:enter' received. Focusing custom editor.");
-        if (activeEditorInstance) {
-            const { textarea, switchMode } = activeEditorInstance;
-            const currentMode = localStorage.getItem(STORAGE_KEY_MODE) || 'split';
-            if (currentMode === 'preview') { switchMode('split', true); }
-            else { textarea.focus(); }
-            setTimeout(() => { const len = textarea.value.length; textarea.setSelectionRange(len, len); }, 0);
-        }
-    }
-    document.addEventListener('sn:title:enter', handleFocusToEditor);
-
     function initiateEditorSetup(editor, attempts = 0) {
         const MAX_ATTEMPTS = 40;
         const RETRY_INTERVAL = 50;
@@ -1030,20 +1087,35 @@
     }
 
     const mainObserver = new MutationObserver((mutations) => {
+        let editorNeedsSetup = false;
+        let editorInstance = null;
+
         for (const mutation of mutations) {
             if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
                 for (const node of mutation.addedNodes) {
                     if (node.nodeType !== Node.ELEMENT_NODE) continue;
                     const editor = node.matches('#note-text-editor') ? node : node.querySelector('#note-text-editor');
                     if (editor && !editor.dataset.markdownReady) {
-                        const oldCustomEditor = document.querySelector('.markdown-editor-container');
-                        if (oldCustomEditor) oldCustomEditor.remove();
-                        initiateEditorSetup(editor);
-                        return;
+                        editorNeedsSetup = true;
+                        editorInstance = editor;
+                        break;
                     }
                 }
             }
+            if (editorNeedsSetup) break;
         }
+
+        if (editorNeedsSetup) {
+            const oldCustomEditor = document.querySelector('.markdown-editor-container');
+            if (oldCustomEditor) oldCustomEditor.remove();
+            initiateEditorSetup(editorInstance);
+        }
+
+        // [IMPORTANT] UIが更新されるたびに、タイトル欄の監視を試みる
+        // これにより、ノート切り替え時にもリスナーが正しく設定される
+        setupTitleEnterListener();
+
+        // エディタがDOMから削除された場合のクリーンアップ処理
         const customEditor = document.querySelector('.markdown-editor-container');
         if (customEditor && !document.querySelector('#note-text-editor')) {
             customEditor.remove();
