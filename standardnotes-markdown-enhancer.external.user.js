@@ -10,7 +10,7 @@
 // @name:de              Erweiterter Markdown-Editor für Standard Notes
 // @name:pt-BR           Editor Markdown avançado para Standard Notes
 // @name:ru              Улучшенный редактор Markdown для Standard Notes
-// @version              5.2.1
+// @version              5.2.5
 // @description          Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency. This version features a new architecture for rock-solid sync reliability.
 // @description:ja       Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップ。盤石な同期信頼性を実現する新アーキテクチャ版です。
 // @description:zh-CN    非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。此版本采用新架构，具有坚如磐石的同步可靠性。
@@ -108,65 +108,68 @@
     const STORAGE_KEY_MODE = 'snMarkdownEditorMode';
     const STORAGE_KEY_TOOLBAR_VISIBLE = 'snMarkdownToolbarVisible';
 
-    // --- [SHADOW DOM] プレビュー専用スタイル ---
-    const PREVIEW_STYLES = `
-        :host {
-            display: block;
+    // ★★★ START OF MODIFICATION ★★★
+    // プレビューコンテナ用のユニークなクラス名
+    const PREVIEW_CONTAINER_CLASS = 'sn-markdown-preview-container';
+
+    // スコープ化されたプレビュースタイル
+    const SCOPED_PREVIEW_STYLES = `
+        .${PREVIEW_CONTAINER_CLASS} {
             overflow-y: auto;
             height: 100%;
             -webkit-overflow-scrolling: touch;
-        }
-        .markdown-preview {
             padding: 16px;
             line-height: 1.7;
             font-size: 1.05rem;
             color: var(--sn-stylekit-foreground-color, #333);
         }
-        .markdown-preview h1, .markdown-preview h2, .markdown-preview h3, .markdown-preview h4, .markdown-preview h5, .markdown-preview h6 { margin-top: 24px; margin-bottom: 16px; font-weight: 600; line-height: 1.25; border-bottom: 1px solid var(--sn-stylekit-border-color, #eee); padding-bottom: .3em; }
-        .markdown-preview h1 { font-size: 2em; }
-        .markdown-preview h2 { font-size: 1.5em; }
-        .markdown-preview h3 { font-size: 1.25em; }
-        .markdown-preview p { margin-bottom: 16px; }
-        .markdown-preview ul, .markdown-preview ol { padding-left: 2em; margin-bottom: 16px; }
-        .markdown-preview blockquote { padding: 0 1em; color: var(--sn-stylekit-secondary-foreground-color, #6a737d); border-left: .25em solid var(--sn-stylekit-border-color, #dfe2e5); margin: 0 0 16px 0; }
-        .markdown-preview code { padding: .2em .4em; margin: 0; font-size: 85%; background-color: var(--sn-stylekit-secondary-background-color, rgba(200,200,200,0.3)); border-radius: 3px; font-family: var(--sn-stylekit-font-code, monospace); }
-        .markdown-preview pre { position: relative; padding: 16px; padding-top: 40px; overflow: auto; font-size: 85%; line-height: 1.45; background-color: var(--sn-stylekit-secondary-background-color, rgba(200,200,200,0.3)); border-radius: 6px; word-wrap: normal; margin-bottom: 16px; }
-        .markdown-preview pre code { background-color: transparent; padding: 0; margin: 0; }
-        .markdown-preview img { max-width: 100%; height: auto; border-radius: 6px; }
-        .markdown-preview table { border-collapse: collapse; width: 100%; margin-bottom: 16px; display: block; overflow: auto; }
-        .markdown-preview th, .markdown-preview td { border: 2px solid var(--sn-stylekit-border-color, #adb5bd); padding: 6px 13px; }
-        .markdown-preview tr:nth-child(2n) { background-color: var(--sn-stylekit-secondary-background-color, #f6f8fa); }
-        .markdown-preview hr { height: .25em; padding: 0; margin: 24px 0; background-color: var(--sn-stylekit-border-color, #dfe2e5); border: 0; }
-        .markdown-preview li.task-list-item { list-style-type: none; }
-        .markdown-preview li.task-list-item input[type="checkbox"] { margin: 0 0.2em 0.25em -1.6em; vertical-align: middle; cursor: pointer; }
-        .copy-code-button { position: absolute; top: 10px; right: 10px; padding: 5px 8px; font-size: 12px; border: 1px solid var(--sn-stylekit-border-color, #ccc); border-radius: 4px; background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-secondary-foreground-color, #555); cursor: pointer; opacity: 0; transition: opacity 0.2s, background-color 0.2s, color 0.2s; z-index: 1; }
-        .markdown-preview pre:hover .copy-code-button { opacity: 1; }
-        .copy-code-button:hover { background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); }
-        .copy-code-button.copied { background-color: var(--sn-stylekit-primary-color, #346df1); color: var(--sn-stylekit-primary-contrast-color, #fff); border-color: var(--sn-stylekit-primary-color, #346df1); }
-        .code-language-label { position: absolute; top: 10px; left: 10px; padding: 3px 6px; font-size: 12px; color: var(--sn-stylekit-secondary-foreground-color, #6a737d); background-color: rgba(255, 255, 255, 0.7); border-radius: 4px; opacity: 0.7; z-index: 1; pointer-events: none; }
-        .preview-error { padding: 1rem; color: #d73a49; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: .25rem; }
-        .preview-error strong { font-weight: bold; }
-        .preview-error pre { white-space: pre-wrap; word-break: break-all; margin-top: 0.5rem; padding: 0; background: transparent; border: none; color: inherit; }
-        .markdown-preview pre code.hljs { display: block; overflow-x: auto; padding: 0; color: var(--sn-stylekit-foreground-color, #333); background: transparent; }
-        .hljs-comment, .hljs-quote { color: var(--sn-stylekit-secondary-foreground-color, #6a737d); font-style: italic; }
-        .hljs-keyword, .hljs-selector-tag, .hljs-subst, .hljs-deletion, .hljs-meta, .hljs-selector-class { color: #d73a49; }
-        .hljs-number, .hljs-literal, .hljs-variable, .hljs-template-variable, .hljs-tag .hljs-attr { color: var(--sn-stylekit-primary-color, #005cc5); }
-        .hljs-string, .hljs-doctag { color: #032f62; }
-        .hljs-title, .hljs-section, .hljs-selector-id, .hljs-type, .hljs-symbol, .hljs-bullet, .hljs-link { color: #6f42c1; }
-        .hljs-addition { color: #22863a; }
-        .hljs-emphasis { font-style: italic; }
-        .hljs-strong { font-weight: bold; }
+        .${PREVIEW_CONTAINER_CLASS} h1, .${PREVIEW_CONTAINER_CLASS} h2, .${PREVIEW_CONTAINER_CLASS} h3, .${PREVIEW_CONTAINER_CLASS} h4, .${PREVIEW_CONTAINER_CLASS} h5, .${PREVIEW_CONTAINER_CLASS} h6 { margin-top: 24px; margin-bottom: 16px; font-weight: 600; line-height: 1.25; border-bottom: 1px solid var(--sn-stylekit-border-color, #eee); padding-bottom: .3em; }
+        .${PREVIEW_CONTAINER_CLASS} h1 { font-size: 2em; }
+        .${PREVIEW_CONTAINER_CLASS} h2 { font-size: 1.5em; }
+        .${PREVIEW_CONTAINER_CLASS} h3 { font-size: 1.25em; }
+        .${PREVIEW_CONTAINER_CLASS} p { margin-bottom: 16px; }
+        .${PREVIEW_CONTAINER_CLASS} ul, .${PREVIEW_CONTAINER_CLASS} ol { padding-left: 2em; margin-bottom: 16px; }
+        .${PREVIEW_CONTAINER_CLASS} blockquote { padding: 0 1em; color: var(--sn-stylekit-secondary-foreground-color, #6a737d); border-left: .25em solid var(--sn-stylekit-border-color, #dfe2e5); margin: 0 0 16px 0; }
+        .${PREVIEW_CONTAINER_CLASS} code { padding: .2em .4em; margin: 0; font-size: 85%; background-color: var(--sn-stylekit-secondary-background-color, rgba(200,200,200,0.3)); border-radius: 3px; font-family: var(--sn-stylekit-font-code, monospace); }
+        .${PREVIEW_CONTAINER_CLASS} pre { position: relative; padding: 16px; padding-top: 40px; overflow: auto; font-size: 85%; line-height: 1.45; background-color: var(--sn-stylekit-secondary-background-color, rgba(200,200,200,0.3)); border-radius: 6px; word-wrap: normal; margin-bottom: 16px; }
+        .${PREVIEW_CONTAINER_CLASS} pre code { background-color: transparent; padding: 0; margin: 0; }
+        .${PREVIEW_CONTAINER_CLASS} img { max-width: 100%; height: auto; border-radius: 6px; }
+        .${PREVIEW_CONTAINER_CLASS} table { border-collapse: collapse; width: 100%; margin-bottom: 16px; display: block; overflow: auto; }
+        .${PREVIEW_CONTAINER_CLASS} th, .${PREVIEW_CONTAINER_CLASS} td { border: 2px solid var(--sn-stylekit-border-color, #adb5bd); padding: 6px 13px; }
+        .${PREVIEW_CONTAINER_CLASS} tr:nth-child(2n) { background-color: var(--sn-stylekit-secondary-background-color, #f6f8fa); }
+        .${PREVIEW_CONTAINER_CLASS} hr { height: .25em; padding: 0; margin: 24px 0; background-color: var(--sn-stylekit-border-color, #dfe2e5); border: 0; }
+        .${PREVIEW_CONTAINER_CLASS} li.task-list-item { list-style-type: none; }
+        .${PREVIEW_CONTAINER_CLASS} li.task-list-item input[type="checkbox"] { margin: 0 0.2em 0.25em -1.6em; vertical-align: middle; cursor: pointer; }
+        .${PREVIEW_CONTAINER_CLASS} .copy-code-button { position: absolute; top: 10px; right: 10px; padding: 5px 8px; font-size: 12px; border: 1px solid var(--sn-stylekit-border-color, #ccc); border-radius: 4px; background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-secondary-foreground-color, #555); cursor: pointer; opacity: 0; transition: opacity 0.2s, background-color 0.2s, color 0.2s; z-index: 1; }
+        .${PREVIEW_CONTAINER_CLASS} pre:hover .copy-code-button { opacity: 1; }
+        .${PREVIEW_CONTAINER_CLASS} .copy-code-button:hover { background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); }
+        .${PREVIEW_CONTAINER_CLASS} .copy-code-button.copied { background-color: var(--sn-stylekit-primary-color, #346df1); color: var(--sn-stylekit-primary-contrast-color, #fff); border-color: var(--sn-stylekit-primary-color, #346df1); }
+        .${PREVIEW_CONTAINER_CLASS} .code-language-label { position: absolute; top: 10px; left: 10px; padding: 3px 6px; font-size: 12px; color: var(--sn-stylekit-secondary-foreground-color, #6a737d); background-color: rgba(255, 255, 255, 0.7); border-radius: 4px; opacity: 0.7; z-index: 1; pointer-events: none; }
+        .${PREVIEW_CONTAINER_CLASS} .preview-error { padding: 1rem; color: #d73a49; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: .25rem; }
+        .${PREVIEW_CONTAINER_CLASS} .preview-error strong { font-weight: bold; }
+        .${PREVIEW_CONTAINER_CLASS} .preview-error pre { white-space: pre-wrap; word-break: break-all; margin-top: 0.5rem; padding: 0; background: transparent; border: none; color: inherit; }
+        .${PREVIEW_CONTAINER_CLASS} pre code.hljs { display: block; overflow-x: auto; padding: 0; color: var(--sn-stylekit-foreground-color, #333); background: transparent; }
+        .${PREVIEW_CONTAINER_CLASS} .hljs-comment, .${PREVIEW_CONTAINER_CLASS} .hljs-quote { color: var(--sn-stylekit-secondary-foreground-color, #6a737d); font-style: italic; }
+        .${PREVIEW_CONTAINER_CLASS} .hljs-keyword, .${PREVIEW_CONTAINER_CLASS} .hljs-selector-tag, .${PREVIEW_CONTAINER_CLASS} .hljs-subst, .${PREVIEW_CONTAINER_CLASS} .hljs-deletion, .${PREVIEW_CONTAINER_CLASS} .hljs-meta, .${PREVIEW_CONTAINER_CLASS} .hljs-selector-class { color: #d73a49; }
+        .${PREVIEW_CONTAINER_CLASS} .hljs-number, .${PREVIEW_CONTAINER_CLASS} .hljs-literal, .${PREVIEW_CONTAINER_CLASS} .hljs-variable, .${PREVIEW_CONTAINER_CLASS} .hljs-template-variable, .${PREVIEW_CONTAINER_CLASS} .hljs-tag .hljs-attr { color: var(--sn-stylekit-primary-color, #005cc5); }
+        .${PREVIEW_CONTAINER_CLASS} .hljs-string, .${PREVIEW_CONTAINER_CLASS} .hljs-doctag { color: #032f62; }
+        .${PREVIEW_CONTAINER_CLASS} .hljs-title, .${PREVIEW_CONTAINER_CLASS} .hljs-section, .${PREVIEW_CONTAINER_CLASS} .hljs-selector-id, .${PREVIEW_CONTAINER_CLASS} .hljs-type, .${PREVIEW_CONTAINER_CLASS} .hljs-symbol, .${PREVIEW_CONTAINER_CLASS} .hljs-bullet, .${PREVIEW_CONTAINER_CLASS} .hljs-link { color: #6f42c1; }
+        .${PREVIEW_CONTAINER_CLASS} .hljs-addition { color: #22863a; }
+        .${PREVIEW_CONTAINER_CLASS} .hljs-emphasis { font-style: italic; }
+        .${PREVIEW_CONTAINER_CLASS} .hljs-strong { font-weight: bold; }
         @media (prefers-color-scheme: dark) {
-            .markdown-preview pre code.hljs .hljs-keyword, .markdown-preview pre code.hljs .hljs-selector-tag, .markdown-preview pre code.hljs .hljs-subst, .markdown-preview pre code.hljs .hljs-deletion, .markdown-preview pre code.hljs .hljs-meta, .markdown-preview pre code.hljs .hljs-selector-class { color: #ff7b72; }
-            .markdown-preview pre code.hljs .hljs-string, .markdown-preview pre code.hljs .hljs-doctag { color: #a5d6ff; }
-            .markdown-preview pre code.hljs .hljs-title, .markdown-preview pre code.hljs .hljs-section, .markdown-preview pre code.hljs .hljs-selector-id, .markdown-preview pre code.hljs .hljs-type, .markdown-preview pre code.hljs .hljs-symbol, .markdown-preview pre code.hljs .hljs-bullet, .markdown-preview pre code.hljs .hljs-link { color: #d2a8ff; }
-            .markdown-preview pre code.hljs .hljs-addition { color: #7ee787; }
-            .code-language-label { background-color: rgba(0, 0, 0, 0.3); }
+            .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-keyword, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-selector-tag, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-subst, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-deletion, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-meta, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-selector-class { color: #ff7b72; }
+            .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-string, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-doctag { color: #a5d6ff; }
+            .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-title, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-section, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-selector-id, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-type, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-symbol, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-bullet, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-link { color: #d2a8ff; }
+            .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-addition { color: #7ee787; }
+            .${PREVIEW_CONTAINER_CLASS} .code-language-label { background-color: rgba(0, 0, 0, 0.3); }
         }
     `;
+    // ★★★ END OF MODIFICATION ★★★
 
-    // --- スタイル定義 (UI部分のみ) ---
+    // --- スタイル定義 (UI部分とプレビュー部分) ---
     GM_addStyle(`
+        /* UI STYLES */
         .sn-markdown-hidden { display: none !important; }
         .sn-markdown-full-height { height: 100%; }
         .markdown-editor-container { display: flex; flex-direction: column; height: 100%; overflow: hidden; border: 1px solid var(--sn-stylekit-border-color, #e0e0e0); border-radius: 4px; }
@@ -185,13 +188,13 @@
         .toolbar-select { font-weight: bold; -webkit-appearance: none; -moz-appearance: none; appearance: none; padding-right: 20px; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20fill%3D%22%23555%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M5%208l5%205%205-5z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 0px center; }
         .markdown-editor-container.toolbar-hidden .markdown-toolbar { display: none; }
         .editor-preview-wrapper { display: flex; flex-grow: 1; overflow: hidden; background-color: var(--sn-stylekit-editor-background-color, #fff); }
-        .custom-markdown-textarea, .markdown-preview-host { flex-grow: 1; flex-shrink: 1; }
+        .custom-markdown-textarea, .${PREVIEW_CONTAINER_CLASS} { flex-grow: 1; flex-shrink: 1; }
         .custom-markdown-textarea { border: none !important; outline: none !important; resize: none !important; box-shadow: none !important; padding: 16px !important; margin: 0 !important; width: 100% !important; background-color: transparent !important; color: var(--sn-stylekit-foreground-color, #333) !important; font-family: var(--sn-stylekit-font-editor, sans-serif) !important; line-height: var(--sn-stylekit-line-height-editor, 1.7) !important; height: 100%; overflow-y: auto; }
-        .markdown-editor-container.mode-editor .markdown-preview-host { display: none; }
+        .markdown-editor-container.mode-editor .${PREVIEW_CONTAINER_CLASS} { display: none; }
         .markdown-editor-container.mode-preview .markdown-toolbar, .markdown-editor-container.mode-preview .custom-markdown-textarea { display: none; }
-        .markdown-editor-container.mode-preview .markdown-preview-host { display: block; }
-        .markdown-editor-container.mode-split .custom-markdown-textarea, .markdown-editor-container.mode-split .markdown-preview-host { display: block !important; flex-basis: 50%; width: 50%; }
-        .markdown-editor-container.mode-split .markdown-preview-host { border-left: 1px solid var(--sn-stylekit-border-color, #e0e0e0); }
+        .markdown-editor-container.mode-preview .${PREVIEW_CONTAINER_CLASS} { display: block; }
+        .markdown-editor-container.mode-split .custom-markdown-textarea, .markdown-editor-container.mode-split .${PREVIEW_CONTAINER_CLASS} { display: block !important; flex-basis: 50%; width: 50%; }
+        .markdown-editor-container.mode-split .${PREVIEW_CONTAINER_CLASS} { border-left: 1px solid var(--sn-stylekit-border-color, #e0e0e0); }
         @media print {
             body > *:not(.print-container) { display: none !important; }
             .print-container > style { display: none !important; }
@@ -262,7 +265,11 @@
         .sn-table-editor tr.drag-over-row { box-shadow: inset 0 2px var(--sn-stylekit-primary-color, #346df1); }
         .sn-table-editor th.drag-over-col { box-shadow: inset 2px 0 var(--sn-stylekit-primary-color, #346df1); }
         .col-header-content { display: flex; align-items: center; justify-content: center; }
+
+        /* PREVIEW STYLES (Scoped) */
+        ${SCOPED_PREVIEW_STYLES}
     `);
+    // ★★★ END OF MODIFICATION ★★★
 
     function debounce(func, wait) {
         let timeout;
@@ -644,27 +651,11 @@
         const toolbar = document.createElement('div');
         toolbar.className = 'markdown-toolbar';
 
-        const previewHost = document.createElement('div');
-        previewHost.className = 'markdown-preview-host';
-        const shadow = previewHost.attachShadow({ mode: 'open' });
-
-        const shadowContent = document.createElement('div');
-        shadowContent.className = 'markdown-preview';
-
-        // Constructable Stylesheet を使ってCSPを回避し、スタイルを適用
-        try {
-            const sheet = new CSSStyleSheet();
-            sheet.replaceSync(PREVIEW_STYLES);
-            shadow.adoptedStyleSheets = [sheet];
-        } catch (e) {
-            // 古いブラウザなどで上記が失敗した場合のフォールバック
-            console.warn('Constructable Stylesheets not supported, falling back to <style> tag.', e);
-            const shadowStyle = document.createElement('style');
-            shadowStyle.textContent = PREVIEW_STYLES;
-            shadow.appendChild(shadowStyle);
-        }
-
-        shadow.appendChild(shadowContent);
+        // ★★★ START OF MODIFICATION ★★★
+        // Shadow DOMを廃止し、通常のDIVをプレビューコンテナとして使用する
+        const previewContainer = document.createElement('div');
+        previewContainer.className = PREVIEW_CONTAINER_CLASS;
+        // ★★★ END OF MODIFICATION ★★★
 
         markdownTextarea.addEventListener('paste', handlePaste);
 
@@ -742,7 +733,7 @@
 
         const contentWrapper = document.createElement('div');
         contentWrapper.className = 'editor-preview-wrapper';
-        contentWrapper.append(markdownTextarea, previewHost);
+        contentWrapper.append(markdownTextarea, previewContainer); // ★★★ MODIFICATION ★★★
         modeBar.append(editorButton, splitButton, previewButton, toolbarToggleButton, printButton);
         container.append(modeBar, toolbar, contentWrapper);
         editorWrapper.after(container);
@@ -754,14 +745,14 @@
                 const contentForPreview = `${mainContent}\n\n${unwrappedDefs}`;
                 const dirtyHtml = marked.parse(contentForPreview);
                 const sanitizedHtml = DOMPurify.sanitize(dirtyHtml, { USE_PROFILES: { html: true }, ADD_ATTR: ['class', 'type', 'disabled', 'checked', 'data-task-index', 'data-processed', 'data-explicit-lang'], ADD_TAGS: ['span', 'input'], });
-                shadowContent.innerHTML = sanitizedHtml;
+                previewContainer.innerHTML = sanitizedHtml; // ★★★ MODIFICATION ★★★
 
-                shadowContent.querySelectorAll('pre > code[class*="language-"]').forEach(codeEl => {
+                previewContainer.querySelectorAll('pre > code[class*="language-"]').forEach(codeEl => { // ★★★ MODIFICATION ★★★
                     const langMatch = Array.from(codeEl.classList).find(cls => cls.startsWith('language-'));
                     if (langMatch) { const lang = langMatch.replace('language-', ''); if (lang) { codeEl.parentElement.dataset.explicitLang = lang; } }
                 });
-                shadowContent.querySelectorAll('pre code').forEach(hljs.highlightElement);
-                shadowContent.querySelectorAll('pre').forEach(preEl => {
+                previewContainer.querySelectorAll('pre code').forEach(hljs.highlightElement); // ★★★ MODIFICATION ★★★
+                previewContainer.querySelectorAll('pre').forEach(preEl => { // ★★★ MODIFICATION ★★★
                     if (preEl.dataset.processed) return;
                     preEl.dataset.processed = 'true';
                     const codeEl = preEl.querySelector('code');
@@ -780,16 +771,14 @@
                     });
                 });
 
-                shadowContent.querySelectorAll('input[type="checkbox"]').forEach((checkbox, index) => {
+                previewContainer.querySelectorAll('input[type="checkbox"]').forEach((checkbox, index) => { // ★★★ MODIFICATION ★★★
                     const listItem = checkbox.closest('li');
                     if (listItem) {
                         listItem.classList.add('task-list-item');
                         if (checkbox.checked) {
                             listItem.classList.add('completed');
                         }
-                        const newCheckbox = checkbox.cloneNode(true);
-                        checkbox.parentNode.replaceChild(newCheckbox, checkbox);
-                        newCheckbox.addEventListener('click', (e) => {
+                        checkbox.addEventListener('click', (e) => {
                             e.preventDefault();
                             handlePreviewChecklistToggle(index);
                         });
@@ -797,7 +786,7 @@
                 });
             } catch (e) {
                 console.error("Error updating preview:", e);
-                shadowContent.innerHTML = `<div class="preview-error"><strong>${T.previewErrorTitle}</strong><br><pre>${e.stack || e}</pre></div>`;
+                previewContainer.innerHTML = `<div class="preview-error"><strong>${T.previewErrorTitle}</strong><br><pre>${e.stack || e}</pre></div>`; // ★★★ MODIFICATION ★★★
             }
         };
 
@@ -943,8 +932,8 @@
                 target.scrollTop = scrollRatio * targetScrollableDist;
             });
         };
-        const onEditorScroll = () => handleScroll(markdownTextarea, previewHost);
-        const onPreviewScroll = () => handleScroll(previewHost, markdownTextarea);
+        const onEditorScroll = () => handleScroll(markdownTextarea, previewContainer); // ★★★ MODIFICATION ★★★
+        const onPreviewScroll = () => handleScroll(previewContainer, markdownTextarea); // ★★★ MODIFICATION ★★★
 
         const modeButtons = { editor: editorButton, split: splitButton, preview: previewButton };
         const switchMode = (mode, shouldFocus = true) => {
@@ -954,10 +943,10 @@
             modeButtons[mode].classList.add('active');
             localStorage.setItem(STORAGE_KEY_MODE, mode);
             markdownTextarea.removeEventListener('scroll', onEditorScroll);
-            previewHost.removeEventListener('scroll', onPreviewScroll);
+            previewContainer.removeEventListener('scroll', onPreviewScroll); // ★★★ MODIFICATION ★★★
             if (mode === 'split') {
                 markdownTextarea.addEventListener('scroll', onEditorScroll, { passive: true });
-                previewHost.addEventListener('scroll', onPreviewScroll, { passive: true });
+                previewContainer.addEventListener('scroll', onPreviewScroll, { passive: true }); // ★★★ MODIFICATION ★★★
             }
             if (mode === 'preview' || mode === 'split') { updatePreview(); }
             if (shouldFocus && mode !== 'preview') { markdownTextarea.focus(); }
@@ -988,9 +977,10 @@
             } else {
                 const printContent = document.createElement('div');
                 printContent.className = 'print-content';
+                // ★★★ MODIFICATION: 印刷時もスコープ化されたスタイルを使う ★★★
                 const printStyle = document.createElement('style');
-                printStyle.textContent = PREVIEW_STYLES;
-                printContent.innerHTML = shadowContent.innerHTML;
+                printStyle.textContent = SCOPED_PREVIEW_STYLES.replace(new RegExp(`\\.${PREVIEW_CONTAINER_CLASS}`, 'g'), '');
+                printContent.innerHTML = previewContainer.innerHTML;
                 printContainer.append(printStyle, printContent);
             }
             document.body.appendChild(printContainer);
