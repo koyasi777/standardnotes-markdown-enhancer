@@ -10,7 +10,7 @@
 // @name:de              Erweiterter Markdown-Editor für Standard Notes
 // @name:pt-BR           Editor Markdown avançado para Standard Notes
 // @name:ru              Улучшенный редактор Markdown для Standard Notes
-// @version              5.3.1
+// @version              5.3.2
 // @description          Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency. This version features a new architecture for rock-solid sync reliability.
 // @description:ja       Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップ。盤石な同期信頼性を実現する新アーキテクチャ版です。
 // @description:zh-CN    非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。此版本采用新架构，具有坚如磐石的同步可靠性。
@@ -6765,8 +6765,7 @@ ${DEFINITIONS_FOOTER}`;
           isInternallyUpdating = false;
         });
       };
-      debouncedInputHandler = debounce(handleInput, 300);
-      markdownTextarea.addEventListener("input", debouncedInputHandler);
+      markdownTextarea.addEventListener('input', handleInput);
       const observer = new MutationObserver(() => {
         if (isInternallyUpdating) {
           return;
