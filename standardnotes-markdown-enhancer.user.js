@@ -10,7 +10,7 @@
 // @name:de           Erweiterter Markdown-Editor für Standard Notes
 // @name:pt-BR        Editor Markdown avançado para Standard Notes
 // @name:ru           Улучшенный редактор Markdown для Standard Notes
-// @version           5.3.3
+// @version           5.4.0
 // @description       Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency. This version features a new architecture for rock-solid sync reliability.
 // @description:ja    Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップ。盤石な同期信頼性を実現する新アーキテクチャ版です。
 // @description:zh-CN 非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。此版本采用新架构，具有坚如磐石的同步可靠性。
@@ -25,10 +25,11 @@
 // @author            koyasi777
 // @match             https://app.standardnotes.com/*
 // @grant             GM_addStyle
-// @license           MIT
 // @homepageURL       https://github.com/koyasi777/standardnotes-markdown-enhancer
 // @supportURL        https://github.com/koyasi777/standardnotes-markdown-enhancer/issues
 // @icon              https://app.standardnotes.com/favicon/favicon-32x32.png
+// @license           MIT
+// @run-at            document-idle
 // ==/UserScript==
 
 (() => {
@@ -86,8 +87,7 @@
          * @param {CompiledMode} mode
          */
         constructor(mode) {
-          if (mode.data === void 0)
-            mode.data = {};
+          if (mode.data === void 0) mode.data = {};
           this.data = mode.data;
           this.isMatchIgnored = false;
         }
@@ -154,8 +154,7 @@
          *
          * @param {Node} node */
         openNode(node) {
-          if (!emitsWrappingTags(node))
-            return;
+          if (!emitsWrappingTags(node)) return;
           const className = scopeToCSSClass(
             node.scope,
             { prefix: this.classPrefix }
@@ -167,8 +166,7 @@
          *
          * @param {Node} node */
         closeNode(node) {
-          if (!emitsWrappingTags(node))
-            return;
+          if (!emitsWrappingTags(node)) return;
           this.buffer += SPAN_CLOSE;
         }
         /**
@@ -219,8 +217,7 @@
           return void 0;
         }
         closeAllNodes() {
-          while (this.closeNode())
-            ;
+          while (this.closeNode()) ;
         }
         toJSON() {
           return JSON.stringify(this.rootNode, null, 4);
@@ -250,10 +247,8 @@
          * @param {Node} node
          */
         static _collapse(node) {
-          if (typeof node === "string")
-            return;
-          if (!node.children)
-            return;
+          if (typeof node === "string") return;
+          if (!node.children) return;
           if (node.children.every((el) => typeof el === "string")) {
             node.children = [node.children.join("")];
           } else {
@@ -293,8 +288,7 @@
          */
         __addSublanguage(emitter, name) {
           const node = emitter.root;
-          if (name)
-            node.scope = `language:${name}`;
+          if (name) node.scope = `language:${name}`;
           this.add(node);
         }
         toHTML() {
@@ -307,10 +301,8 @@
         }
       };
       function source3(re) {
-        if (!re)
-          return null;
-        if (typeof re === "string")
-          return re;
+        if (!re) return null;
+        if (typeof re === "string") return re;
         return re.source;
       }
       function lookahead3(re) {
@@ -399,8 +391,7 @@
           relevance: 0,
           /** @type {ModeCallback} */
           "on:begin": (m, resp) => {
-            if (m.index !== 0)
-              resp.ignoreMatch();
+            if (m.index !== 0) resp.ignoreMatch();
           }
         }, opts);
       };
@@ -550,8 +541,7 @@
             },
             /** @type {ModeCallback} */
             "on:end": (m, resp) => {
-              if (resp.data._beginMatch !== m[1])
-                resp.ignoreMatch();
+              if (resp.data._beginMatch !== m[1]) resp.ignoreMatch();
             }
           }
         );
@@ -596,39 +586,30 @@
         }
       }
       function beginKeywords(mode, parent) {
-        if (!parent)
-          return;
-        if (!mode.beginKeywords)
-          return;
+        if (!parent) return;
+        if (!mode.beginKeywords) return;
         mode.begin = "\\b(" + mode.beginKeywords.split(" ").join("|") + ")(?!\\.)(?=\\b|\\s)";
         mode.__beforeBegin = skipIfHasPrecedingDot;
         mode.keywords = mode.keywords || mode.beginKeywords;
         delete mode.beginKeywords;
-        if (mode.relevance === void 0)
-          mode.relevance = 0;
+        if (mode.relevance === void 0) mode.relevance = 0;
       }
       function compileIllegal(mode, _parent) {
-        if (!Array.isArray(mode.illegal))
-          return;
+        if (!Array.isArray(mode.illegal)) return;
         mode.illegal = either3(...mode.illegal);
       }
       function compileMatch(mode, _parent) {
-        if (!mode.match)
-          return;
-        if (mode.begin || mode.end)
-          throw new Error("begin & end are not supported with match");
+        if (!mode.match) return;
+        if (mode.begin || mode.end) throw new Error("begin & end are not supported with match");
         mode.begin = mode.match;
         delete mode.match;
       }
       function compileRelevance(mode, _parent) {
-        if (mode.relevance === void 0)
-          mode.relevance = 1;
+        if (mode.relevance === void 0) mode.relevance = 1;
       }
       var beforeMatchExt = (mode, parent) => {
-        if (!mode.beforeMatch)
-          return;
-        if (mode.starts)
-          throw new Error("beforeMatch cannot be used with starts");
+        if (!mode.beforeMatch) return;
+        if (mode.starts) throw new Error("beforeMatch cannot be used with starts");
         const originalMode = Object.assign({}, mode);
         Object.keys(mode).forEach((key) => {
           delete mode[key];
@@ -703,8 +684,7 @@
         console.log(`WARN: ${message}`, ...args);
       };
       var deprecated = (version2, message) => {
-        if (seenDeprecations[`${version2}/${message}`])
-          return;
+        if (seenDeprecations[`${version2}/${message}`]) return;
         console.log(`Deprecated as of ${version2}. ${message}`);
         seenDeprecations[`${version2}/${message}`] = true;
       };
@@ -724,8 +704,7 @@
         mode[key]._multi = true;
       }
       function beginMultiClass(mode) {
-        if (!Array.isArray(mode.begin))
-          return;
+        if (!Array.isArray(mode.begin)) return;
         if (mode.skip || mode.excludeBegin || mode.returnBegin) {
           error("skip, excludeBegin, returnBegin not compatible with beginScope: {}");
           throw MultiClassError;
@@ -738,8 +717,7 @@
         mode.begin = _rewriteBackreferences(mode.begin, { joinWith: "" });
       }
       function endMultiClass(mode) {
-        if (!Array.isArray(mode.end))
-          return;
+        if (!Array.isArray(mode.end)) return;
         if (mode.skip || mode.excludeEnd || mode.returnEnd) {
           error("skip, excludeEnd, returnEnd not compatible with endScope: {}");
           throw MultiClassError;
@@ -820,8 +798,7 @@
           }
           // @ts-ignore
           getMatcher(index) {
-            if (this.multiRegexes[index])
-              return this.multiRegexes[index];
+            if (this.multiRegexes[index]) return this.multiRegexes[index];
             const matcher = new MultiRegex();
             this.rules.slice(index).forEach(([re, opts]) => matcher.addRule(re, opts));
             matcher.compile();
@@ -837,8 +814,7 @@
           // @ts-ignore
           addRule(re, opts) {
             this.rules.push([re, opts]);
-            if (opts.type === "begin")
-              this.count++;
+            if (opts.type === "begin") this.count++;
           }
           /** @param {string} s */
           exec(s) {
@@ -846,8 +822,7 @@
             m.lastIndex = this.lastIndex;
             let result = m.exec(s);
             if (this.resumingScanAtSamePosition()) {
-              if (result && result.index === this.lastIndex)
-                ;
+              if (result && result.index === this.lastIndex) ;
               else {
                 const m2 = this.getMatcher(0);
                 m2.lastIndex = this.lastIndex + 1;
@@ -879,8 +854,7 @@
             /** @type CompiledMode */
             mode
           );
-          if (mode.isCompiled)
-            return cmode;
+          if (mode.isCompiled) return cmode;
           [
             scopeClassName,
             // do this early so compiler extensions generally don't have to worry about
@@ -912,25 +886,20 @@
           }
           cmode.keywordPatternRe = langRe(keywordPattern, true);
           if (parent) {
-            if (!mode.begin)
-              mode.begin = /\B|\b/;
+            if (!mode.begin) mode.begin = /\B|\b/;
             cmode.beginRe = langRe(cmode.begin);
-            if (!mode.end && !mode.endsWithParent)
-              mode.end = /\B|\b/;
-            if (mode.end)
-              cmode.endRe = langRe(cmode.end);
+            if (!mode.end && !mode.endsWithParent) mode.end = /\B|\b/;
+            if (mode.end) cmode.endRe = langRe(cmode.end);
             cmode.terminatorEnd = source3(cmode.end) || "";
             if (mode.endsWithParent && parent.terminatorEnd) {
               cmode.terminatorEnd += (mode.end ? "|" : "") + parent.terminatorEnd;
             }
           }
-          if (mode.illegal)
-            cmode.illegalRe = langRe(
-              /** @type {RegExp | string} */
-              mode.illegal
-            );
-          if (!mode.contains)
-            mode.contains = [];
+          if (mode.illegal) cmode.illegalRe = langRe(
+            /** @type {RegExp | string} */
+            mode.illegal
+          );
+          if (!mode.contains) mode.contains = [];
           mode.contains = [].concat(...mode.contains.map(function(c2) {
             return expandOrCloneMode(c2 === "self" ? mode : c2);
           }));
@@ -947,8 +916,7 @@
           cmode.matcher = buildModeRegex(cmode);
           return cmode;
         }
-        if (!language.compilerExtensions)
-          language.compilerExtensions = [];
+        if (!language.compilerExtensions) language.compilerExtensions = [];
         if (language.contains && language.contains.includes("self")) {
           throw new Error("ERR: contains `self` is not supported at the top-level of a language.  See documentation.");
         }
@@ -959,8 +927,7 @@
         );
       }
       function dependencyOnParent(mode) {
-        if (!mode)
-          return false;
+        if (!mode) return false;
         return mode.endsWithParent || dependencyOnParent(mode.starts);
       }
       function expandOrCloneMode(mode) {
@@ -1077,8 +1044,7 @@
                 emitter.addText(buf);
                 buf = "";
                 keywordHits[word] = (keywordHits[word] || 0) + 1;
-                if (keywordHits[word] <= MAX_KEYWORD_HITS)
-                  relevance += keywordRelevance;
+                if (keywordHits[word] <= MAX_KEYWORD_HITS) relevance += keywordRelevance;
                 if (kind.startsWith("_")) {
                   buf += match[0];
                 } else {
@@ -1095,8 +1061,7 @@
             emitter.addText(buf);
           }
           function processSubLanguage() {
-            if (modeBuffer === "")
-              return;
+            if (modeBuffer === "") return;
             let result2 = null;
             if (typeof top.subLanguage === "string") {
               if (!languages2[top.subLanguage]) {
@@ -1123,8 +1088,7 @@
             modeBuffer = "";
           }
           function emitKeyword(keyword, scope) {
-            if (keyword === "")
-              return;
+            if (keyword === "") return;
             emitter.startScope(scope);
             emitter.addText(keyword);
             emitter.endScope();
@@ -1171,8 +1135,7 @@
               if (mode["on:end"]) {
                 const resp = new Response(mode);
                 mode["on:end"](match, resp);
-                if (resp.isMatchIgnored)
-                  matched = false;
+                if (resp.isMatchIgnored) matched = false;
               }
               if (matched) {
                 while (mode.endsParent && mode.parent) {
@@ -1200,11 +1163,9 @@
             const resp = new Response(newMode);
             const beforeCallbacks = [newMode.__beforeBegin, newMode["on:begin"]];
             for (const cb of beforeCallbacks) {
-              if (!cb)
-                continue;
+              if (!cb) continue;
               cb(match, resp);
-              if (resp.isMatchIgnored)
-                return doIgnore(lexeme);
+              if (resp.isMatchIgnored) return doIgnore(lexeme);
             }
             if (newMode.skip) {
               modeBuffer += lexeme;
@@ -1338,8 +1299,7 @@
                 }
                 top.matcher.lastIndex = index;
                 const match = top.matcher.exec(codeToHighlight);
-                if (!match)
-                  break;
+                if (!match) break;
                 const beforeMatch = codeToHighlight.substring(index, match.index);
                 const processedCount = processLexeme(beforeMatch, match);
                 index = match.index + processedCount;
@@ -1408,8 +1368,7 @@
           );
           results.unshift(plaintext);
           const sorted = results.sort((a, b) => {
-            if (a.relevance !== b.relevance)
-              return b.relevance - a.relevance;
+            if (a.relevance !== b.relevance) return b.relevance - a.relevance;
             if (a.language && b.language) {
               if (getLanguage(a.language).supersetOf === b.language) {
                 return 1;
@@ -1432,8 +1391,7 @@
         function highlightElement(element) {
           let node = null;
           const language = blockLanguage(element);
-          if (shouldNotHighlight(language))
-            return;
+          if (shouldNotHighlight(language)) return;
           fire(
             "before:highlightElement",
             { el: element, language }
@@ -1516,8 +1474,7 @@
             }
             lang2 = PLAINTEXT_LANGUAGE;
           }
-          if (!lang2.name)
-            lang2.name = languageName;
+          if (!lang2.name) lang2.name = languageName;
           languages2[languageName] = lang2;
           lang2.rawDefinition = languageDefinition.bind(null, hljs);
           if (lang2.aliases) {
@@ -1715,7 +1672,7 @@
   function cleanUrl(href) {
     try {
       href = encodeURI(href).replace(/%25/g, "%");
-    } catch (e) {
+    } catch {
       return null;
     }
     return href;
@@ -1902,22 +1859,70 @@
       if (cap) {
         return {
           type: "hr",
-          raw: cap[0]
+          raw: rtrim(cap[0], "\n")
         };
       }
     }
     blockquote(src) {
       const cap = this.rules.block.blockquote.exec(src);
       if (cap) {
-        let text2 = cap[0].replace(/\n {0,3}((?:=+|-+) *)(?=\n|$)/g, "\n    $1");
-        text2 = rtrim(text2.replace(/^ *>[ \t]?/gm, ""), "\n");
-        const top = this.lexer.state.top;
-        this.lexer.state.top = true;
-        const tokens = this.lexer.blockTokens(text2);
-        this.lexer.state.top = top;
+        let lines = rtrim(cap[0], "\n").split("\n");
+        let raw = "";
+        let text2 = "";
+        const tokens = [];
+        while (lines.length > 0) {
+          let inBlockquote = false;
+          const currentLines = [];
+          let i;
+          for (i = 0; i < lines.length; i++) {
+            if (/^ {0,3}>/.test(lines[i])) {
+              currentLines.push(lines[i]);
+              inBlockquote = true;
+            } else if (!inBlockquote) {
+              currentLines.push(lines[i]);
+            } else {
+              break;
+            }
+          }
+          lines = lines.slice(i);
+          const currentRaw = currentLines.join("\n");
+          const currentText = currentRaw.replace(/\n {0,3}((?:=+|-+) *)(?=\n|$)/g, "\n    $1").replace(/^ {0,3}>[ \t]?/gm, "");
+          raw = raw ? `${raw}
+${currentRaw}` : currentRaw;
+          text2 = text2 ? `${text2}
+${currentText}` : currentText;
+          const top = this.lexer.state.top;
+          this.lexer.state.top = true;
+          this.lexer.blockTokens(currentText, tokens, true);
+          this.lexer.state.top = top;
+          if (lines.length === 0) {
+            break;
+          }
+          const lastToken = tokens[tokens.length - 1];
+          if (lastToken?.type === "code") {
+            break;
+          } else if (lastToken?.type === "blockquote") {
+            const oldToken = lastToken;
+            const newText = oldToken.raw + "\n" + lines.join("\n");
+            const newToken = this.blockquote(newText);
+            tokens[tokens.length - 1] = newToken;
+            raw = raw.substring(0, raw.length - oldToken.raw.length) + newToken.raw;
+            text2 = text2.substring(0, text2.length - oldToken.text.length) + newToken.text;
+            break;
+          } else if (lastToken?.type === "list") {
+            const oldToken = lastToken;
+            const newText = oldToken.raw + "\n" + lines.join("\n");
+            const newToken = this.list(newText);
+            tokens[tokens.length - 1] = newToken;
+            raw = raw.substring(0, raw.length - lastToken.raw.length) + newToken.raw;
+            text2 = text2.substring(0, text2.length - oldToken.raw.length) + newToken.raw;
+            lines = newText.substring(tokens[tokens.length - 1].raw.length).split("\n");
+            continue;
+          }
+        }
         return {
           type: "blockquote",
-          raw: cap[0],
+          raw,
           tokens,
           text: text2
         };
@@ -1941,11 +1946,11 @@
           bull = isordered ? bull : "[*+-]";
         }
         const itemRegex = new RegExp(`^( {0,3}${bull})((?:[	 ][^\\n]*)?(?:\\n|$))`);
-        let raw = "";
-        let itemContents = "";
         let endsWithBlankLine = false;
         while (src) {
           let endEarly = false;
+          let raw = "";
+          let itemContents = "";
           if (!(cap = itemRegex.exec(src))) {
             break;
           }
@@ -1956,18 +1961,20 @@
           src = src.substring(raw.length);
           let line = cap[2].split("\n", 1)[0].replace(/^\t+/, (t) => " ".repeat(3 * t.length));
           let nextLine = src.split("\n", 1)[0];
+          let blankLine = !line.trim();
           let indent = 0;
           if (this.options.pedantic) {
             indent = 2;
             itemContents = line.trimStart();
+          } else if (blankLine) {
+            indent = cap[1].length + 1;
           } else {
             indent = cap[2].search(/[^ ]/);
             indent = indent > 4 ? 1 : indent;
             itemContents = line.slice(indent);
             indent += cap[1].length;
           }
-          let blankLine = false;
-          if (!line && /^ *$/.test(nextLine)) {
+          if (blankLine && /^ *$/.test(nextLine)) {
             raw += nextLine + "\n";
             src = src.substring(nextLine.length + 1);
             endEarly = true;
@@ -2050,8 +2057,8 @@
           });
           list2.raw += raw;
         }
-        list2.items[list2.items.length - 1].raw = raw.trimEnd();
-        list2.items[list2.items.length - 1].text = itemContents.trimEnd();
+        list2.items[list2.items.length - 1].raw = list2.items[list2.items.length - 1].raw.trimEnd();
+        list2.items[list2.items.length - 1].text = list2.items[list2.items.length - 1].text.trimEnd();
         list2.raw = list2.raw.trimEnd();
         for (let i = 0; i < list2.items.length; i++) {
           this.lexer.state.top = false;
@@ -2130,17 +2137,21 @@
           item.align.push(null);
         }
       }
-      for (const header of headers) {
+      for (let i = 0; i < headers.length; i++) {
         item.header.push({
-          text: header,
-          tokens: this.lexer.inline(header)
+          text: headers[i],
+          tokens: this.lexer.inline(headers[i]),
+          header: true,
+          align: item.align[i]
         });
       }
       for (const row of rows) {
-        item.rows.push(splitCells(row, item.header.length).map((cell) => {
+        item.rows.push(splitCells(row, item.header.length).map((cell, i) => {
           return {
             text: cell,
-            tokens: this.lexer.inline(cell)
+            tokens: this.lexer.inline(cell),
+            header: false,
+            align: item.align[i]
           };
         }));
       }
@@ -2635,7 +2646,7 @@
       this.inlineQueue = [];
       return this.tokens;
     }
-    blockTokens(src, tokens = []) {
+    blockTokens(src, tokens = [], lastParagraphClipped = false) {
       if (this.options.pedantic) {
         src = src.replace(/\t/g, "    ").replace(/^ +$/gm, "");
       } else {
@@ -2646,7 +2657,6 @@
       let token;
       let lastToken;
       let cutSrc;
-      let lastParagraphClipped;
       while (src) {
         if (this.options.extensions && this.options.extensions.block && this.options.extensions.block.some((extTokenizer) => {
           if (token = extTokenizer.call({ lexer: this }, src, tokens)) {
@@ -2751,7 +2761,7 @@
         }
         if (this.state.top && (token = this.tokenizer.paragraph(cutSrc))) {
           lastToken = tokens[tokens.length - 1];
-          if (lastParagraphClipped && lastToken.type === "paragraph") {
+          if (lastParagraphClipped && lastToken?.type === "paragraph") {
             lastToken.raw += "\n" + token.raw;
             lastToken.text += "\n" + token.text;
             this.inlineQueue.pop();
@@ -2939,83 +2949,134 @@
   };
   var _Renderer = class {
     options;
+    parser;
+    // set by the parser
     constructor(options2) {
       this.options = options2 || _defaults;
     }
-    code(code, infostring, escaped) {
-      const lang2 = (infostring || "").match(/^\S*/)?.[0];
-      code = code.replace(/\n$/, "") + "\n";
-      if (!lang2) {
+    space(token) {
+      return "";
+    }
+    code({ text: text2, lang: lang2, escaped }) {
+      const langString = (lang2 || "").match(/^\S*/)?.[0];
+      const code = text2.replace(/\n$/, "") + "\n";
+      if (!langString) {
         return "<pre><code>" + (escaped ? code : escape$1(code, true)) + "</code></pre>\n";
       }
-      return '<pre><code class="language-' + escape$1(lang2) + '">' + (escaped ? code : escape$1(code, true)) + "</code></pre>\n";
+      return '<pre><code class="language-' + escape$1(langString) + '">' + (escaped ? code : escape$1(code, true)) + "</code></pre>\n";
     }
-    blockquote(quote) {
+    blockquote({ tokens }) {
+      const body = this.parser.parse(tokens);
       return `<blockquote>
-${quote}</blockquote>
+${body}</blockquote>
 `;
     }
-    html(html3, block2) {
-      return html3;
+    html({ text: text2 }) {
+      return text2;
     }
-    heading(text2, level, raw) {
-      return `<h${level}>${text2}</h${level}>
+    heading({ tokens, depth }) {
+      return `<h${depth}>${this.parser.parseInline(tokens)}</h${depth}>
 `;
     }
-    hr() {
+    hr(token) {
       return "<hr>\n";
     }
-    list(body, ordered, start) {
+    list(token) {
+      const ordered = token.ordered;
+      const start = token.start;
+      let body = "";
+      for (let j = 0; j < token.items.length; j++) {
+        const item = token.items[j];
+        body += this.listitem(item);
+      }
       const type = ordered ? "ol" : "ul";
-      const startatt = ordered && start !== 1 ? ' start="' + start + '"' : "";
-      return "<" + type + startatt + ">\n" + body + "</" + type + ">\n";
+      const startAttr = ordered && start !== 1 ? ' start="' + start + '"' : "";
+      return "<" + type + startAttr + ">\n" + body + "</" + type + ">\n";
     }
-    listitem(text2, task, checked) {
-      return `<li>${text2}</li>
+    listitem(item) {
+      let itemBody = "";
+      if (item.task) {
+        const checkbox = this.checkbox({ checked: !!item.checked });
+        if (item.loose) {
+          if (item.tokens.length > 0 && item.tokens[0].type === "paragraph") {
+            item.tokens[0].text = checkbox + " " + item.tokens[0].text;
+            if (item.tokens[0].tokens && item.tokens[0].tokens.length > 0 && item.tokens[0].tokens[0].type === "text") {
+              item.tokens[0].tokens[0].text = checkbox + " " + item.tokens[0].tokens[0].text;
+            }
+          } else {
+            item.tokens.unshift({
+              type: "text",
+              raw: checkbox + " ",
+              text: checkbox + " "
+            });
+          }
+        } else {
+          itemBody += checkbox + " ";
+        }
+      }
+      itemBody += this.parser.parse(item.tokens, !!item.loose);
+      return `<li>${itemBody}</li>
 `;
     }
-    checkbox(checked) {
+    checkbox({ checked }) {
       return "<input " + (checked ? 'checked="" ' : "") + 'disabled="" type="checkbox">';
     }
-    paragraph(text2) {
-      return `<p>${text2}</p>
+    paragraph({ tokens }) {
+      return `<p>${this.parser.parseInline(tokens)}</p>
 `;
     }
-    table(header, body) {
+    table(token) {
+      let header = "";
+      let cell = "";
+      for (let j = 0; j < token.header.length; j++) {
+        cell += this.tablecell(token.header[j]);
+      }
+      header += this.tablerow({ text: cell });
+      let body = "";
+      for (let j = 0; j < token.rows.length; j++) {
+        const row = token.rows[j];
+        cell = "";
+        for (let k = 0; k < row.length; k++) {
+          cell += this.tablecell(row[k]);
+        }
+        body += this.tablerow({ text: cell });
+      }
       if (body)
         body = `<tbody>${body}</tbody>`;
       return "<table>\n<thead>\n" + header + "</thead>\n" + body + "</table>\n";
     }
-    tablerow(content) {
+    tablerow({ text: text2 }) {
       return `<tr>
-${content}</tr>
+${text2}</tr>
 `;
     }
-    tablecell(content, flags) {
-      const type = flags.header ? "th" : "td";
-      const tag2 = flags.align ? `<${type} align="${flags.align}">` : `<${type}>`;
+    tablecell(token) {
+      const content = this.parser.parseInline(token.tokens);
+      const type = token.header ? "th" : "td";
+      const tag2 = token.align ? `<${type} align="${token.align}">` : `<${type}>`;
       return tag2 + content + `</${type}>
 `;
     }
     /**
      * span level renderer
      */
-    strong(text2) {
-      return `<strong>${text2}</strong>`;
+    strong({ tokens }) {
+      return `<strong>${this.parser.parseInline(tokens)}</strong>`;
     }
-    em(text2) {
-      return `<em>${text2}</em>`;
+    em({ tokens }) {
+      return `<em>${this.parser.parseInline(tokens)}</em>`;
     }
-    codespan(text2) {
+    codespan({ text: text2 }) {
       return `<code>${text2}</code>`;
     }
-    br() {
+    br(token) {
       return "<br>";
     }
-    del(text2) {
-      return `<del>${text2}</del>`;
+    del({ tokens }) {
+      return `<del>${this.parser.parseInline(tokens)}</del>`;
     }
-    link(href, title, text2) {
+    link({ href, title, tokens }) {
+      const text2 = this.parser.parseInline(tokens);
       const cleanHref = cleanUrl(href);
       if (cleanHref === null) {
         return text2;
@@ -3028,7 +3089,7 @@ ${content}</tr>
       out += ">" + text2 + "</a>";
       return out;
     }
-    image(href, title, text2) {
+    image({ href, title, text: text2 }) {
       const cleanHref = cleanUrl(href);
       if (cleanHref === null) {
         return text2;
@@ -3041,34 +3102,34 @@ ${content}</tr>
       out += ">";
       return out;
     }
-    text(text2) {
-      return text2;
+    text(token) {
+      return "tokens" in token && token.tokens ? this.parser.parseInline(token.tokens) : token.text;
     }
   };
   var _TextRenderer = class {
     // no need for block level renderers
-    strong(text2) {
+    strong({ text: text2 }) {
       return text2;
     }
-    em(text2) {
+    em({ text: text2 }) {
       return text2;
     }
-    codespan(text2) {
+    codespan({ text: text2 }) {
       return text2;
     }
-    del(text2) {
+    del({ text: text2 }) {
       return text2;
     }
-    html(text2) {
+    html({ text: text2 }) {
       return text2;
     }
-    text(text2) {
+    text({ text: text2 }) {
       return text2;
     }
-    link(href, title, text2) {
+    link({ text: text2 }) {
       return "" + text2;
     }
-    image(href, title, text2) {
+    image({ text: text2 }) {
       return "" + text2;
     }
     br() {
@@ -3084,6 +3145,7 @@ ${content}</tr>
       this.options.renderer = this.options.renderer || new _Renderer();
       this.renderer = this.options.renderer;
       this.renderer.options = this.options;
+      this.renderer.parser = this;
       this.textRenderer = new _TextRenderer();
     }
     /**
@@ -3106,112 +3168,70 @@ ${content}</tr>
     parse(tokens, top = true) {
       let out = "";
       for (let i = 0; i < tokens.length; i++) {
-        const token = tokens[i];
-        if (this.options.extensions && this.options.extensions.renderers && this.options.extensions.renderers[token.type]) {
-          const genericToken = token;
+        const anyToken = tokens[i];
+        if (this.options.extensions && this.options.extensions.renderers && this.options.extensions.renderers[anyToken.type]) {
+          const genericToken = anyToken;
           const ret = this.options.extensions.renderers[genericToken.type].call({ parser: this }, genericToken);
           if (ret !== false || !["space", "hr", "heading", "code", "table", "blockquote", "list", "html", "paragraph", "text"].includes(genericToken.type)) {
             out += ret || "";
             continue;
           }
         }
+        const token = anyToken;
         switch (token.type) {
           case "space": {
+            out += this.renderer.space(token);
             continue;
           }
           case "hr": {
-            out += this.renderer.hr();
+            out += this.renderer.hr(token);
             continue;
           }
           case "heading": {
-            const headingToken = token;
-            out += this.renderer.heading(this.parseInline(headingToken.tokens), headingToken.depth, unescape(this.parseInline(headingToken.tokens, this.textRenderer)));
+            out += this.renderer.heading(token);
             continue;
           }
           case "code": {
-            const codeToken = token;
-            out += this.renderer.code(codeToken.text, codeToken.lang, !!codeToken.escaped);
+            out += this.renderer.code(token);
             continue;
           }
           case "table": {
-            const tableToken = token;
-            let header = "";
-            let cell = "";
-            for (let j = 0; j < tableToken.header.length; j++) {
-              cell += this.renderer.tablecell(this.parseInline(tableToken.header[j].tokens), { header: true, align: tableToken.align[j] });
-            }
-            header += this.renderer.tablerow(cell);
-            let body = "";
-            for (let j = 0; j < tableToken.rows.length; j++) {
-              const row = tableToken.rows[j];
-              cell = "";
-              for (let k = 0; k < row.length; k++) {
-                cell += this.renderer.tablecell(this.parseInline(row[k].tokens), { header: false, align: tableToken.align[k] });
-              }
-              body += this.renderer.tablerow(cell);
-            }
-            out += this.renderer.table(header, body);
+            out += this.renderer.table(token);
             continue;
           }
           case "blockquote": {
-            const blockquoteToken = token;
-            const body = this.parse(blockquoteToken.tokens);
-            out += this.renderer.blockquote(body);
+            out += this.renderer.blockquote(token);
             continue;
           }
           case "list": {
-            const listToken = token;
-            const ordered = listToken.ordered;
-            const start = listToken.start;
-            const loose = listToken.loose;
-            let body = "";
-            for (let j = 0; j < listToken.items.length; j++) {
-              const item = listToken.items[j];
-              const checked = item.checked;
-              const task = item.task;
-              let itemBody = "";
-              if (item.task) {
-                const checkbox = this.renderer.checkbox(!!checked);
-                if (loose) {
-                  if (item.tokens.length > 0 && item.tokens[0].type === "paragraph") {
-                    item.tokens[0].text = checkbox + " " + item.tokens[0].text;
-                    if (item.tokens[0].tokens && item.tokens[0].tokens.length > 0 && item.tokens[0].tokens[0].type === "text") {
-                      item.tokens[0].tokens[0].text = checkbox + " " + item.tokens[0].tokens[0].text;
-                    }
-                  } else {
-                    item.tokens.unshift({
-                      type: "text",
-                      text: checkbox + " "
-                    });
-                  }
-                } else {
-                  itemBody += checkbox + " ";
-                }
-              }
-              itemBody += this.parse(item.tokens, loose);
-              body += this.renderer.listitem(itemBody, task, !!checked);
-            }
-            out += this.renderer.list(body, ordered, start);
+            out += this.renderer.list(token);
             continue;
           }
           case "html": {
-            const htmlToken = token;
-            out += this.renderer.html(htmlToken.text, htmlToken.block);
+            out += this.renderer.html(token);
             continue;
           }
           case "paragraph": {
-            const paragraphToken = token;
-            out += this.renderer.paragraph(this.parseInline(paragraphToken.tokens));
+            out += this.renderer.paragraph(token);
             continue;
           }
           case "text": {
             let textToken = token;
-            let body = textToken.tokens ? this.parseInline(textToken.tokens) : textToken.text;
+            let body = this.renderer.text(textToken);
             while (i + 1 < tokens.length && tokens[i + 1].type === "text") {
               textToken = tokens[++i];
-              body += "\n" + (textToken.tokens ? this.parseInline(textToken.tokens) : textToken.text);
+              body += "\n" + this.renderer.text(textToken);
             }
-            out += top ? this.renderer.paragraph(body) : body;
+            if (top) {
+              out += this.renderer.paragraph({
+                type: "paragraph",
+                raw: body,
+                text: body,
+                tokens: [{ type: "text", raw: body, text: body }]
+              });
+            } else {
+              out += body;
+            }
             continue;
           }
           default: {
@@ -3234,62 +3254,54 @@ ${content}</tr>
       renderer = renderer || this.renderer;
       let out = "";
       for (let i = 0; i < tokens.length; i++) {
-        const token = tokens[i];
-        if (this.options.extensions && this.options.extensions.renderers && this.options.extensions.renderers[token.type]) {
-          const ret = this.options.extensions.renderers[token.type].call({ parser: this }, token);
-          if (ret !== false || !["escape", "html", "link", "image", "strong", "em", "codespan", "br", "del", "text"].includes(token.type)) {
+        const anyToken = tokens[i];
+        if (this.options.extensions && this.options.extensions.renderers && this.options.extensions.renderers[anyToken.type]) {
+          const ret = this.options.extensions.renderers[anyToken.type].call({ parser: this }, anyToken);
+          if (ret !== false || !["escape", "html", "link", "image", "strong", "em", "codespan", "br", "del", "text"].includes(anyToken.type)) {
             out += ret || "";
             continue;
           }
         }
+        const token = anyToken;
         switch (token.type) {
           case "escape": {
-            const escapeToken = token;
-            out += renderer.text(escapeToken.text);
+            out += renderer.text(token);
             break;
           }
           case "html": {
-            const tagToken = token;
-            out += renderer.html(tagToken.text);
+            out += renderer.html(token);
             break;
           }
           case "link": {
-            const linkToken = token;
-            out += renderer.link(linkToken.href, linkToken.title, this.parseInline(linkToken.tokens, renderer));
+            out += renderer.link(token);
             break;
           }
           case "image": {
-            const imageToken = token;
-            out += renderer.image(imageToken.href, imageToken.title, imageToken.text);
+            out += renderer.image(token);
             break;
           }
           case "strong": {
-            const strongToken = token;
-            out += renderer.strong(this.parseInline(strongToken.tokens, renderer));
+            out += renderer.strong(token);
             break;
           }
           case "em": {
-            const emToken = token;
-            out += renderer.em(this.parseInline(emToken.tokens, renderer));
+            out += renderer.em(token);
             break;
           }
           case "codespan": {
-            const codespanToken = token;
-            out += renderer.codespan(codespanToken.text);
+            out += renderer.codespan(token);
             break;
           }
           case "br": {
-            out += renderer.br();
+            out += renderer.br(token);
             break;
           }
           case "del": {
-            const delToken = token;
-            out += renderer.del(this.parseInline(delToken.tokens, renderer));
+            out += renderer.del(token);
             break;
           }
           case "text": {
-            const textToken = token;
-            out += renderer.text(textToken.text);
+            out += renderer.text(token);
             break;
           }
           default: {
@@ -3451,11 +3463,14 @@ ${content}</tr>
             if (!(prop in renderer)) {
               throw new Error(`renderer '${prop}' does not exist`);
             }
-            if (prop === "options") {
+            if (["options", "parser"].includes(prop)) {
               continue;
             }
             const rendererProp = prop;
-            const rendererFunc = pack.renderer[rendererProp];
+            let rendererFunc = pack.renderer[rendererProp];
+            if (!pack.useNewRenderer) {
+              rendererFunc = this.#convertRendererFunction(rendererFunc, rendererProp, renderer);
+            }
             const prevRenderer = renderer[rendererProp];
             renderer[rendererProp] = (...args2) => {
               let ret = rendererFunc.apply(renderer, args2);
@@ -3538,6 +3553,181 @@ ${content}</tr>
         this.defaults = { ...this.defaults, ...opts };
       });
       return this;
+    }
+    // TODO: Remove this in next major release
+    #convertRendererFunction(func, prop, renderer) {
+      switch (prop) {
+        case "heading":
+          return function(token) {
+            if (!token.type || token.type !== prop) {
+              return func.apply(this, arguments);
+            }
+            return func.call(this, renderer.parser.parseInline(token.tokens), token.depth, unescape(renderer.parser.parseInline(token.tokens, renderer.parser.textRenderer)));
+          };
+        case "code":
+          return function(token) {
+            if (!token.type || token.type !== prop) {
+              return func.apply(this, arguments);
+            }
+            return func.call(this, token.text, token.lang, !!token.escaped);
+          };
+        case "table":
+          return function(token) {
+            if (!token.type || token.type !== prop) {
+              return func.apply(this, arguments);
+            }
+            let header = "";
+            let cell = "";
+            for (let j = 0; j < token.header.length; j++) {
+              cell += this.tablecell({
+                text: token.header[j].text,
+                tokens: token.header[j].tokens,
+                header: true,
+                align: token.align[j]
+              });
+            }
+            header += this.tablerow({ text: cell });
+            let body = "";
+            for (let j = 0; j < token.rows.length; j++) {
+              const row = token.rows[j];
+              cell = "";
+              for (let k = 0; k < row.length; k++) {
+                cell += this.tablecell({
+                  text: row[k].text,
+                  tokens: row[k].tokens,
+                  header: false,
+                  align: token.align[k]
+                });
+              }
+              body += this.tablerow({ text: cell });
+            }
+            return func.call(this, header, body);
+          };
+        case "blockquote":
+          return function(token) {
+            if (!token.type || token.type !== prop) {
+              return func.apply(this, arguments);
+            }
+            const body = this.parser.parse(token.tokens);
+            return func.call(this, body);
+          };
+        case "list":
+          return function(token) {
+            if (!token.type || token.type !== prop) {
+              return func.apply(this, arguments);
+            }
+            const ordered = token.ordered;
+            const start = token.start;
+            const loose = token.loose;
+            let body = "";
+            for (let j = 0; j < token.items.length; j++) {
+              const item = token.items[j];
+              const checked = item.checked;
+              const task = item.task;
+              let itemBody = "";
+              if (item.task) {
+                const checkbox = this.checkbox({ checked: !!checked });
+                if (loose) {
+                  if (item.tokens.length > 0 && item.tokens[0].type === "paragraph") {
+                    item.tokens[0].text = checkbox + " " + item.tokens[0].text;
+                    if (item.tokens[0].tokens && item.tokens[0].tokens.length > 0 && item.tokens[0].tokens[0].type === "text") {
+                      item.tokens[0].tokens[0].text = checkbox + " " + item.tokens[0].tokens[0].text;
+                    }
+                  } else {
+                    item.tokens.unshift({
+                      type: "text",
+                      text: checkbox + " "
+                    });
+                  }
+                } else {
+                  itemBody += checkbox + " ";
+                }
+              }
+              itemBody += this.parser.parse(item.tokens, loose);
+              body += this.listitem({
+                type: "list_item",
+                raw: itemBody,
+                text: itemBody,
+                task,
+                checked: !!checked,
+                loose,
+                tokens: item.tokens
+              });
+            }
+            return func.call(this, body, ordered, start);
+          };
+        case "html":
+          return function(token) {
+            if (!token.type || token.type !== prop) {
+              return func.apply(this, arguments);
+            }
+            return func.call(this, token.text, token.block);
+          };
+        case "paragraph":
+          return function(token) {
+            if (!token.type || token.type !== prop) {
+              return func.apply(this, arguments);
+            }
+            return func.call(this, this.parser.parseInline(token.tokens));
+          };
+        case "escape":
+          return function(token) {
+            if (!token.type || token.type !== prop) {
+              return func.apply(this, arguments);
+            }
+            return func.call(this, token.text);
+          };
+        case "link":
+          return function(token) {
+            if (!token.type || token.type !== prop) {
+              return func.apply(this, arguments);
+            }
+            return func.call(this, token.href, token.title, this.parser.parseInline(token.tokens));
+          };
+        case "image":
+          return function(token) {
+            if (!token.type || token.type !== prop) {
+              return func.apply(this, arguments);
+            }
+            return func.call(this, token.href, token.title, token.text);
+          };
+        case "strong":
+          return function(token) {
+            if (!token.type || token.type !== prop) {
+              return func.apply(this, arguments);
+            }
+            return func.call(this, this.parser.parseInline(token.tokens));
+          };
+        case "em":
+          return function(token) {
+            if (!token.type || token.type !== prop) {
+              return func.apply(this, arguments);
+            }
+            return func.call(this, this.parser.parseInline(token.tokens));
+          };
+        case "codespan":
+          return function(token) {
+            if (!token.type || token.type !== prop) {
+              return func.apply(this, arguments);
+            }
+            return func.call(this, token.text);
+          };
+        case "del":
+          return function(token) {
+            if (!token.type || token.type !== prop) {
+              return func.apply(this, arguments);
+            }
+            return func.call(this, this.parser.parseInline(token.tokens));
+          };
+        case "text":
+          return function(token) {
+            if (!token.type || token.type !== prop) {
+              return func.apply(this, arguments);
+            }
+            return func.call(this, token.text);
+          };
+      }
+      return func;
     }
     setOptions(opt) {
       this.defaults = { ...this.defaults, ...opt };
@@ -4358,10 +4548,8 @@ ${content}</tr>
       if (SANITIZE_DOM && (lcName === "id" || lcName === "name") && (value in document2 || value in formElement)) {
         return false;
       }
-      if (ALLOW_DATA_ATTR && !FORBID_ATTR[lcName] && regExpTest(DATA_ATTR2, lcName))
-        ;
-      else if (ALLOW_ARIA_ATTR && regExpTest(ARIA_ATTR2, lcName))
-        ;
+      if (ALLOW_DATA_ATTR && !FORBID_ATTR[lcName] && regExpTest(DATA_ATTR2, lcName)) ;
+      else if (ALLOW_ARIA_ATTR && regExpTest(ARIA_ATTR2, lcName)) ;
       else if (!ALLOWED_ATTR[lcName] || FORBID_ATTR[lcName]) {
         if (
           // First condition does a very basic check if a) it's basically a valid custom element tagname AND
@@ -4370,23 +4558,17 @@ ${content}</tr>
           _isBasicCustomElement(lcTag) && (CUSTOM_ELEMENT_HANDLING.tagNameCheck instanceof RegExp && regExpTest(CUSTOM_ELEMENT_HANDLING.tagNameCheck, lcTag) || CUSTOM_ELEMENT_HANDLING.tagNameCheck instanceof Function && CUSTOM_ELEMENT_HANDLING.tagNameCheck(lcTag)) && (CUSTOM_ELEMENT_HANDLING.attributeNameCheck instanceof RegExp && regExpTest(CUSTOM_ELEMENT_HANDLING.attributeNameCheck, lcName) || CUSTOM_ELEMENT_HANDLING.attributeNameCheck instanceof Function && CUSTOM_ELEMENT_HANDLING.attributeNameCheck(lcName)) || // Alternative, second condition checks if it's an `is`-attribute, AND
           // the value passes whatever the user has configured for CUSTOM_ELEMENT_HANDLING.tagNameCheck
           lcName === "is" && CUSTOM_ELEMENT_HANDLING.allowCustomizedBuiltInElements && (CUSTOM_ELEMENT_HANDLING.tagNameCheck instanceof RegExp && regExpTest(CUSTOM_ELEMENT_HANDLING.tagNameCheck, value) || CUSTOM_ELEMENT_HANDLING.tagNameCheck instanceof Function && CUSTOM_ELEMENT_HANDLING.tagNameCheck(value))
-        )
-          ;
+        ) ;
         else {
           return false;
         }
-      } else if (URI_SAFE_ATTRIBUTES[lcName])
-        ;
-      else if (regExpTest(IS_ALLOWED_URI$1, stringReplace(value, ATTR_WHITESPACE2, "")))
-        ;
-      else if ((lcName === "src" || lcName === "xlink:href" || lcName === "href") && lcTag !== "script" && stringIndexOf(value, "data:") === 0 && DATA_URI_TAGS[lcTag])
-        ;
-      else if (ALLOW_UNKNOWN_PROTOCOLS && !regExpTest(IS_SCRIPT_OR_DATA2, stringReplace(value, ATTR_WHITESPACE2, "")))
-        ;
+      } else if (URI_SAFE_ATTRIBUTES[lcName]) ;
+      else if (regExpTest(IS_ALLOWED_URI$1, stringReplace(value, ATTR_WHITESPACE2, ""))) ;
+      else if ((lcName === "src" || lcName === "xlink:href" || lcName === "href") && lcTag !== "script" && stringIndexOf(value, "data:") === 0 && DATA_URI_TAGS[lcTag]) ;
+      else if (ALLOW_UNKNOWN_PROTOCOLS && !regExpTest(IS_SCRIPT_OR_DATA2, stringReplace(value, ATTR_WHITESPACE2, ""))) ;
       else if (value) {
         return false;
-      } else
-        ;
+      } else ;
       return true;
     };
     const _isBasicCustomElement = function _isBasicCustomElement2(tagName) {
@@ -4454,8 +4636,7 @@ ${content}</tr>
           continue;
         }
         if (trustedTypesPolicy && typeof trustedTypes === "object" && typeof trustedTypes.getAttributeType === "function") {
-          if (namespaceURI)
-            ;
+          if (namespaceURI) ;
           else {
             switch (trustedTypes.getAttributeType(lcTag, lcName)) {
               case "TrustedHTML": {
@@ -15923,10 +16104,8 @@ ${content}</tr>
     return new RegExp(value.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&"), "m");
   }
   function source(re) {
-    if (!re)
-      return null;
-    if (typeof re === "string")
-      return re;
+    if (!re) return null;
+    if (typeof re === "string") return re;
     return re.source;
   }
   function lookahead(re) {
@@ -22269,8 +22448,7 @@ ${content}</tr>
     relevance: 0
   };
   function recurRegex(re, substitution, depth) {
-    if (depth === -1)
-      return "";
+    if (depth === -1) return "";
     return re.replace(substitution, (_) => {
       return recurRegex(re, substitution, depth - 1);
     });
@@ -33854,8 +34032,7 @@ ${content}</tr>
         begin: SYMBOL_RE,
         // for performance out of fear of regex.either(...Mathematica.SYSTEM_SYMBOLS)
         "on:begin": (match, response) => {
-          if (!SYSTEM_SYMBOLS_SET.has(match[0]))
-            response.ignoreMatch();
+          if (!SYSTEM_SYMBOLS_SET.has(match[0])) response.ignoreMatch();
         }
       },
       {
@@ -37507,8 +37684,7 @@ ${content}</tr>
         resp.data._beginMatch = m[1] || m[2];
       },
       "on:end": (m, resp) => {
-        if (resp.data._beginMatch !== m[1])
-          resp.ignoreMatch();
+        if (resp.data._beginMatch !== m[1]) resp.ignoreMatch();
       }
     };
     const NOWDOC = hljs.END_SAME_AS_BEGIN({
@@ -48312,10 +48488,8 @@ ${content}</tr>
 
   // node_modules/highlight.js/es/languages/swift.js
   function source2(re) {
-    if (!re)
-      return null;
-    if (typeof re === "string")
-      return re;
+    if (!re) return null;
+    if (typeof re === "string") return re;
     return re.source;
   }
   function lookahead2(re) {
@@ -53493,138 +53667,41 @@ ${content}</tr>
   });
   var MAX_IMAGE_DIMENSION = 1280;
   var JPEG_QUALITY = 0.8;
+  var INDENT_SPACES = "    ";
   var DEFINITIONS_HEADER = "<!-- sn-markdown-enhancer-definitions";
   var DEFINITIONS_FOOTER = "-->";
   var activeEditorInstance = null;
   var debouncedInputHandler = () => {
   };
   var isInternallyUpdating = false;
-  var nativeTextareaSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;
-  var I18N = {
-    en: {
-      editor: "Editor",
-      split: "Split",
-      preview: "Preview",
-      toggleToolbar: "Toggle Toolbar",
-      exportPDF: "Print / Export as PDF",
-      paragraph: "Paragraph",
-      heading1: "Heading 1",
-      heading2: "Heading 2",
-      heading3: "Heading 3",
-      heading4: "Heading 4",
-      bold: "Bold",
-      italic: "Italic",
-      strikethrough: "Strikethrough",
-      inlineCode: "Inline Code",
-      quote: "Quote",
-      list: "Bulleted List",
-      numberedList: "Numbered List",
-      checklist: "Checklist",
-      codeBlock: "Code Block",
-      link: "Link",
-      insertTable: "Insert/Edit Table",
-      horizontalRule: "Horizontal Rule",
-      image: "Image",
-      linkPrompt: "Enter the link URL:",
-      boldPlaceholder: "bold text",
-      italicPlaceholder: "italic text",
-      strikethroughPlaceholder: "strikethrough",
-      codePlaceholder: "code",
-      quotePlaceholder: "quote",
-      listItemPlaceholder: "item",
-      taskPlaceholder: "task",
-      linkTextPlaceholder: "link text",
-      copy: "Copy",
-      copied: "Copied!",
-      copyError: "Error",
-      copyAriaLabel: "Copy code to clipboard",
-      previewErrorTitle: "An error occurred while updating the preview:",
-      printPDF: "PDF",
-      pastedImageAltText: "Pasted Image at",
-      insertImage: "Insert Image",
-      fromURL: "From URL",
-      uploadFile: "Upload File",
-      imageURL: "Image URL",
-      altText: "Alt Text (optional)",
-      chooseFile: "Choose a file...",
-      insert: "Insert",
-      close: "Close",
-      processing: "Processing...",
-      errorImageProcessing: "Failed to process image.",
-      tableEditor: "Interactive Table Editor",
-      addRow: "Add Row",
-      addCol: "Add Column",
-      deleteRow: "Delete Row",
-      deleteCol: "Delete Column",
-      alignLeft: "Align Left",
-      alignCenter: "Align Center",
-      alignRight: "Align Right"
-    },
-    ja: {
-      editor: "エディタ",
-      split: "分割",
-      preview: "プレビュー",
-      toggleToolbar: "ツールバー表示切替",
-      exportPDF: "PDFとして印刷/エクスポート",
-      paragraph: "段落",
-      heading1: "見出し 1",
-      heading2: "見出し 2",
-      heading3: "見出し 3",
-      heading4: "見出し 4",
-      bold: "太字",
-      italic: "斜体",
-      strikethrough: "打ち消し線",
-      inlineCode: "インラインコード",
-      quote: "引用",
-      list: "リスト",
-      numberedList: "番号付きリスト",
-      checklist: "チェックリスト",
-      codeBlock: "コードブロック",
-      link: "リンク",
-      insertTable: "テーブルを挿入/編集",
-      horizontalRule: "水平線",
-      image: "画像",
-      linkPrompt: "リンク先のURLを入力してください:",
-      boldPlaceholder: "太字",
-      italicPlaceholder: "斜体",
-      strikethroughPlaceholder: "打ち消し",
-      codePlaceholder: "code",
-      quotePlaceholder: "引用文",
-      listItemPlaceholder: "項目",
-      taskPlaceholder: "タスク",
-      linkTextPlaceholder: "リンクテキスト",
-      copy: "コピー",
-      copied: "コピーしました!",
-      copyError: "エラー",
-      copyAriaLabel: "クリップボードにコードをコピー",
-      previewErrorTitle: "プレビューの更新中にエラーが発生しました:",
-      printPDF: "PDF",
-      pastedImageAltText: "貼り付けられた画像",
-      insertImage: "画像を挿入",
-      fromURL: "URLから",
-      uploadFile: "ファイルをアップロード",
-      imageURL: "画像のURL",
-      altText: "代替テキスト（任意）",
-      chooseFile: "ファイルを選択...",
-      insert: "挿入",
-      close: "閉じる",
-      processing: "処理中...",
-      errorImageProcessing: "画像の処理に失敗しました。",
-      tableEditor: "インタラクティブ テーブルエディタ",
-      addRow: "行を追加",
-      addCol: "列を追加",
-      deleteRow: "この行を削除",
-      deleteCol: "この列を削除",
-      alignLeft: "左揃え",
-      alignCenter: "中央揃え",
-      alignRight: "右揃え"
-    }
+  var _desc = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value");
+  var nativeTextareaSetter = _desc && _desc.set ? _desc.set : function(v) {
+    this.value = v;
   };
-  var lang = navigator.language.startsWith("ja") ? "ja" : "en";
+  var I18N = {
+    en: { editor: "Editor", split: "Split", preview: "Preview", toggleToolbar: "Toggle Toolbar", exportPDF: "Print / Export as PDF", paragraph: "Paragraph", heading1: "Heading 1", heading2: "Heading 2", heading3: "Heading 3", heading4: "Heading 4", bold: "Bold", italic: "Italic", strikethrough: "Strikethrough", inlineCode: "Inline Code", quote: "Quote", list: "Bulleted List", numberedList: "Numbered List", checklist: "Checklist", codeBlock: "Code Block", link: "Link", insertTable: "Insert/Edit Table", horizontalRule: "Horizontal Rule", image: "Image", linkPrompt: "Enter the link URL:", boldPlaceholder: "bold text", italicPlaceholder: "italic text", strikethroughPlaceholder: "strikethrough", codePlaceholder: "code", quotePlaceholder: "quote", listItemPlaceholder: "item", taskPlaceholder: "task", linkTextPlaceholder: "link text", copy: "Copy", copied: "Copied!", copyError: "Error", copyAriaLabel: "Copy code to clipboard", previewErrorTitle: "An error occurred while updating the preview:", printPDF: "PDF", pastedImageAltText: "Pasted Image at", insertImage: "Insert Image", fromURL: "From URL", uploadFile: "Upload File", imageURL: "Image URL", altText: "Alt Text (optional)", chooseFile: "Choose a file...", insert: "Insert", close: "Close", processing: "Processing...", errorImageProcessing: "Failed to process image.", tableEditor: "Interactive Table Editor", addRow: "Add Row", addCol: "Add Column", deleteRow: "Delete Row", deleteCol: "Delete Column", alignLeft: "Align Left", alignCenter: "Align Center", alignRight: "Align Right" },
+    ja: { editor: "エディタ", split: "分割", preview: "プレビュー", toggleToolbar: "ツールバー表示切替", exportPDF: "PDFとして印刷/エクスポート", paragraph: "段落", heading1: "見出し 1", heading2: "見出し 2", heading3: "見出し 3", heading4: "見出し 4", bold: "太字", italic: "斜体", strikethrough: "打ち消し線", inlineCode: "インラインコード", quote: "引用", list: "リスト", numberedList: "番号付きリスト", checklist: "チェックリスト", codeBlock: "コードブロック", link: "リンク", insertTable: "テーブルを挿入/編集", horizontalRule: "水平線", image: "画像", linkPrompt: "リンク先のURLを入力してください:", boldPlaceholder: "太字", italicPlaceholder: "斜体", strikethroughPlaceholder: "打ち消し", codePlaceholder: "code", quotePlaceholder: "引用文", listItemPlaceholder: "項目", taskPlaceholder: "タスク", linkTextPlaceholder: "リンクテキスト", copy: "コピー", copied: "コピーしました!", copyError: "エラー", copyAriaLabel: "クリップボードにコードをコピー", previewErrorTitle: "プレビューの更新中にエラーが発生しました:", printPDF: "PDF", pastedImageAltText: "貼り付けられた画像", insertImage: "画像を挿入", fromURL: "URLから", uploadFile: "ファイルをアップロード", imageURL: "画像のURL", altText: "代替テキスト（任意）", chooseFile: "ファイルを選択...", insert: "挿入", close: "閉じる", processing: "処理中...", errorImageProcessing: "画像の処理に失敗しました。", tableEditor: "インタラクティブ テーブルエディタ", addRow: "行を追加", addCol: "列を追加", deleteRow: "この行を削除", deleteCol: "この列を削除", alignLeft: "左揃え", alignCenter: "中央揃え", alignRight: "右揃え" }
+  };
+  function resolveLang() {
+    const n = (navigator.language || "").toLowerCase();
+    const map = {
+      "ja": "ja",
+      "zh-cn": "zh-CN",
+      "zh-tw": "zh-TW",
+      "ko": "ko",
+      "fr": "fr",
+      "es": "es",
+      "de": "de",
+      "pt-br": "pt-BR",
+      "ru": "ru"
+    };
+    const hit = Object.keys(map).find((k) => n.startsWith(k));
+    return hit ? map[hit] : "en";
+  }
+  var lang = resolveLang();
   var T = I18N[lang] || I18N.en;
   var STORAGE_KEY_MODE = "snMarkdownEditorMode";
   var STORAGE_KEY_TOOLBAR_VISIBLE = "snMarkdownToolbarVisible";
-  var PREVIEW_CONTAINER_CLASS = "sn-markdown-preview-container";
   GM_addStyle(`/* src/main.css */\r
 \r
 /* UI STYLES */\r
@@ -53637,7 +53714,7 @@ ${content}</tr>
 .toolbar-toggle-button { margin-left: auto; padding: 5px 8px; font-size: 13px; display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; }\r
 .toolbar-toggle-button.active { background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); }\r
 .pdf-export-button { padding: 4px 10px; font-size: 12px; }\r
-.markdown-toolbar { flex-shrink: 0; display: flex; flex-wrap: wrap; align-items: center; padding: 8px 10px; gap: 8px; background-color: var(--sn-stylekit-editor-background-color, #f9f9f9); border-bottom: 1px solid var(--sn-stylekit-border-color, #e0e0e0); transition: display 0.2s; }\r
+.markdown-toolbar { flex-shrink: 0; display: flex; flex-wrap: wrap; align-items: center; padding: 8px 10px; gap: 8px; background-color: var(--sn-stylekit-editor-background-color, #f9f9f9); border-bottom: 1px solid var(--sn-stylekit-border-color, #e0e0e0); }\r
 .toolbar-button, .toolbar-select { padding: 4px 8px; border: 1px solid transparent; border-radius: 4px; cursor: pointer; background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-foreground-color, #555); font-size: 14px; transition: all 0.2s; }\r
 .toolbar-button:hover, .toolbar-select:hover { background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); border-color: var(--sn-stylekit-border-color, #ccc); }\r
 .toolbar-button { font-weight: bold; }\r
@@ -53651,24 +53728,24 @@ ${content}</tr>
 .markdown-editor-container.mode-editor .sn-markdown-preview-container { display: none; }\r
 .markdown-editor-container.mode-preview .markdown-toolbar, .markdown-editor-container.mode-preview .custom-markdown-textarea { display: none; }\r
 .markdown-editor-container.mode-preview .sn-markdown-preview-container { display: block; }\r
-.markdown-editor-container.mode-split .custom-markdown-textarea, .markdown-editor-container.mode-split .sn-markdown-preview-container { display: block !important; flex-basis: 50%; width: 50%; }\r
+.markdown-editor-container.mode-split .custom-markdown-textarea, .markdown-editor-container.mode-split .sn-markdown-preview-container { display: block; flex-basis: 50%; width: 50%; }\r
 .markdown-editor-container.mode-split .sn-markdown-preview-container { border-left: 1px solid var(--sn-stylekit-border-color, #e0e0e0); }\r
 @media print {\r
-    body > *:not(.print-container) { display: none !important; }\r
-    .print-container > style { display: none !important; }\r
-    .print-container, .print-container > .print-content, .print-container > .raw-text-print { display: block !important; width: 100% !important; height: auto !important; overflow: visible !important; }\r
-    html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }\r
-    .print-content { padding: 2cm !important; border: none !important; box-shadow: none !important; color: #000 !important; background-color: #fff !important; font-size: 12pt !important; line-height: 1.5 !important; }\r
-    .print-content h1, .print-content h2, .print-content h3, .print-content h4, .print-content h5, .print-content h6 { color: #000 !important; border-bottom-color: #ccc !important; }\r
-    .print-content pre, .print-content code { background-color: #f0f0f0 !important; color: #000 !important; border: 1px solid #ccc !important; }\r
-    .print-content pre code.hljs { color: #000 !important; }\r
-    .print-content blockquote { color: #333 !important; border-left-color: #ccc !important; }\r
-    .print-content tr:nth-child(2n) { background-color: #f6f8fa !important; }\r
-    .print-content th, .print-content td { border-color: #ccc !important; }\r
-    .copy-code-button, .code-language-label { display: none !important; }\r
-    .raw-text-print { margin: 0 !important; padding: 2cm !important; white-space: pre-wrap !important; word-wrap: break-word !important; font-family: 'Menlo', 'Monaco', 'Consolas', 'Courier New', monospace; font-size: 10pt !important; color: #000 !important; background: #fff !important; }\r
-    pre, blockquote, table, img, h1, h2, h3, h4 { page-break-inside: avoid; }\r
-    h1, h2, h3 { page-break-after: avoid; }\r
+  body > *:not(.print-container) { display: none !important; }\r
+  .print-container > style { display: none !important; }\r
+  .print-container, .print-container > .print-content, .print-container > .raw-text-print { display: block !important; width: 100% !important; height: auto !important; overflow: visible !important; }\r
+  html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }\r
+  .print-content { padding: 2cm !important; border: none !important; box-shadow: none !important; color: #000 !important; background-color: #fff !important; font-size: 12pt !important; line-height: 1.5 !important; }\r
+  .print-content h1, .print-content h2, .print-content h3, .print-content h4, .print-content h5, .print-content h6 { color: #000 !important; border-bottom-color: #ccc !important; }\r
+  .print-content pre, .print-content code { background-color: #f0f0f0 !important; color: #000 !important; border: 1px solid #ccc !important; }\r
+  .print-content pre code.hljs { color: #000 !important; }\r
+  .print-content blockquote { color: #333 !important; border-left-color: #ccc !important; }\r
+  .print-content tr:nth-child(2n) { background-color: #f6f8fa !important; }\r
+  .print-content th, .print-content td { border-color: #ccc !important; }\r
+  .copy-code-button, .code-language-label { display: none !important; }\r
+  .raw-text-print { margin: 0 !important; padding: 2cm !important; white-space: pre-wrap !important; word-wrap: break-word !important; font-family: 'Menlo', 'Monaco', 'Consolas', 'Courier New', monospace; font-size: 10pt !important; color: #000 !important; background: #fff !important; }\r
+  pre, blockquote, table, img, h1, h2, h3, h4 { page-break-inside: avoid; }\r
+  h1, h2, h3 { page-break-after: avoid; }\r
 }\r
 .sn-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); z-index: 9999; display: flex; align-items: center; justify-content: center; }\r
 .sn-modal-content { background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-foreground-color, #333); padding: 20px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: flex; flex-direction: column; max-height: 90vh; }\r
@@ -53726,18 +53803,16 @@ ${content}</tr>
 \r
 /* PREVIEW STYLES (Scoped) */\r
 .sn-markdown-preview-container {\r
-    overflow-y: auto;\r
-    height: 100%;\r
-    -webkit-overflow-scrolling: touch;\r
-    padding: 16px;\r
-    line-height: 1.7;\r
-    font-size: 1.05rem;\r
-    color: var(--sn-stylekit-foreground-color, #333);\r
+  overflow-y: auto;\r
+  height: 100%;\r
+  -webkit-overflow-scrolling: touch;\r
+  padding: 16px;\r
+  line-height: 1.7;\r
+  font-size: 1.05rem;\r
+  color: var(--sn-stylekit-foreground-color, #333);\r
 }\r
 /* [BESTPRACTICE] コンテナ内の全要素に色の継承を強制し、本体CSSからの意図しない上書きを防ぐ */\r
-.sn-markdown-preview-container * {\r
-    color: inherit;\r
-}\r
+.sn-markdown-preview-container * { color: inherit; }\r
 .sn-markdown-preview-container h1, .sn-markdown-preview-container h2, .sn-markdown-preview-container h3, .sn-markdown-preview-container h4, .sn-markdown-preview-container h5, .sn-markdown-preview-container h6 { margin-top: 24px; margin-bottom: 16px; font-weight: 600; line-height: 1.25; border-bottom: 1px solid var(--sn-stylekit-border-color, #eee); padding-bottom: .3em; }\r
 .sn-markdown-preview-container h1 { font-size: 2em; }\r
 .sn-markdown-preview-container h2 { font-size: 1.5em; }\r
@@ -53772,19 +53847,14 @@ ${content}</tr>
 .sn-markdown-preview-container .hljs-addition { color: #22863a !important; }\r
 .sn-markdown-preview-container .hljs-emphasis { font-style: italic; }\r
 .sn-markdown-preview-container .hljs-strong { font-weight: bold; }\r
-.sn-markdown-preview-container a {\r
-    color: var(--sn-stylekit-primary-color, #007bff) !important;\r
-    text-decoration: underline;\r
-}\r
-.sn-markdown-preview-container a:hover {\r
-    text-decoration: none;\r
-}\r
+.sn-markdown-preview-container a { color: var(--sn-stylekit-primary-color, #007bff) !important; text-decoration: underline; }\r
+.sn-markdown-preview-container a:hover { text-decoration: none; }\r
 @media (prefers-color-scheme: dark) {\r
-    .sn-markdown-preview-container pre code.hljs .hljs-keyword, .sn-markdown-preview-container pre code.hljs .hljs-selector-tag, .sn-markdown-preview-container pre code.hljs .hljs-subst, .sn-markdown-preview-container pre code.hljs .hljs-deletion, .sn-markdown-preview-container pre code.hljs .hljs-meta, .sn-markdown-preview-container pre code.hljs .hljs-selector-class { color: #ff7b72 !important; }\r
-    .sn-markdown-preview-container pre code.hljs .hljs-string, .sn-markdown-preview-container pre code.hljs .hljs-doctag { color: #a5d6ff !important; }\r
-    .sn-markdown-preview-container pre code.hljs .hljs-title, .sn-markdown-preview-container pre code.hljs .hljs-section, .sn-markdown-preview-container pre code.hljs .hljs-selector-id, .sn-markdown-preview-container pre code.hljs .hljs-type, .sn-markdown-preview-container pre code.hljs .hljs-symbol, .sn-markdown-preview-container pre code.hljs .hljs-bullet, .sn-markdown-preview-container pre code.hljs .hljs-link { color: #d2a8ff !important; }\r
-    .sn-markdown-preview-container pre code.hljs .hljs-addition { color: #7ee787 !important; }\r
-    .sn-markdown-preview-container .code-language-label { background-color: rgba(0, 0, 0, 0.3); }\r
+  .sn-markdown-preview-container pre code.hljs .hljs-keyword, .sn-markdown-preview-container pre code.hljs .hljs-selector-tag, .sn-markdown-preview-container pre code.hljs .hljs-subst, .sn-markdown-preview-container pre code.hljs .hljs-deletion, .sn-markdown-preview-container pre code.hljs .hljs-meta, .sn-markdown-preview-container pre code.hljs .hljs-selector-class { color: #ff7b72 !important; }\r
+  .sn-markdown-preview-container pre code.hljs .hljs-string, .sn-markdown-preview-container pre code.hljs .hljs-doctag { color: #a5d6ff !important; }\r
+  .sn-markdown-preview-container pre code.hljs .hljs-title, .sn-markdown-preview-container pre code.hljs .hljs-section, .sn-markdown-preview-container pre code.hljs .hljs-selector-id, .sn-markdown-preview-container pre code.hljs .hljs-type, .sn-markdown-preview-container pre code.hljs .hljs-symbol, .sn-markdown-preview-container pre code.hljs .hljs-bullet, .sn-markdown-preview-container pre code.hljs .hljs-link { color: #d2a8ff !important; }\r
+  .sn-markdown-preview-container pre code.hljs .hljs-addition { color: #7ee787 !important; }\r
+  .sn-markdown-preview-container .code-language-label { background-color: rgba(0, 0, 0, 0.3); }\r
 }`);
   function debounce(func, wait) {
     let timeout;
@@ -53811,7 +53881,6 @@ ${content}</tr>
     const titleSelector = 'textarea[aria-label*="Note title"], #note-title-editor';
     const titleInput = document.querySelector(titleSelector);
     if (titleInput && !titleInput.dataset.enterKeyHandlerAttached) {
-      console.log("Markdown Editor: Attaching Enter key handler to title input.");
       titleInput.dataset.enterKeyHandlerAttached = "true";
       let isComposing = false;
       titleInput.addEventListener("compositionstart", () => {
@@ -53829,7 +53898,6 @@ ${content}</tr>
     }
   }
   function handleFocusToEditor() {
-    console.log("Request received to focus custom editor.");
     if (activeEditorInstance) {
       const { textarea, switchMode } = activeEditorInstance;
       const currentMode = localStorage.getItem(STORAGE_KEY_MODE) || "split";
@@ -53843,8 +53911,6 @@ ${content}</tr>
         textarea.setSelectionRange(len, len);
         textarea.scrollTop = textarea.scrollHeight;
       });
-    } else {
-      console.warn("Could not focus editor: activeEditorInstance is not available.");
     }
   }
   function setupMarkdownEditor(originalTextarea, isNewNoteSetup = false) {
@@ -53852,18 +53918,19 @@ ${content}</tr>
       console.warn("Markdown Editor: Setup aborted. Target textarea is not attached to the DOM.");
       return;
     }
-    if (originalTextarea.dataset.markdownReady)
-      return;
+    if (originalTextarea.dataset.markdownReady) return;
     originalTextarea.dataset.markdownReady = "true";
     marked.setOptions({ gfm: true, breaks: true, smartLists: true, langPrefix: "language-" });
     const definitionsRegex = new RegExp(`\\n*${DEFINITIONS_HEADER}[\\s\\S]*?${DEFINITIONS_FOOTER}`, "g");
     const editorWrapper = originalTextarea.parentElement;
     editorWrapper.classList.add("sn-markdown-hidden", "sn-markdown-full-height");
+    editorWrapper.dataset.snMarkdownHiddenByEnhancer = "1";
     const container = document.createElement("div");
     container.className = "markdown-editor-container";
     const markdownTextarea = document.createElement("textarea");
     markdownTextarea.className = originalTextarea.className + " custom-markdown-textarea";
     markdownTextarea.spellcheck = false;
+    markdownTextarea.setAttribute("aria-label", "Enhanced Markdown Editor");
     let definitionsText = "";
     const extractAndSetContent = (fullText) => {
       const match = fullText.match(definitionsRegex);
@@ -53910,10 +53977,16 @@ ${DEFINITIONS_FOOTER}`;
             canvas.width = width;
             canvas.height = height;
             const ctx = canvas.getContext("2d");
-            ctx.fillStyle = "#FFFFFF";
-            ctx.fillRect(0, 0, width, height);
+            const preserveAlpha = /image\/(png|webp)/i.test(file.type);
+            if (!preserveAlpha) {
+              ctx.fillStyle = "#FFFFFF";
+              ctx.fillRect(0, 0, width, height);
+            }
             ctx.drawImage(img, 0, 0, width, height);
-            const dataUrl = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
+            const dataUrl = canvas.toDataURL(
+              preserveAlpha ? "image/png" : "image/jpeg",
+              preserveAlpha ? void 0 : JPEG_QUALITY
+            );
             resolve(dataUrl);
           };
           img.onerror = () => reject(new Error("Failed to load image."));
@@ -53995,15 +54068,16 @@ ${DEFINITIONS_FOOTER}`;
       if (text2.includes("	") && text2.includes("\n")) {
         event.preventDefault();
         const tableMd = textToTable(text2);
-        document.execCommand("insertText", false, tableMd);
+        const start = markdownTextarea.selectionStart;
+        const end = markdownTextarea.selectionEnd;
+        markdownTextarea.setRangeText(tableMd, start, end, "end");
+        debouncedInputHandler();
       }
     };
     const parseMarkdownTable = (text2) => {
-      if (!text2 || typeof text2 !== "string" || !text2.includes("|"))
-        return null;
+      if (!text2 || typeof text2 !== "string" || !text2.includes("|")) return null;
       const lines = text2.trim().split("\n").map((l) => l.trim()).filter((l) => l.includes("|"));
-      if (lines.length < 2)
-        return null;
+      if (lines.length < 2) return null;
       const headerLine = lines[0];
       const separatorLine = lines[1];
       const dataLines = lines.slice(2);
@@ -54013,33 +54087,72 @@ ${DEFINITIONS_FOOTER}`;
         return content.split("|").map((cell) => cell.trim());
       };
       const separatorParts = parseRow(separatorLine);
-      if (!separatorParts.every((part) => /^:?-+:?$/.test(part)))
-        return null;
+      if (!separatorParts.every((part) => /^:?-+:?$/.test(part))) return null;
       const header = parseRow(headerLine);
       const numCols = header.length;
-      if (separatorParts.length !== numCols)
-        return null;
+      if (separatorParts.length !== numCols) return null;
       const alignments = separatorParts.map((part) => {
         const left = part.startsWith(":");
         const right = part.endsWith(":");
-        if (left && right)
-          return "center";
-        if (right)
-          return "right";
+        if (left && right) return "center";
+        if (right) return "right";
         return "left";
       });
       const rows = [header, ...dataLines.map((line) => {
         const rowData = parseRow(line);
-        while (rowData.length < numCols)
-          rowData.push("");
+        while (rowData.length < numCols) rowData.push("");
         return rowData.slice(0, numCols);
       })];
       return { rows, alignments };
     };
+    function attachModalA11yBasics(modalOverlay, closeModal) {
+      const onKey = (e) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          closeModal();
+        }
+      };
+      document.addEventListener("keydown", onKey, { passive: false });
+      return () => document.removeEventListener("keydown", onKey);
+    }
     const openImageInserterModal = (onInsertCallback) => {
       const modalOverlay = document.createElement("div");
       modalOverlay.className = "sn-modal-overlay";
-      modalOverlay.innerHTML = `<div class="sn-modal-content sn-modal-content-image"><div class="sn-modal-header"><h3>${T.insertImage}</h3><button class="sn-modal-close" title="${T.close}">&times;</button></div><div class="sn-modal-body"><div class="sn-modal-tabs"><div class="sn-modal-tab active" data-tab="url">${T.fromURL}</div><div class="sn-modal-tab" data-tab="upload">${T.uploadFile}</div></div><div class="sn-modal-tab-content active" data-tab-content="url"><div class="sn-modal-form-group"><label for="sn-image-url">${T.imageURL}</label><input type="text" id="sn-image-url" class="sn-modal-input" placeholder="https://example.com/image.jpg"></div></div><div class="sn-modal-tab-content" data-tab-content="upload"><div class="sn-modal-form-group"><label class="sn-modal-file-wrapper"><span class="sn-modal-file-label">${T.chooseFile}</span><input type="file" class="sn-modal-file-input" accept="image/*"></label><div class="sn-modal-processing-indicator"></div></div></div><div class="sn-modal-form-group"><label for="sn-image-alt">${T.altText}</label><input type="text" id="sn-image-alt" class="sn-modal-input" placeholder="A description of the image"></div></div><div class="sn-modal-footer"><button class="sn-modal-insert-btn">${T.insert}</button></div></div>`;
+      modalOverlay.innerHTML = `
+            <div class="sn-modal-content sn-modal-content-image" role="dialog" aria-modal="true" aria-label="${T.insertImage}">
+                <div class="sn-modal-header">
+                    <h3>${T.insertImage}</h3>
+                    <button class="sn-modal-close" title="${T.close}" aria-label="${T.close}">&times;</button>
+                </div>
+                <div class="sn-modal-body">
+                    <div class="sn-modal-tabs" role="tablist">
+                        <div class="sn-modal-tab active" data-tab="url" role="tab" aria-selected="true">${T.fromURL}</div>
+                        <div class="sn-modal-tab" data-tab="upload" role="tab" aria-selected="false">${T.uploadFile}</div>
+                    </div>
+                    <div class="sn-modal-tab-content active" data-tab-content="url">
+                        <div class="sn-modal-form-group">
+                            <label for="sn-image-url">${T.imageURL}</label>
+                            <input type="text" id="sn-image-url" class="sn-modal-input" placeholder="https://example.com/image.jpg">
+                        </div>
+                    </div>
+                    <div class="sn-modal-tab-content" data-tab-content="upload">
+                        <div class="sn-modal-form-group">
+                            <label class="sn-modal-file-wrapper">
+                                <span class="sn-modal-file-label">${T.chooseFile}</span>
+                                <input type="file" class="sn-modal-file-input" accept="image/*" aria-label="${T.uploadFile}">
+                            </label>
+                            <div class="sn-modal-processing-indicator"></div>
+                        </div>
+                    </div>
+                    <div class="sn-modal-form-group">
+                        <label for="sn-image-alt">${T.altText}</label>
+                        <input type="text" id="sn-image-alt" class="sn-modal-input" placeholder="A description of the image">
+                    </div>
+                </div>
+                <div class="sn-modal-footer">
+                    <button class="sn-modal-insert-btn">${T.insert}</button>
+                </div>
+            </div>`;
       document.body.appendChild(modalOverlay);
       const content = modalOverlay.querySelector(".sn-modal-content");
       const urlInput = modalOverlay.querySelector("#sn-image-url");
@@ -54048,26 +54161,34 @@ ${DEFINITIONS_FOOTER}`;
       const fileLabel = modalOverlay.querySelector(".sn-modal-file-label");
       const processingIndicator = modalOverlay.querySelector(".sn-modal-processing-indicator");
       const insertBtn = modalOverlay.querySelector(".sn-modal-insert-btn");
-      const closeModal = () => document.body.contains(modalOverlay) && document.body.removeChild(modalOverlay);
+      const closeModal = () => {
+        if (document.body.contains(modalOverlay)) document.body.removeChild(modalOverlay);
+        cleanupKey();
+      };
+      const cleanupKey = attachModalA11yBasics(modalOverlay, closeModal);
       let base64data = null;
       let currentTab = "url";
       modalOverlay.querySelectorAll(".sn-modal-tab").forEach((tab) => {
         tab.onclick = () => {
           currentTab = tab.dataset.tab;
-          modalOverlay.querySelectorAll(".sn-modal-tab").forEach((t) => t.classList.remove("active"));
+          modalOverlay.querySelectorAll(".sn-modal-tab").forEach((t) => {
+            t.classList.remove("active");
+            t.setAttribute("aria-selected", "false");
+          });
           modalOverlay.querySelectorAll(".sn-modal-tab-content").forEach((c2) => c2.classList.remove("active"));
           tab.classList.add("active");
+          tab.setAttribute("aria-selected", "true");
           modalOverlay.querySelector(`.sn-modal-tab-content[data-tab-content="${currentTab}"]`).classList.add("active");
           base64data = null;
           fileInput.value = "";
           fileLabel.textContent = T.chooseFile;
           processingIndicator.innerHTML = "";
+          if (currentTab === "url") urlInput.focus();
         };
       });
       fileInput.onchange = async (e) => {
         const file = e.target.files[0];
-        if (!file)
-          return;
+        if (!file) return;
         fileLabel.textContent = file.name;
         processingIndicator.innerHTML = `<span>${T.processing}</span>`;
         insertBtn.disabled = true;
@@ -54132,11 +54253,11 @@ ${DEFINITIONS_FOOTER}`;
             default:
               alignIcon = "←";
           }
-          headerHtml += `<th data-col="${c2}"><div class="col-header-content" draggable="true"><span class="drag-handle">⁙</span><div class="col-header" title="${T.alignLeft}/${T.alignCenter}/${T.alignRight}"><span class="align-icon">${alignIcon}</span></div></div><div class="delete-btn delete-col-btn" title="${T.deleteCol}">🗑️</div></th>`;
+          headerHtml += `<th data-col="${c2}"><div class="col-header-content" draggable="true"><span class="drag-handle">⁙</span><div class="col-header" title="${T.alignLeft}/${T.alignCenter}/${T.alignRight}" aria-label="${T.alignLeft}/${T.alignCenter}/${T.alignRight}"><span class="align-icon">${alignIcon}</span></div></div><div class="delete-btn delete-col-btn" title="${T.deleteCol}" aria-label="${T.deleteCol}">🗑️</div></th>`;
         }
         let bodyHtml = "";
         for (let r2 = 0; r2 < rowCount; r2++) {
-          bodyHtml += `<tr data-row="${r2}"><td class="control-cell"><span class="drag-handle" draggable="true">⁙</span><div class="delete-btn delete-row-btn" title="${T.deleteRow}">🗑️</div></td>`;
+          bodyHtml += `<tr data-row="${r2}"><td class="control-cell"><span class="drag-handle" draggable="true">⁙</span><div class="delete-btn delete-row-btn" title="${T.deleteRow}" aria-label="${T.deleteRow}">🗑️</div></td>`;
           for (let c2 = 0; c2 < colCount; c2++) {
             const cellValue = tableData.rows[r2][c2] || "";
             const placeholder = r2 === 0 ? "Header" : "Cell";
@@ -54144,13 +54265,31 @@ ${DEFINITIONS_FOOTER}`;
           }
           bodyHtml += `<td class="control-cell"></td></tr>`;
         }
-        const tableHtml = `<table class="sn-table-editor"><thead><tr><th class="control-cell"></th>${headerHtml}<th class="control-cell"><div class="add-btn add-col-btn" title="${T.addCol}">+</div></th></tr></thead><tbody>${bodyHtml}<tr><td class="control-cell"></td><td colspan="${colCount}" class="control-cell"><div class="add-btn add-row-btn" title="${T.addRow}">+</div></td><td class="control-cell"></td></tr></tbody></table>`;
-        modalOverlay.innerHTML = `<div class="sn-modal-content sn-modal-content-table"><div class="sn-modal-header"><h3>${T.tableEditor}</h3><button class="sn-modal-close" title="${T.close}">&times;</button></div><div class="sn-modal-body"><div class="sn-table-editor-container"><div class="sn-table-scroll-container">${tableHtml}</div></div></div><div class="sn-modal-footer"><button class="sn-modal-insert-btn">${T.insert}</button></div></div>`;
+        const tableHtml = `<table class="sn-table-editor" role="table"><thead><tr><th class="control-cell"></th>${headerHtml}<th class="control-cell"><div class="add-btn add-col-btn" title="${T.addCol}" aria-label="${T.addCol}">+</div></th></tr></thead><tbody>${bodyHtml}<tr><td class="control-cell"></td><td colspan="${colCount}" class="control-cell"><div class="add-btn add-row-btn" title="${T.addRow}" aria-label="${T.addRow}">+</div></td><td class="control-cell"></td></tr></tbody></table>`;
+        modalOverlay.innerHTML = `
+                <div class="sn-modal-content sn-modal-content-table" role="dialog" aria-modal="true" aria-label="${T.tableEditor}">
+                    <div class="sn-modal-header">
+                        <h3>${T.tableEditor}</h3>
+                        <button class="sn-modal-close" title="${T.close}" aria-label="${T.close}">&times;</button>
+                    </div>
+                    <div class="sn-modal-body">
+                        <div class="sn-table-editor-container">
+                            <div class="sn-table-scroll-container">${tableHtml}</div>
+                        </div>
+                    </div>
+                    <div class="sn-modal-footer">
+                        <button class="sn-modal-insert-btn">${T.insert}</button>
+                    </div>
+                </div>`;
         attachEventListeners();
       };
       const attachEventListeners = () => {
         const content = modalOverlay.querySelector(".sn-modal-content");
-        const closeModal = () => document.body.contains(modalOverlay) && document.body.removeChild(modalOverlay);
+        const closeModal = () => {
+          if (document.body.contains(modalOverlay)) document.body.removeChild(modalOverlay);
+          cleanupKey();
+        };
+        const cleanupKey = attachModalA11yBasics(modalOverlay, closeModal);
         let draggedItem = null;
         modalOverlay.querySelector(".sn-modal-close").onclick = closeModal;
         content.onclick = (e) => e.stopPropagation();
@@ -54161,10 +54300,8 @@ ${DEFINITIONS_FOOTER}`;
           if (colCount > 0 && tableData.rows.some((row) => row.some((cell) => cell.trim() !== ""))) {
             markdown2 += "| " + tableData.rows[0].map((c2) => c2.trim() || " ").join(" | ") + " |\n";
             markdown2 += "|" + tableData.alignments.map((a) => {
-              if (a === "center")
-                return " :---: ";
-              if (a === "right")
-                return " ---: ";
+              if (a === "center") return " :---: ";
+              if (a === "right") return " ---: ";
               return " :--- ";
             }).join("|") + "|\n";
             for (let i = 1; i < tableData.rows.length; i++) {
@@ -54281,8 +54418,7 @@ ${DEFINITIONS_FOOTER}`;
             e.preventDefault();
             const targetRow = e.currentTarget;
             targetRow.classList.remove("drag-over-row");
-            if (!targetRow || targetRow === draggedItem)
-              return;
+            if (!targetRow || targetRow === draggedItem) return;
             const sourceIndex = parseInt(e.dataTransfer.getData("text/plain"), 10);
             const targetIndex = parseInt(targetRow.dataset.row, 10);
             const [removedRowData] = tableData.rows.splice(sourceIndex, 1);
@@ -54290,8 +54426,8 @@ ${DEFINITIONS_FOOTER}`;
             render();
           });
         });
-        modalOverlay.querySelectorAll('th .col-header-content[draggable="true"]').forEach((handle) => {
-          const headerCell = handle.closest("th");
+        modalOverlay.querySelectorAll("thead th[data-col]").forEach((headerCell) => {
+          const handle = headerCell.querySelector('.col-header-content[draggable="true"]');
           handle.addEventListener("dragstart", (e) => {
             e.stopPropagation();
             draggedItem = headerCell;
@@ -54306,8 +54442,6 @@ ${DEFINITIONS_FOOTER}`;
             modalOverlay.querySelectorAll(".drag-over-col").forEach((el) => el.classList.remove("drag-over-col"));
             draggedItem = null;
           });
-        });
-        modalOverlay.querySelectorAll("thead th[data-col]").forEach((headerCell) => {
           headerCell.addEventListener("dragover", (e) => {
             e.preventDefault();
             const targetCol = e.target.closest("th[data-col]");
@@ -54323,8 +54457,7 @@ ${DEFINITIONS_FOOTER}`;
             e.preventDefault();
             e.stopPropagation();
             const targetCol = e.target.closest("th[data-col]");
-            if (!targetCol || targetCol === draggedItem)
-              return;
+            if (!targetCol || targetCol === draggedItem) return;
             const sourceIndex = parseInt(e.dataTransfer.getData("text/plain"), 10);
             const targetIndex = parseInt(targetCol.dataset.col, 10);
             const [removedAlign] = tableData.alignments.splice(sourceIndex, 1);
@@ -54355,6 +54488,7 @@ ${DEFINITIONS_FOOTER}`;
     const toolbarToggleButton = document.createElement("button");
     toolbarToggleButton.className = "mode-toggle-button toolbar-toggle-button";
     toolbarToggleButton.title = T.toggleToolbar;
+    toolbarToggleButton.setAttribute("aria-label", T.toggleToolbar);
     toolbarToggleButton.appendChild(createIcon("M3 18h18v-2H3v2z m0-5h18v-2H3v2z m0-7v2h18V6H3z"));
     const printButton = document.createElement("button");
     printButton.className = "mode-toggle-button pdf-export-button";
@@ -54363,21 +54497,28 @@ ${DEFINITIONS_FOOTER}`;
     const toolbar = document.createElement("div");
     toolbar.className = "markdown-toolbar";
     const previewContainer = document.createElement("div");
-    previewContainer.className = PREVIEW_CONTAINER_CLASS;
+    previewContainer.className = "sn-markdown-preview-container";
     markdownTextarea.addEventListener("paste", handlePaste);
     const toolbarButtons = [
       { type: "select", name: "heading", options: [{ value: "p", text: T.paragraph }, { value: "h1", text: T.heading1 }, { value: "h2", text: T.heading2 }, { value: "h3", text: T.heading3 }, { value: "h4", text: T.heading4 }], action: (prefix) => {
-        const start = markdownTextarea.selectionStart;
-        let lineStart = markdownTextarea.value.lastIndexOf("\n", start - 1) + 1;
-        let lineEnd = markdownTextarea.value.indexOf("\n", start);
-        if (lineEnd === -1)
-          lineEnd = markdownTextarea.value.length;
-        const originalLine = markdownTextarea.value.substring(lineStart, lineEnd);
-        const cleanedLine = originalLine.replace(/^\s*#+\s*/, "");
-        const newText = prefix ? `${prefix} ${cleanedLine}` : cleanedLine;
-        markdownTextarea.setRangeText(newText, lineStart, lineEnd, "end");
+        const val = markdownTextarea.value;
+        const selStart = markdownTextarea.selectionStart;
+        const selEnd = markdownTextarea.selectionEnd;
+        const lineStart = val.lastIndexOf("\n", selStart - 1) + 1;
+        let lineEnd = val.indexOf("\n", selEnd);
+        if (lineEnd === -1) lineEnd = val.length;
+        const block2 = val.slice(lineStart, lineEnd);
+        const lines = block2.split("\n");
+        const cleaned = lines.map((line) => {
+          if (!line.trim()) return line;
+          const withoutHeading = line.replace(/^\s*#{1,6}\s+/, "");
+          return prefix ? `${prefix} ${withoutHeading}` : withoutHeading;
+        });
+        const newBlock = cleaned.join("\n");
+        markdownTextarea.setRangeText(newBlock, lineStart, lineEnd, "select");
         debouncedInputHandler();
         markdownTextarea.focus();
+        updateHeadingSelector();
       } },
       { type: "button", name: "B", title: T.bold, action: () => applyMarkdown(markdownTextarea, "**", "**", T.boldPlaceholder) },
       { type: "button", name: "I", title: T.italic, action: () => applyMarkdown(markdownTextarea, "*", "*", T.italicPlaceholder) },
@@ -54400,8 +54541,7 @@ ${DEFINITIONS_FOOTER}`;
       } },
       { type: "icon", title: T.link, path: "M3.9 12 c 0 -1.71 1.39 -3.1 3.1 -3.1 h4 V7 H7 c -2.76 0 -5 2.24 -5 5 s2.24 5 5 5 h4 v-1.9 H7 c -1.71 0 -3.1 -1.39 -3.1 -3.1 z M8 13 h8 v-2 H8 v2 z m9 -6 h-4 v1.9 h4 c 1.71 0 3.1 1.39 3.1 3.1 s -1.39 3.1 -3.1 3.1 h-4 V17 h4 c 2.76 0 -5 -2.24 -5 -5 s -2.24 -5 -5 -5 z", action: () => {
         const url = prompt(T.linkPrompt, "https://");
-        if (url)
-          applyMarkdown(markdownTextarea, "[", `](${url})`, T.linkTextPlaceholder);
+        if (url) applyMarkdown(markdownTextarea, "[", `](${url})`, T.linkTextPlaceholder);
       } },
       { type: "icon", title: T.insertTable, path: "M20 4 H4 c -1.1 0 -2 0.9 -2 2 v12 c 0 1.1 0.9 2 2 2 h16 c 1.1 0 2 -0.9 2 -2 V6 c 0 -1.1 -0.9 -2 -2 -2 z M8 10 H4 V6 h4 v4 z m6 0 h-4 V6 h4 v4 z m6 0 h-4 V6 h4 v4 z M8 14 H4 v4 h4 v-4 z m6 0 h-4 v4 h4 v-4 z m6 0 h-4 v4 h4 v-4 z", action: () => {
         const start = markdownTextarea.selectionStart;
@@ -54462,8 +54602,7 @@ ${DEFINITIONS_FOOTER}`;
     });
     const headingSelect = toolbar.querySelector(".heading-select");
     const updateHeadingSelector = () => {
-      if (!headingSelect)
-        return;
+      if (!headingSelect) return;
       const pos = markdownTextarea.selectionStart;
       const text2 = markdownTextarea.value;
       const lineStart = text2.lastIndexOf("\n", pos - 1) + 1;
@@ -54504,7 +54643,11 @@ ${DEFINITIONS_FOOTER}`;
 
 ${unwrappedDefs}`;
         const dirtyHtml = marked.parse(contentForPreview);
-        const sanitizedHtml = purify.sanitize(dirtyHtml, { USE_PROFILES: { html: true }, ADD_ATTR: ["class", "type", "disabled", "checked", "data-task-index", "data-processed", "data-explicit-lang"], ADD_TAGS: ["span", "input"] });
+        const sanitizedHtml = purify.sanitize(dirtyHtml, {
+          USE_PROFILES: { html: true },
+          ADD_ATTR: ["class", "type", "disabled", "checked", "data-task-index", "data-processed", "data-explicit-lang"],
+          ADD_TAGS: ["span", "input"]
+        });
         previewContainer.innerHTML = sanitizedHtml;
         previewContainer.querySelectorAll('pre > code[class*="language-"]').forEach((codeEl) => {
           const langMatch = Array.from(codeEl.classList).find((cls) => cls.startsWith("language-"));
@@ -54515,14 +54658,16 @@ ${unwrappedDefs}`;
             }
           }
         });
-        previewContainer.querySelectorAll("pre code").forEach(core_default.highlightElement);
+        previewContainer.querySelectorAll("pre code").forEach((codeEl) => {
+          if (!codeEl.classList.contains("hljs")) {
+            core_default.highlightElement(codeEl);
+          }
+        });
         previewContainer.querySelectorAll("pre").forEach((preEl) => {
-          if (preEl.dataset.processed)
-            return;
+          if (preEl.dataset.processed) return;
           preEl.dataset.processed = "true";
           const codeEl = preEl.querySelector("code");
-          if (!codeEl)
-            return;
+          if (!codeEl) return;
           const langLabel = document.createElement("div");
           langLabel.className = "code-language-label";
           langLabel.textContent = preEl.dataset.explicitLang || "code";
@@ -54562,6 +54707,10 @@ ${unwrappedDefs}`;
               handlePreviewChecklistToggle(index);
             });
           }
+        });
+        previewContainer.querySelectorAll("a[href]").forEach((a) => {
+          a.setAttribute("target", "_blank");
+          a.setAttribute("rel", "noopener noreferrer");
         });
       } catch (e) {
         console.error("Error updating preview:", e);
@@ -54649,11 +54798,80 @@ ${indent}${listMarker}`, pos, pos, "end");
         debouncedInputHandler();
       }
     };
-    markdownTextarea.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
-        handleEnterKey(e);
+    function getLineRangeForSelection(text2, selStart, selEnd) {
+      const lineStart = text2.lastIndexOf("\n", selStart - 1) + 1;
+      let lineEnd = text2.indexOf("\n", selEnd);
+      if (lineEnd === -1) lineEnd = text2.length;
+      return { lineStart, lineEnd };
+    }
+    function outdentOneLevel(line) {
+      if (line.startsWith(INDENT_SPACES)) {
+        return { line: line.slice(INDENT_SPACES.length), removed: INDENT_SPACES.length };
       }
-    });
+      if (line.startsWith("	")) {
+        return { line: line.slice(1), removed: 1 };
+      }
+      const m = line.match(/^ +/);
+      if (m) {
+        const n = Math.min(INDENT_SPACES.length, m[0].length);
+        return { line: line.slice(n), removed: n };
+      }
+      return { line, removed: 0 };
+    }
+    function handleTabKey(e) {
+      if (e.ctrlKey || e.metaKey) return;
+      if (e.key !== "Tab") return;
+      e.preventDefault();
+      const val = markdownTextarea.value;
+      const selStart = markdownTextarea.selectionStart;
+      const selEnd = markdownTextarea.selectionEnd;
+      const { lineStart, lineEnd } = getLineRangeForSelection(val, selStart, selEnd);
+      const block2 = val.slice(lineStart, lineEnd);
+      const lines = block2.split("\n");
+      const isCaretOnly = selStart === selEnd && !block2.includes("\n");
+      if (isCaretOnly) {
+        if (!e.shiftKey) {
+          markdownTextarea.setRangeText(INDENT_SPACES, selStart, selEnd, "end");
+          debouncedInputHandler();
+          return;
+        } else {
+          const { lineStart: ls, lineEnd: le } = getLineRangeForSelection(val, selStart, selEnd);
+          const line = val.slice(ls, le);
+          const { line: out, removed } = outdentOneLevel(line);
+          if (removed > 0) {
+            markdownTextarea.setRangeText(out, ls, le, "end");
+            const newPos = Math.max(ls, selStart - removed);
+            markdownTextarea.selectionStart = markdownTextarea.selectionEnd = newPos;
+            debouncedInputHandler();
+          }
+          return;
+        }
+      }
+      if (!e.shiftKey) {
+        const indented = lines.map((l) => INDENT_SPACES + l);
+        const newBlock = indented.join("\n");
+        markdownTextarea.setRangeText(newBlock, lineStart, lineEnd, "end");
+        const deltaFirst = INDENT_SPACES.length;
+        const deltaAll = INDENT_SPACES.length * lines.length;
+        markdownTextarea.selectionStart = selStart + deltaFirst;
+        markdownTextarea.selectionEnd = selEnd + deltaAll;
+        debouncedInputHandler();
+      } else {
+        let removedTotal = 0;
+        let removedFirst = 0;
+        const outdented = lines.map((l, i) => {
+          const { line: out, removed } = outdentOneLevel(l);
+          if (i === 0) removedFirst = removed;
+          removedTotal += removed;
+          return out;
+        });
+        const newBlock = outdented.join("\n");
+        markdownTextarea.setRangeText(newBlock, lineStart, lineEnd, "end");
+        markdownTextarea.selectionStart = Math.max(lineStart, selStart - removedFirst);
+        markdownTextarea.selectionEnd = Math.max(markdownTextarea.selectionStart, selEnd - removedTotal);
+        debouncedInputHandler();
+      }
+    }
     const cleanupOrphanedImageRefs = () => {
       const contentValue = markdownTextarea.value;
       const usedRefs = /* @__PURE__ */ new Set();
@@ -54663,12 +54881,11 @@ ${indent}${listMarker}`, pos, pos, "end");
         usedRefs.add(match[1]);
       }
       const currentDefsContent = definitionsText.replace(DEFINITIONS_HEADER, "").replace(DEFINITIONS_FOOTER, "").trim();
-      if (!currentDefsContent)
-        return false;
+      if (!currentDefsContent) return false;
       const defLines = currentDefsContent.split("\n");
       const keptDefLines = defLines.filter((line) => {
         const defMatch = line.match(/^\[(image-ref-\d+)\]:/);
-        return defMatch && usedRefs.has(defMatch[1]);
+        return !defMatch || usedRefs.has(defMatch[1]);
       });
       const newDefsContent = keptDefLines.join("\n");
       if (newDefsContent !== currentDefsContent) {
@@ -54687,9 +54904,7 @@ ${DEFINITIONS_FOOTER}`;
       cleanupOrphanedImageRefs();
       isInternallyUpdating = true;
       nativeTextareaSetter.call(originalTextarea, getFullContent());
-      if (!document.hidden) {
-        originalTextarea.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
-      }
+      originalTextarea.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
       if (container.classList.contains("mode-split") || container.classList.contains("mode-preview")) {
         debouncedUpdatePreview();
       }
@@ -54699,11 +54914,8 @@ ${DEFINITIONS_FOOTER}`;
     };
     debouncedInputHandler = debounce(handleInput, 300);
     markdownTextarea.addEventListener("input", debouncedInputHandler);
-    const observer = new MutationObserver(() => {
-      if (isInternallyUpdating) {
-        return;
-      }
-      console.log("Markdown Editor: External change detected. Syncing to custom editor.");
+    const onHostInput = () => {
+      if (isInternallyUpdating) return;
       isInternallyUpdating = true;
       extractAndSetContent(originalTextarea.value);
       if (container.classList.contains("mode-split") || container.classList.contains("mode-preview")) {
@@ -54712,8 +54924,9 @@ ${DEFINITIONS_FOOTER}`;
       requestAnimationFrame(() => {
         isInternallyUpdating = false;
       });
-    });
-    observer.observe(originalTextarea, { attributes: true, childList: true, subtree: true, characterData: true });
+    };
+    originalTextarea.addEventListener("input", onHostInput);
+    originalTextarea.addEventListener("change", onHostInput);
     let scrollRequest;
     const handleScroll = (source3, target) => {
       if (source3.isSyncing) {
@@ -54723,8 +54936,7 @@ ${DEFINITIONS_FOOTER}`;
       cancelAnimationFrame(scrollRequest);
       scrollRequest = requestAnimationFrame(() => {
         const sourceScrollableDist = source3.scrollHeight - source3.clientHeight;
-        if (sourceScrollableDist <= 0)
-          return;
+        if (sourceScrollableDist <= 0) return;
         const scrollRatio = source3.scrollTop / sourceScrollableDist;
         const targetScrollableDist = target.scrollHeight - target.clientHeight;
         target.isSyncing = true;
@@ -54778,6 +54990,10 @@ ${DEFINITIONS_FOOTER}`;
         const printContent = document.createElement("div");
         printContent.className = "print-content";
         const printStyle = document.createElement("style");
+        const previewStyles = Array.from(document.styleSheets).find((s) => s.ownerNode.textContent.includes(".sn-markdown-preview-container"));
+        if (previewStyles) {
+          printStyle.textContent = previewStyles.ownerNode.textContent.replace(new RegExp(`\\.${"sn-markdown-preview-container"}`, "g"), "");
+        }
         printContent.innerHTML = previewContainer.innerHTML;
         printContainer.append(printStyle, printContent);
       }
@@ -54792,10 +55008,20 @@ ${DEFINITIONS_FOOTER}`;
     const savedMode = localStorage.getItem(STORAGE_KEY_MODE);
     activeEditorInstance = { textarea: markdownTextarea, switchMode };
     switchMode(savedMode || "split", isNewNoteSetup);
-    console.log(`Markdown Editor for Standard Notes (v${"5.3.3"}, Robust Edition) has been initialized.`);
+    console.log(`Markdown Editor for Standard Notes (v${"5.4.0"}, Robust Edition) has been initialized.`);
     if (isNewNoteSetup) {
       console.log("New note detected, focusing editor.");
     }
+    markdownTextarea.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+        handleEnterKey(e);
+        return;
+      }
+      if (e.key === "Tab") {
+        handleTabKey(e);
+        return;
+      }
+    });
   }
   function initiateEditorSetup(editor, attempts = 0) {
     const MAX_ATTEMPTS = 40;
@@ -54820,8 +55046,7 @@ ${DEFINITIONS_FOOTER}`;
     for (const mutation of mutations) {
       if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
         for (const node of mutation.addedNodes) {
-          if (node.nodeType !== Node.ELEMENT_NODE)
-            continue;
+          if (node.nodeType !== Node.ELEMENT_NODE) continue;
           const editor = node.matches("#note-text-editor") ? node : node.querySelector("#note-text-editor");
           if (editor && !editor.dataset.markdownReady) {
             editorNeedsSetup = true;
@@ -54830,13 +55055,11 @@ ${DEFINITIONS_FOOTER}`;
           }
         }
       }
-      if (editorNeedsSetup)
-        break;
+      if (editorNeedsSetup) break;
     }
     if (editorNeedsSetup) {
       const oldCustomEditor = document.querySelector(".markdown-editor-container");
-      if (oldCustomEditor)
-        oldCustomEditor.remove();
+      if (oldCustomEditor) oldCustomEditor.remove();
       initiateEditorSetup(editorInstance);
     }
     setupTitleEnterListener();
@@ -54844,10 +55067,10 @@ ${DEFINITIONS_FOOTER}`;
     if (customEditor && !document.querySelector("#note-text-editor")) {
       customEditor.remove();
       activeEditorInstance = null;
-      const hiddenWrapper = document.querySelector("#editor-content.sn-markdown-hidden");
-      if (hiddenWrapper) {
-        hiddenWrapper.classList.remove("sn-markdown-hidden");
-      }
+      document.querySelectorAll('[data-sn-markdown-hidden-by-enhancer="1"]').forEach((el) => {
+        el.classList.remove("sn-markdown-hidden");
+        delete el.dataset.snMarkdownHiddenByEnhancer;
+      });
     }
   });
   mainObserver.observe(document.body, { childList: true, subtree: true });
