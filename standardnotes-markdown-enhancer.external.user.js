@@ -10,7 +10,7 @@
 // @name:de              Erweiterter Markdown-Editor für Standard Notes
 // @name:pt-BR           Editor Markdown avançado para Standard Notes
 // @name:ru              Улучшенный редактор Markdown для Standard Notes
-// @version              5.4.0
+// @version              6.0.0
 // @description          Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency. This version features a new architecture for rock-solid sync reliability.
 // @description:ja       Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップ。盤石な同期信頼性を実現する新アーキテクチャ版です。
 // @description:zh-CN    非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。此版本采用新架构，具有坚如磐石的同步可靠性。
@@ -34,6 +34,7 @@
 // @icon                 https://app.standardnotes.com/favicon/favicon-32x32.png
 // @license              MIT
 // @run-at               document-idle
+// @noframes
 // ==/UserScript==
 
 (function() {
@@ -44,7 +45,26 @@
   const JPEG_QUALITY = 0.8;
   const INDENT_SPACES = '    ';
 
-  // UserScriptエンジンの誤パースを避けるため、HTMLコメントに見える文字列を連結で生成
+  // ★ パフォーマンス閾値（デバイス性能に応じて自動調整）
+  const devMemGB = Math.max(2, Math.min(16, (navigator.deviceMemory || 4)));
+  const PERF_SCALE = devMemGB <= 4 ? 0.75 : devMemGB >= 12 ? 1.25 : 1.0;
+
+  const BASE_HEAVY_NOTE_THRESHOLD = 200_000;   // 20万文字以上はストリーミング経路
+  const BASE_LOCKDOWN_THRESHOLD   = 1_000_000; // 100万文字以上はSplit/Preview完全封鎖
+  const BASE_MD_CHUNK_TARGET      = 32_000;    // 1チャンク目安（文字数）
+  const MAX_INITIAL_CHUNKS        = 6;         // 初期ロードするチャンク数
+
+  const HEAVY_NOTE_THRESHOLD = Math.floor(BASE_HEAVY_NOTE_THRESHOLD * PERF_SCALE);
+  const LOCKDOWN_THRESHOLD   = Math.floor(BASE_LOCKDOWN_THRESHOLD   * PERF_SCALE);
+  const MD_CHUNK_TARGET      = Math.floor(BASE_MD_CHUNK_TARGET      * PERF_SCALE);
+
+  // requestIdleCallback フォールバック
+  const runIdle = (cb) => {
+    if (window.requestIdleCallback) return window.requestIdleCallback(cb, { timeout: 80 });
+    return setTimeout(() => cb({ timeRemaining: () => 0, didTimeout: true }), 0);
+  };
+
+  // UserScriptエンジンの誤パース回避
   const DEFINITIONS_HEADER = '<' + '!-- sn-markdown-enhancer-definitions';
   const DEFINITIONS_FOOTER = '--' + '>';
 
@@ -52,10 +72,75 @@
   let activeEditorInstance = null;
   let debouncedInputHandler = () => {};
   let isInternallyUpdating = false;
+  let isLockdown = false;
 
-  // Reactなどのフレームワークに確実に入力変更を伝えるため、textareaのネイティブなセッターを取得
+  // === 追加：インスタンス安全なグローバル・ホットキー ===
+  let globalHotkeyInstalled = false;
+  function globalHotkeyHandler(e) {
+    const meta = e.metaKey || e.ctrlKey;
+    if (!meta) return;
+
+    const k = e.key.toLowerCase();
+
+    // ⌘/Ctrl+P は常に現在のアクティブエディタへ（存在時のみ）
+    if (k === 'p') {
+      if (activeEditorInstance?.textarea && document.contains(activeEditorInstance.textarea) && typeof activeEditorInstance.handlePrint === 'function') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        activeEditorInstance.handlePrint();
+      }
+      return;
+    }
+
+    // B / I はエディタにフォーカスがなくても発火させる
+    if (!activeEditorInstance) return;
+
+    if (k === 'b' || k === 'i') {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      const ta = activeEditorInstance.textarea;
+      if (ta && ta.isConnected) {
+        if (document.activeElement !== ta) ta.focus();
+        if (k === 'b' && activeEditorInstance.applyBold)   activeEditorInstance.applyBold();
+        if (k === 'i' && activeEditorInstance.applyItalic) activeEditorInstance.applyItalic();
+      }
+    }
+  }
+  if (!globalHotkeyInstalled) {
+    window.addEventListener('keydown', globalHotkeyHandler, { capture: true });
+    globalHotkeyInstalled = true;
+  }
+
+  // Textarea ネイティブセッター
   const _desc = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value');
   const nativeTextareaSetter = _desc && _desc.set ? _desc.set : function(v){ this.value = v; };
+
+  // --- DOMPurify 強化（危険プロトコル遮断 / 安全なURLのみ許可） ---
+  if (!DOMPurify.__snHooksAdded) {
+    DOMPurify.addHook('uponSanitizeAttribute', (node, data) => {
+      const attr = data.attrName;
+      const val = data.attrValue || '';
+      // 許可するスキーム
+      const isHttpish = /^(https?:)?\/\//i.test(val) || /^\/(?!\/)/.test(val) || val.startsWith('#');
+      const isMailTel = /^(mailto|tel):/i.test(val);
+      const isSafeImgData = /^data:image\/(png|jpeg|jpg|webp|gif);base64,/i.test(val);
+      if (attr === 'href') {
+        if (!(isHttpish || isMailTel)) data.keepAttr = false;
+      } else if (attr === 'src') {
+        // 画像のみ data: を許可
+        if (!(isHttpish || isSafeImgData)) data.keepAttr = false;
+      }
+      // target/relの強制（リンクのみ）
+      if (node.nodeName === 'A' && attr === 'href' && data.keepAttr !== false) {
+        node.setAttribute('target', '_blank');
+        node.setAttribute('rel', 'noopener noreferrer');
+      }
+    });
+    DOMPurify.__snHooksAdded = true;
+  }
 
   // --- 国際化 (i18n) ---
   const I18N = {
@@ -79,7 +164,8 @@
       errorImageProcessing: 'Failed to process image.',
       tableEditor: 'Interactive Table Editor', addRow: 'Add Row', addCol: 'Add Column',
       deleteRow: 'Delete Row', deleteCol: 'Delete Column',
-      alignLeft: 'Align Left', alignCenter: 'Align Center', alignRight: 'Align Right'
+      alignLeft: 'Align Left', alignCenter: 'Align Center', alignRight: 'Align Right',
+      lockdownMsg: 'Preview disabled for oversized note to keep the app responsive.'
     },
     ja: {
       editor: 'エディタ', split: '分割', preview: 'プレビュー', toggleToolbar: 'ツールバー表示切替',
@@ -101,7 +187,8 @@
       errorImageProcessing: '画像の処理に失敗しました。',
       tableEditor: 'インタラクティブ テーブルエディタ', addRow: '行を追加', addCol: '列を追加',
       deleteRow: 'この行を削除', deleteCol: 'この列を削除',
-      alignLeft: '左揃え', alignCenter: '中央揃え', alignRight: '右揃え'
+      alignLeft: '左揃え', alignCenter: '中央揃え', alignRight: '右揃え',
+      lockdownMsg: 'アプリの応答性を保つため、超巨大ノートではプレビューを無効化しています。'
     }
   };
 
@@ -117,10 +204,54 @@
   const lang = resolveLang();
   const T = I18N[lang] || I18N.en;
 
+  // --- 小ユーティリティ（エスケープ類） ---
+  const escAttr = (s) => String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+  const escAlt = (s) => String(s ?? '').replace(/\]/g, '\\]').replace(/\r?\n/g, ' ');
+
+  // 2) data: URI はエンコードしない
+  const escUrl = (s) => {
+    const str = String(s ?? '');
+    if (str.startsWith('data:')) return str;
+    try { return encodeURI(str); } catch { return str; }
+  };
+
+  // ▼ 追加: Markdownのリンク先に安全な URL 文字列を生成（必要時に <...> で囲む）
+  const stripAngle = (s) => String(s ?? '').replace(/^\s*<|>\s*$/g, '');
+  const formatLinkDestination = (urlStr) => {
+    const raw = stripAngle(urlStr.trim());
+    const encoded = escUrl(raw);
+    // ) や空白, <, >, " を含むなら <...> で囲む（> は%3Eに）
+    return /[()\s<>"]/.test(encoded) ? `<${encoded.replace(/>/g, '%3E')}>` : encoded;
+  };
+
+  // ▼ 追加: 選択範囲にリンクを挿入（リンクテキスト中の ']' をエスケープ）
+  const insertLinkAtSelection = (textarea, urlStr, placeholderText) => {
+    const dest = formatLinkDestination(urlStr);
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = textarea.value.substring(start, end);
+    let linkText = selectedText || String(placeholderText ?? T.linkTextPlaceholder);
+    linkText = linkText.replace(/\]/g, '\\]');
+    const md = `[${linkText}](${dest})`;
+    textarea.setRangeText(md, start, end, 'end');
+    if (!selectedText) {
+      textarea.selectionStart = start + 1;
+      textarea.selectionEnd = start + 1 + linkText.length;
+    }
+    textarea.focus();
+    debouncedInputHandler();
+  };
+
   const STORAGE_KEY_MODE = 'snMarkdownEditorMode';
   const STORAGE_KEY_TOOLBAR_VISIBLE = 'snMarkdownToolbarVisible';
 
-  // プレビューコンテナ用のユニークなクラス名
+  // プレビューコンテナ用クラス
   const PREVIEW_CONTAINER_CLASS = 'sn-markdown-preview-container';
 
   // スコープ化されたプレビュースタイル
@@ -134,7 +265,6 @@
       font-size: 1.05rem;
       color: var(--sn-stylekit-foreground-color, #333);
     }
-    /* [BESTPRACTICE] コンテナ内の全要素に色の継承を強制し、本体CSSからの意図しない上書きを防ぐ */
     .${PREVIEW_CONTAINER_CLASS} * { color: inherit; }
     .${PREVIEW_CONTAINER_CLASS} h1, .${PREVIEW_CONTAINER_CLASS} h2, .${PREVIEW_CONTAINER_CLASS} h3, .${PREVIEW_CONTAINER_CLASS} h4, .${PREVIEW_CONTAINER_CLASS} h5, .${PREVIEW_CONTAINER_CLASS} h6 { margin-top: 24px; margin-bottom: 16px; font-weight: 600; line-height: 1.25; border-bottom: 1px solid var(--sn-stylekit-border-color, #eee); padding-bottom: .3em; }
     .${PREVIEW_CONTAINER_CLASS} h1 { font-size: 2em; }
@@ -175,21 +305,21 @@
     @media (prefers-color-scheme: dark) {
       .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-keyword, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-selector-tag, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-subst, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-deletion, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-meta, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-selector-class { color: #ff7b72 !important; }
       .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-string, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-doctag { color: #a5d6ff !important; }
-      .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-title, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-section, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-selector-id, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-type, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-symbol, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-bullet, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-link { color: #d2a8ff !important; }
+      .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-title, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-section, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-selector-id, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-type, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-symbol, .${PREVIEW_CONTAINER_CLASS} .hljs-bullet, .${PREVIEW_CONTAINER_CLASS} .hljs-link { color: #d2a8ff !important; }
       .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-addition { color: #7ee787 !important; }
       .${PREVIEW_CONTAINER_CLASS} .code-language-label { background-color: rgba(0, 0, 0, 0.3); }
     }
   `;
 
-  // --- スタイル定義 (UI部分とプレビュー部分) ---
+  // --- スタイル定義 (UI/プレビュー/ロックダウンUI) ---
   GM_addStyle(`
-    /* UI STYLES */
     .sn-markdown-hidden { display: none !important; }
     .sn-markdown-full-height { height: 100%; }
     .markdown-editor-container { display: flex; flex-direction: column; height: 100%; overflow: hidden; border: 1px solid var(--sn-stylekit-border-color, #e0e0e0); border-radius: 4px; }
     .mode-toggle-bar { flex-shrink: 0; padding: 4px 10px; background-color: var(--sn-stylekit-editor-background-color, #f9f9f9); border-bottom: 1px solid var(--sn-stylekit-border-color, #e0e0e0); display: flex; align-items: center; gap: 5px; }
     .mode-toggle-button { padding: 5px 12px; border: 1px solid var(--sn-stylekit-border-color, #ccc); border-radius: 6px; cursor: pointer; background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-foreground-color, #333); font-size: 13px; }
     .mode-toggle-button.active { background-color: var(--sn-stylekit-primary-color, #346df1); color: var(--sn-stylekit-primary-contrast-color, #fff); border-color: var(--sn-stylekit-primary-color, #346df1); }
+    .mode-toggle-button[disabled] { opacity: .55; cursor: not-allowed; }
     .toolbar-toggle-button { margin-left: auto; padding: 5px 8px; font-size: 13px; display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; }
     .toolbar-toggle-button.active { background-color: var(--sn-stylekit-secondary-background-color, #f0f0f0); }
     .pdf-export-button { padding: 4px 10px; font-size: 12px; }
@@ -209,6 +339,27 @@
     .markdown-editor-container.mode-preview .${PREVIEW_CONTAINER_CLASS} { display: block; }
     .markdown-editor-container.mode-split .custom-markdown-textarea, .markdown-editor-container.mode-split .${PREVIEW_CONTAINER_CLASS} { display: block; flex-basis: 50%; width: 50%; }
     .markdown-editor-container.mode-split .${PREVIEW_CONTAINER_CLASS} { border-left: 1px solid var(--sn-stylekit-border-color, #e0e0e0); }
+
+    /* チャンク仮想化 */
+    .${PREVIEW_CONTAINER_CLASS} .preview-chunk {
+      content-visibility: auto;
+      contain-intrinsic-size: 1000px;
+      contain: content;
+      margin-bottom: 12px;
+    }
+
+    /* ロックダウン表示 */
+    .lockdown-indicator {
+      margin-left: 6px;
+      font-size: 12px;
+      color: #b00020;
+      background: #fdecea;
+      border: 1px solid #f5c2c7;
+      padding: 3px 6px;
+      border-radius: 4px;
+      user-select: none;
+    }
+
     @media print {
       body > *:not(.print-container) { display: none !important; }
       .print-container > style { display: none !important; }
@@ -226,6 +377,8 @@
       pre, blockquote, table, img, h1, h2, h3, h4 { page-break-inside: avoid; }
       h1, h2, h3 { page-break-after: avoid; }
     }
+
+    /* Modal / Table editor styles */
     .sn-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); z-index: 9999; display: flex; align-items: center; justify-content: center; }
     .sn-modal-content { background-color: var(--sn-stylekit-background-color, #fff); color: var(--sn-stylekit-foreground-color, #333); padding: 20px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: flex; flex-direction: column; max-height: 90vh; }
     .sn-modal-content-image { max-width: 500px; width: 90%; }
@@ -296,7 +449,6 @@
     };
   }
 
-  // SVGアイコンを安全に生成するヘルパー関数
   function createIcon(pathData) {
     const svgNS = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(svgNS, 'svg');
@@ -309,7 +461,7 @@
   }
 
   // =========================================================================
-  // ▼▼▼ タイトルからエディタへのフォーカス移動に関するロジック ▼▼▼
+  // ▼▼▼ タイトルからエディタへのフォーカス移動 ▼▼▼
   // =========================================================================
 
   function setupTitleEnterListener() {
@@ -347,7 +499,7 @@
   }
 
   // =========================================================================
-  // ▲▲▲ ここまでがフォーカス移動関連ロジック ▲▲▲
+  // ▲▲▲ フォーカス移動関連 ▲▲▲
   // =========================================================================
 
   function setupMarkdownEditor(originalTextarea, isNewNoteSetup = false) {
@@ -357,6 +509,9 @@
     }
     if (originalTextarea.dataset.markdownReady) return;
     originalTextarea.dataset.markdownReady = 'true';
+
+    // インスタンスローカルの破棄フラグ（※グローバルと干渉しない）
+    let destroyed = false;
 
     marked.setOptions({ gfm: true, breaks: true, smartLists: true, langPrefix: 'language-' });
 
@@ -387,7 +542,10 @@
     };
 
     const getFullContent = () => {
-      const mainContent = markdownTextarea.value.trim();
+      // 改行正規化＋末尾だけトリム（先頭空行は保持）
+      const mainContent = markdownTextarea.value
+        .replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+        .trimEnd();
       const defs = definitionsText.replace(DEFINITIONS_HEADER, '').replace(DEFINITIONS_FOOTER, '').trim();
       if (defs) {
         return `${mainContent}\n\n${DEFINITIONS_HEADER}\n${defs}\n${DEFINITIONS_FOOTER}`;
@@ -399,6 +557,14 @@
       return new Promise((resolve, reject) => {
         if (!file.type.startsWith('image/')) {
           return reject(new Error('File is not an image.'));
+        }
+        // animated GIF は縮小・再エンコードすると壊れるので、そのまま data: にする
+        if (/^image\/gif$/i.test(file.type)) {
+          const fr = new FileReader();
+          fr.onload = () => resolve(fr.result);
+          fr.onerror = () => reject(new Error('Failed to read GIF.'));
+          fr.readAsDataURL(file);
+          return;
         }
         const reader = new FileReader();
         reader.onload = (event) => {
@@ -425,10 +591,19 @@
               ctx.fillRect(0, 0, width, height);
             }
             ctx.drawImage(img, 0, 0, width, height);
-            const dataUrl = canvas.toDataURL(
-              preserveAlpha ? 'image/png' : 'image/jpeg',
-              preserveAlpha ? undefined : JPEG_QUALITY
-            );
+
+            // 非透過は WebP を試し、ダメなら JPEG へ（PNG/WEBPはそのまま）
+            let dataUrl;
+            if (!preserveAlpha) {
+              try {
+                dataUrl = canvas.toDataURL('image/webp', JPEG_QUALITY);
+                if (!/^data:image\/webp;/.test(dataUrl)) throw new Error('no-webp');
+              } catch {
+                dataUrl = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
+              }
+            } else {
+              dataUrl = canvas.toDataURL('image/png');
+            }
             resolve(dataUrl);
           };
           img.onerror = () => reject(new Error('Failed to load image.'));
@@ -447,7 +622,11 @@
       const textAfter = textarea.value.substring(end, end + suffix.length);
       if (textBefore === prefix && textAfter === suffix) {
         textarea.setRangeText(selectedText, start - prefix.length, end + suffix.length, 'select');
-      } else if (selectedText.startsWith(prefix) && selectedText.endsWith(suffix)) {
+      } else if (
+        // 言語指定付き ```lang も許可
+        (prefix === '```\n' && selectedText.startsWith('```') && selectedText.endsWith(suffix)) ||
+        (selectedText.startsWith(prefix) && selectedText.endsWith(suffix))
+      ) {
         const unwrappedText = selectedText.slice(prefix.length, -suffix.length || undefined);
         textarea.setRangeText(unwrappedText, start, end, 'select');
       } else {
@@ -469,9 +648,9 @@
       const timestamp = new Date();
       const finalAltText = altText || `${T.pastedImageAltText} ${timestamp.toLocaleString(lang)}`;
       const refId = `image-ref-${timestamp.getTime()}`;
-      const markdownImageRef = `![${finalAltText}][${refId}]`;
+      const markdownImageRef = `![${escAlt(finalAltText)}][${refId}]`;
       applyMarkdown(markdownTextarea, markdownImageRef);
-      const markdownImageDef = `[${refId}]: ${base64data}`;
+      const markdownImageDef = `[${refId}]: ${escUrl(base64data)}`;
       let currentDefs = definitionsText.replace(DEFINITIONS_HEADER, '').replace(DEFINITIONS_FOOTER, '').trim();
       currentDefs = (currentDefs ? currentDefs + '\n' : '') + markdownImageDef;
       definitionsText = `${DEFINITIONS_HEADER}\n${currentDefs}\n${DEFINITIONS_FOOTER}`;
@@ -481,16 +660,18 @@
     const textToTable = (text) => {
       const rows = text.trim().split('\n').map(row => row.split('\t'));
       const colCount = Math.max(...rows.map(row => row.length));
-      let markdown = `| ${rows[0].map(h => h || ' ').join(' | ')} |\n`;
+      const esc = (s) => String(s ?? '').replace(/\|/g, '\\|').replace(/`/g, '\\`');
+      let markdown = `| ${rows[0].map(h => esc(h) || ' ').join(' | ')} |\n`;
       markdown += `|${' :--- |'.repeat(colCount)}\n`;
       for (let i = 1; i < rows.length; i++) {
-        markdown += `| ${rows[i].map(c => c || ' ').join(' | ')} |\n`;
+        markdown += `| ${rows[i].map(c => esc(c) || ' ').join(' | ')} |\n`;
       }
       return markdown;
     };
 
     const handlePaste = async (event) => {
       const clipboardData = event.clipboardData;
+      if (!clipboardData) return;
       const imageItem = Array.from(clipboardData.items).find(item => item.type.startsWith('image/'));
       if (imageItem) {
         const file = imageItem.getAsFile();
@@ -558,6 +739,15 @@
       document.addEventListener('keydown', onKey, { passive: false });
       return () => document.removeEventListener('keydown', onKey);
     }
+
+    const isSafeInputUrl = (urlStr, { allowImageData = false } = {}) => {
+      const s = (urlStr || '').trim();
+      if (!s) return false;
+      if (/^#/.test(s) || /^\/(?!\/)/.test(s)) return true;
+      if (/^(https?:|mailto:|tel:)/i.test(s)) return true;
+      if (allowImageData && /^data:image\/(png|jpeg|jpg|webp|gif);base64,/i.test(s)) return true;
+      return false;
+    };
 
     const openImageInserterModal = (onInsertCallback) => {
       const modalOverlay = document.createElement('div');
@@ -652,7 +842,8 @@
         const altText = altInput.value.trim();
         if (currentTab === 'url') {
           const url = urlInput.value.trim();
-          if (url) { onInsertCallback(url, altText, false); closeModal(); }
+          if (isSafeInputUrl(url)) { onInsertCallback(url, altText, false); closeModal(); }
+          else { urlInput.focus(); urlInput.select(); }
         } else {
           if (base64data) { onInsertCallback(base64data, altText, true); closeModal(); }
         }
@@ -688,7 +879,7 @@
           for (let c = 0; c < colCount; c++) {
             const cellValue = tableData.rows[r][c] || '';
             const placeholder = r === 0 ? 'Header' : 'Cell';
-            bodyHtml += `<td><input class="cell-input" type="text" value="${cellValue.replace(/"/g, '&quot;')}" placeholder="${placeholder}" data-row="${r}" data-col="${c}"></td>`;
+            bodyHtml += `<td><input class="cell-input" type="text" value="${escAttr(cellValue)}" placeholder="${escAttr(placeholder)}" data-row="${r}" data-col="${c}"></td>`;
           }
           bodyHtml += `<td class="control-cell"></td></tr>`;
         }
@@ -888,6 +1079,8 @@
     const editorButton = document.createElement('button'); editorButton.className = 'mode-toggle-button'; editorButton.textContent = T.editor;
     const splitButton = document.createElement('button'); splitButton.className = 'mode-toggle-button'; splitButton.textContent = T.split;
     const previewButton = document.createElement('button'); previewButton.className = 'mode-toggle-button'; previewButton.textContent = T.preview;
+    const lockdownIndicator = document.createElement('span'); lockdownIndicator.className = 'lockdown-indicator'; lockdownIndicator.textContent = T.lockdownMsg; lockdownIndicator.style.display = 'none';
+
     const toolbarToggleButton = document.createElement('button');
     toolbarToggleButton.className = 'mode-toggle-button toolbar-toggle-button';
     toolbarToggleButton.title = T.toggleToolbar;
@@ -903,10 +1096,33 @@
 
     markdownTextarea.addEventListener('paste', handlePaste);
 
-    // SVGを安全なパスデータとして定義
+    // --- 先行宣言（applyLinePrefix が参照） ---
+    function getLineRangeForSelection(text, selStart, selEnd) {
+      const lineStart = text.lastIndexOf('\n', selStart - 1) + 1;
+      let lineEnd = text.indexOf('\n', selEnd);
+      if (lineEnd === -1) lineEnd = text.length;
+      return { lineStart, lineEnd };
+    }
+
+    // 3) 行頭系操作：プレフィクスの付与/解除をトグル
+    function applyLinePrefix(textarea, prefix) {
+      const val = textarea.value;
+      const selStart = textarea.selectionStart;
+      const selEnd   = textarea.selectionEnd;
+      const { lineStart, lineEnd } = getLineRangeForSelection(val, selStart, selEnd);
+      const lines = val.slice(lineStart, lineEnd).split('\n');
+      const allHave = lines.every(l => l.startsWith(prefix) || l.trim() === '');
+      const next = allHave
+        ? lines.map(l => l.startsWith(prefix) ? l.slice(prefix.length) : l)
+        : lines.map(l => l ? prefix + l : l);
+      textarea.setRangeText(next.join('\n'), lineStart, lineEnd, 'end');
+      textarea.focus();
+      debouncedInputHandler();
+    }
+
+    // --- Toolbar buttons ---
     const toolbarButtons = [
       { type: 'select', name: 'heading', options: [{ value: 'p', text: T.paragraph }, { value: 'h1', text: T.heading1 }, { value: 'h2', text: T.heading2 }, { value: 'h3', text: T.heading3 }, { value: 'h4', text: T.heading4 }], action: (prefix) => {
-        // ▼ 見出しセレクタ：複数行対応
         const val = markdownTextarea.value;
         const selStart = markdownTextarea.selectionStart;
         const selEnd   = markdownTextarea.selectionEnd;
@@ -916,7 +1132,7 @@
         const block = val.slice(lineStart, lineEnd);
         const lines = block.split('\n');
         const cleaned = lines.map(line => {
-          if (!line.trim()) return line; // 空行は素通し
+          if (!line.trim()) return line;
           const withoutHeading = line.replace(/^\s*#{1,6}\s+/, '');
           return prefix ? `${prefix} ${withoutHeading}` : withoutHeading;
         });
@@ -929,27 +1145,37 @@
       { type: 'button', name: 'B', title: T.bold, action: () => applyMarkdown(markdownTextarea, '**', '**', T.boldPlaceholder) },
       { type: 'button', name: 'I', title: T.italic, action: () => applyMarkdown(markdownTextarea, '*', '*', T.italicPlaceholder) },
       { type: 'button', name: 'S', title: T.strikethrough, action: () => applyMarkdown(markdownTextarea, '~~', '~~', T.strikethroughPlaceholder) },
-      { type: 'button', name: '`', title: T.inlineCode, action: () => applyMarkdown(markdownTextarea, '`', '`', T.codePlaceholder) },
-      { type: 'button', name: '“ ”', title: T.quote, action: () => applyMarkdown(markdownTextarea, '> ', '', T.quotePlaceholder) },
-      { type: 'button', name: '•', title: T.list, action: () => applyMarkdown(markdownTextarea, '- ', '', T.listItemPlaceholder) },
-      { type: 'button', name: '1.', title: T.numberedList, action: () => applyMarkdown(markdownTextarea, '1. ', '', T.listItemPlaceholder) },
-      { type: 'button', name: '☑', title: T.checklist, action: () => applyMarkdown(markdownTextarea, '- [ ] ', '', T.taskPlaceholder) },
+      // 9) インラインコード/コードブロック自動切替
+      { type: 'button', name: '`', title: T.inlineCode, action: () => {
+        const { selectionStart: s, selectionEnd: e, value: v } = markdownTextarea;
+        const sel = v.slice(s, e);
+        if (sel.includes('\n')) { applyMarkdown(markdownTextarea, '```\n', '\n```', T.codePlaceholder); }
+        else { applyMarkdown(markdownTextarea, '`', '`', T.codePlaceholder); }
+      }},
+      // 3) 行頭系は専用ロジックに
+      { type: 'button', name: '“ ”', title: T.quote,        action: () => applyLinePrefix(markdownTextarea, '> ') },
+      { type: 'button', name: '•',   title: T.list,         action: () => applyLinePrefix(markdownTextarea, '- ') },
+      { type: 'button', name: '1.',  title: T.numberedList, action: () => applyLinePrefix(markdownTextarea, '1. ') },
+      { type: 'button', name: '☑',  title: T.checklist,    action: () => applyLinePrefix(markdownTextarea, '- [ ] ') },
       { type: 'button', name: '</>', title: T.codeBlock, action: () => applyMarkdown(markdownTextarea, '```\n', '\n```', T.codePlaceholder) },
       { type: 'icon', title: T.image, path: 'M21 19V5 c 0 -1.1 -0.9 -2 -2 -2 H5 c -1.1 0 -2 0.9 -2 2 v14 c 0 1.1 0.9 2 2 2 h14 c 1.1 0 2 -0.9 2 -2 z M8.5 13.5 l 2.5 3.01 L14.5 12 l 4.5 6 H5 l 3.5 -4.5 z', action: () => {
         openImageInserterModal((data, altText, isReference) => {
           if (isReference) {
             insertImageAsReference(data, altText);
           } else {
-            const markdown = `![${altText}](${data})`;
+            const dest = formatLinkDestination(data);
+            const markdown = `![${escAlt(altText)}](${dest})`;
             applyMarkdown(markdownTextarea, markdown);
           }
         });
       }},
       { type: 'icon', title: T.link, path: 'M3.9 12 c 0 -1.71 1.39 -3.1 3.1 -3.1 h4 V7 H7 c -2.76 0 -5 2.24 -5 5 s2.24 5 5 5 h4 v-1.9 H7 c -1.71 0 -3.1 -1.39 -3.1 -3.1 z M8 13 h8 v-2 H8 v2 z m9 -6 h-4 v1.9 h4 c 1.71 0 3.1 1.39 3.1 3.1 s -1.39 3.1 -3.1 3.1 h-4 V17 h4 c 2.76 0 -5 -2.24 -5 -5 s -2.24 -5 -5 -5 z', action: () => {
         const url = prompt(T.linkPrompt, 'https://');
-        if (url) applyMarkdown(markdownTextarea, '[', `](${url})`, T.linkTextPlaceholder);
+        if (isSafeInputUrl(url)) {
+          insertLinkAtSelection(markdownTextarea, url.trim(), T.linkTextPlaceholder);
+        }
       }},
-      { type: 'icon', title: T.insertTable, path: 'M20 4 H4 c -1.1 0 -2 0.9 -2 2 v12 c 0 1.1 0.9 2 2 2 h16 c 1.1 0 2 -0.9 2 -2 V6 c 0 -1.1 -0.9 -2 -2 -2 z M8 10 H4 V6 h4 v4 z m6 0 h-4 V6 h4 v4 z m6 0 h-4 V6 h4 v4 z M8 14 H4 v4 h4 v-4 z m6 0 h-4 v4 h4 v-4 z m6 0 h-4 v4 h4 v-4 z', action: () => {
+      { type: 'icon', title: T.insertTable, path: 'M20 4 H4 c -1.1 0 -2 0.9 -2 2 v12 c 0 1.1 0.9 2 2 2 h16 c 1.1 0 2 -0.9 2 -2 V6 c 0 -1.1 -0.9 -2 -2 -2 z M8 10 H4 V6 h4 v4 z m6 0 h-4 V6 h4 v4 z m6 0 h-4 V6 h4 v4 z M8 14 H4 v4h4 v-4 z m6 0 h-4 v4 h4 v-4 z m6 0 h-4 v4 h4 v-4 z', action: () => {
         const start = markdownTextarea.selectionStart;
         const end = markdownTextarea.selectionEnd;
         const selectedText = markdownTextarea.value.substring(start, end);
@@ -1009,10 +1235,10 @@
       if (lineEnd === -1) { lineEnd = text.length; }
       const line = text.substring(lineStart, lineEnd);
       let headingLevel = 'p';
-      if (line.startsWith('#### ')) { headingLevel = 'h4'; }
-      else if (line.startsWith('### ')) { headingLevel = 'h3'; }
-      else if (line.startsWith('## ')) { headingLevel = 'h2'; }
-      else if (line.startsWith('# ')) { headingLevel = 'h1'; }
+      if (/^\s*####\s/.test(line)) { headingLevel = 'h4'; }
+      else if (/^\s*###\s/.test(line)) { headingLevel = 'h3'; }
+      else if (/^\s*##\s/.test(line))  { headingLevel = 'h2'; }
+      else if (/^\s*#\s/.test(line))   { headingLevel = 'h1'; }
       if (headingSelect.value !== headingLevel) { headingSelect.value = headingLevel; }
     };
     const debouncedUpdateHeadingSelector = debounce(updateHeadingSelector, 150);
@@ -1023,84 +1249,249 @@
     const contentWrapper = document.createElement('div');
     contentWrapper.className = 'editor-preview-wrapper';
     contentWrapper.append(markdownTextarea, previewContainer);
-    modeBar.append(editorButton, splitButton, previewButton, toolbarToggleButton, printButton);
+    modeBar.append(editorButton, splitButton, previewButton, lockdownIndicator, toolbarToggleButton, printButton);
     container.append(modeBar, toolbar, contentWrapper);
     editorWrapper.after(container);
 
-    const updatePreview = () => {
+    // =========================
+    // ▼ ストリーミング・プレビュー
+    // =========================
+    function splitMarkdownIntoChunks(fullMd) {
+      // コードフェンスや表の途中で切らないように配慮
+      const lines = fullMd.split('\n');
+      const chunks = [];
+      let buf = [];
+      let size = 0;
+      let inFence = false;
+      let fenceMarker = null; // ``` or ~~~
+      let inTable = false;
+      let prevLine = '';
+
+      for (const rawLine of lines) {
+        const line = rawLine;
+        const fence = line.match(/^(\s*)(`{3,}|~{3,})/);
+        if (fence) {
+          const mark = fence[2][0] === '`' ? '```' : '~~~';
+          if (!inFence) {
+            inFence = true; fenceMarker = mark;
+          } else if (mark === fenceMarker && line.trim().startsWith(mark)) {
+            inFence = false; fenceMarker = null;
+          }
+        }
+
+        // テーブル検出：ヘッダ行の直後に区切り行 → inTable=true。空行や非パイプ行で抜ける
+        const isHeaderLike   = /^\s*\|.*\|\s*$/.test(prevLine);
+        const isSeparatorRow = /^\s*\|?\s*:?-{3,}(?:\s*\|+\s*:?-{3,})+\s*\|?\s*$/.test(line);
+        if (!inFence) {
+          if (!inTable && isHeaderLike && isSeparatorRow) inTable = true;
+          if (inTable && !/^\s*\|/.test(line) && !isSeparatorRow) inTable = false;
+        }
+
+        buf.push(line);
+        size += line.length + 1;
+        const isBoundary = !inFence && !inTable && (!line.trim() || /^#{1,6}\s/.test(line));
+        if (size >= MD_CHUNK_TARGET && isBoundary) {
+          chunks.push(buf.join('\n')); buf = []; size = 0;
+        }
+        prevLine = line;
+      }
+      if (buf.length) chunks.push(buf.join('\n'));
+      return chunks;
+    }
+
+    let previewRenderToken = 0;
+    let observeChunkCodes = null;
+
+    function postProcessPreview(containerEl) {
+      // ① チェックボックスのグローバルインデックス化（チャンクを跨いで一意）
+      let globalTaskIndex = 0;
+
+      if (!containerEl.dataset.copyDelegationAttached) {
+        containerEl.addEventListener('click', (e) => {
+          const btn = e.target.closest('.copy-code-button');
+          if (!btn) return;
+          const pre = btn.closest('pre');
+          const codeEl = pre && pre.querySelector('code');
+          if (!codeEl) return;
+          navigator.clipboard.writeText(codeEl.innerText).then(() => {
+            btn.textContent = T.copied; btn.classList.add('copied');
+            setTimeout(() => { btn.textContent = T.copy; btn.classList.remove('copied'); }, 2000);
+          }).catch(() => {
+            btn.textContent = T.copyError;
+            setTimeout(() => { btn.textContent = T.copy; }, 2000);
+          });
+        }, { passive: true });
+        containerEl.dataset.copyDelegationAttached = '1';
+      }
+
+      const highlightQueue = [];
+      let highlighting = false;
+
+      const ensureDecorations = (preEl) => {
+        if (!preEl.querySelector('.code-language-label')) {
+          const label = document.createElement('div');
+          label.className = 'code-language-label';
+          label.textContent = preEl.dataset.explicitLang || 'code';
+          preEl.appendChild(label);
+        }
+        if (!preEl.querySelector('.copy-code-button')) {
+          const btn = document.createElement('button');
+          btn.className = 'copy-code-button';
+          btn.textContent = T.copy;
+          btn.setAttribute('aria-label', T.copyAriaLabel);
+          preEl.appendChild(btn);
+        }
+      };
+
+      const pumpHighlight = () => {
+        if (highlighting) return;
+        const next = highlightQueue.shift();
+        if (!next) return;
+        highlighting = true;
+        runIdle(() => {
+          try {
+            if (window.hljs && !next.classList.contains('hljs')) {
+              hljs.highlightElement(next);
+            }
+            const pre = next.closest('pre');
+            if (pre) ensureDecorations(pre);
+          } finally {
+            highlighting = false;
+            pumpHighlight();
+          }
+        });
+      };
+
+      const io = new IntersectionObserver(entries => {
+        for (const ent of entries) {
+          if (ent.isIntersecting) {
+            const codeEl = ent.target;
+            const langMatch = Array.from(codeEl.classList).find(cls => cls.startsWith('language-'));
+            if (langMatch) {
+              const pre = codeEl.closest('pre');
+              if (pre) pre.dataset.explicitLang = langMatch.replace('language-','');
+            }
+            highlightQueue.push(codeEl);
+            pumpHighlight();
+          }
+        }
+      }, { root: previewContainer, rootMargin: (devMemGB <= 4 ? '80px 0px' : '200px 0px'), threshold: 0.01 });
+
+      const processWithin = (root) => {
+        root.querySelectorAll('pre code').forEach(code => io.observe(code));
+        root.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+          const li = cb.closest('li'); if (li) {
+            li.classList.add('task-list-item'); if (cb.checked) li.classList.add('completed');
+            const idx = globalTaskIndex++;
+            // 1) クリック可能化 + A11y
+            cb.removeAttribute('disabled');
+            cb.tabIndex = 0;
+            cb.setAttribute('data-task-index', String(idx));
+            cb.addEventListener('click',  (e) => { e.preventDefault(); handlePreviewChecklistToggle(idx); });
+            cb.addEventListener('keydown',(e) => {
+              if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); handlePreviewChecklistToggle(idx); }
+            });
+          }
+        });
+        root.querySelectorAll('a[href]').forEach(a => {
+          a.setAttribute('target','_blank'); a.setAttribute('rel','noopener noreferrer');
+        });
+      };
+
+      processWithin(containerEl);
+      const processWithinFn = (root) => processWithin(root);
+      processWithinFn.cleanup = () => io.disconnect();
+      return processWithinFn;
+    }
+
+    // 8) DOMPurify の URL ガードをわずかに強化（srcset禁止）
+    function sanitizeHtml(html) {
+      return DOMPurify.sanitize(html, {
+        USE_PROFILES: { html: true },
+        ALLOWED_ATTR: [
+          'href','src','alt','title','class','type','disabled','checked',
+          'data-task-index','data-processed','data-explicit-lang','rel','target',
+          // 将来のA11y拡張用
+          'aria-label','aria-labelledby','aria-describedby','role'
+        ],
+        ADD_TAGS: ['span','input'],
+        FORBID_TAGS: ['style','iframe','form'],
+        FORBID_ATTR: ['xlink:href', 'srcset']
+      });
+    }
+
+    function updatePreview() {
       try {
+        if (isLockdown) return; // ロックダウン時は描画しない
+        if (observeChunkCodes && observeChunkCodes.cleanup) {
+          // 旧Observerを破棄
+          observeChunkCodes.cleanup();
+        }
         const mainContent = markdownTextarea.value;
         const unwrappedDefs = definitionsText.replace(DEFINITIONS_HEADER, '').replace(DEFINITIONS_FOOTER, '').trim();
-        const contentForPreview = `${mainContent}\n\n${unwrappedDefs}`;
-        const dirtyHtml = marked.parse(contentForPreview);
-        const sanitizedHtml = DOMPurify.sanitize(dirtyHtml, {
-          USE_PROFILES: { html: true },
-          ADD_ATTR: ['class', 'type', 'disabled', 'checked', 'data-task-index', 'data-processed', 'data-explicit-lang'],
-          ADD_TAGS: ['span', 'input'],
-        });
-        previewContainer.innerHTML = sanitizedHtml;
+        const fullMd = `${mainContent}\n\n${unwrappedDefs ? unwrappedDefs : ''}`;
 
-        // 言語ラベル付け・ハイライト
-        previewContainer.querySelectorAll('pre > code[class*="language-"]').forEach(codeEl => {
-          const langMatch = Array.from(codeEl.classList).find(cls => cls.startsWith('language-'));
-          if (langMatch) { const lang = langMatch.replace('language-', ''); if (lang) { codeEl.parentElement.dataset.explicitLang = lang; } }
-        });
-        previewContainer.querySelectorAll('pre code').forEach(codeEl => {
-          if (!codeEl.classList.contains('hljs')) {
-            hljs.highlightElement(codeEl);
-          }
-        });
-        previewContainer.querySelectorAll('pre').forEach(preEl => {
-          if (preEl.dataset.processed) return;
-          preEl.dataset.processed = 'true';
-          const codeEl = preEl.querySelector('code');
-          if (!codeEl) return;
-          const langLabel = document.createElement('div'); langLabel.className = 'code-language-label'; langLabel.textContent = preEl.dataset.explicitLang || 'code'; preEl.appendChild(langLabel);
-          const copyButton = document.createElement('button'); copyButton.className = 'copy-code-button'; copyButton.textContent = T.copy; copyButton.setAttribute('aria-label', T.copyAriaLabel); preEl.appendChild(copyButton);
-          copyButton.addEventListener('click', (e) => {
-            e.stopPropagation();
-            navigator.clipboard.writeText(codeEl.innerText).then(() => {
-              copyButton.textContent = T.copied; copyButton.classList.add('copied');
-              setTimeout(() => { copyButton.textContent = T.copy; copyButton.classList.remove('copied'); }, 2000);
-            }).catch(err => {
-              console.error('Failed to copy code block.', err); copyButton.textContent = T.copyError;
-              setTimeout(() => { copyButton.textContent = T.copy; }, 2000);
-            });
+        observeChunkCodes = null;
+        const token = ++previewRenderToken;
+        const smallNote = mainContent.length < HEAVY_NOTE_THRESHOLD;
+
+        if (smallNote) {
+          const dirtyHtml = marked.parse(fullMd);
+          const sanitizedHtml = sanitizeHtml(dirtyHtml);
+          previewContainer.innerHTML = sanitizedHtml;
+          observeChunkCodes = postProcessPreview(previewContainer);
+          return;
+        }
+
+        // 重モード：ストリーミング
+        previewContainer.innerHTML = '';
+        const chunks = splitMarkdownIntoChunks(fullMd);
+        const initial = Math.min(chunks.length, MAX_INITIAL_CHUNKS);
+
+        const frag = document.createDocumentFragment();
+        for (let i = 0; i < initial; i++) {
+          if (token !== previewRenderToken) return;
+          const html = sanitizeHtml(marked.parse(chunks[i]));
+          const section = document.createElement('section');
+          section.className = 'preview-chunk';
+          section.innerHTML = html;
+          frag.appendChild(section);
+        }
+        previewContainer.appendChild(frag);
+
+        observeChunkCodes = postProcessPreview(previewContainer);
+        if (observeChunkCodes) {
+          Array.from(previewContainer.children).forEach(ch => observeChunkCodes(ch));
+        }
+
+        let idx = initial;
+        const pump = () => {
+          if (token !== previewRenderToken) return;
+          if (idx >= chunks.length) return;
+          runIdle(() => {
+            if (token !== previewRenderToken) return;
+            const html = sanitizeHtml(marked.parse(chunks[idx]));
+            const section = document.createElement('section');
+            section.className = 'preview-chunk';
+            section.innerHTML = html;
+            previewContainer.appendChild(section);
+            if (observeChunkCodes) observeChunkCodes(section);
+            idx++;
+            if (idx < chunks.length) pump();
           });
-        });
-
-        // チェックリストの同期トグル
-        previewContainer.querySelectorAll('input[type="checkbox"]').forEach((checkbox, index) => {
-          const listItem = checkbox.closest('li');
-          if (listItem) {
-            listItem.classList.add('task-list-item');
-            if (checkbox.checked) {
-              listItem.classList.add('completed');
-            }
-            checkbox.addEventListener('click', (e) => {
-              e.preventDefault();
-              handlePreviewChecklistToggle(index);
-            });
-          }
-        });
-
-        // 安全な外部リンク化
-        previewContainer.querySelectorAll('a[href]').forEach(a => {
-          a.setAttribute('target', '_blank');
-          a.setAttribute('rel', 'noopener noreferrer');
-        });
-
+        };
+        pump();
       } catch (e) {
         console.error("Error updating preview:", e);
         previewContainer.innerHTML = `<div class="preview-error"><strong>${T.previewErrorTitle}</strong><br><pre>${e.stack || e}</pre></div>`;
       }
-    };
+    }
 
-    const debouncedUpdatePreview = debounce(updatePreview, 250);
+    const debouncedUpdatePreview = debounce(() => updatePreview(), 250);
 
     const handlePreviewChecklistToggle = (toggledIndex) => {
       const text = markdownTextarea.value;
-      const regex = /^\s*(?:-|\*|\d+\.)\s+\[( |x)\]/gm;
+      const regex = /^\s*(?:-|\*|\d+[.)])\s+\[(?: |x|X)\]/gm;
       let currentIndex = 0;
       const newText = text.replace(regex, (original) => {
         if (currentIndex === toggledIndex) {
@@ -1129,59 +1520,105 @@
       const pos = textarea.selectionStart;
       const text = textarea.value;
       const lineStart = text.lastIndexOf('\n', pos - 1) + 1;
-      const lineEnd = text.indexOf('\n', pos);
-      const effectiveLineEnd = lineEnd === -1 ? text.length : lineEnd;
-      const line = text.substring(lineStart, effectiveLineEnd);
-      const checklistRegex = /^(\s*)(?:-|\*|\d+\.)\s\[( |x)\]/;
+      const lineEnd = text.indexOf('\n', pos) === -1 ? text.length : text.indexOf('\n', pos);
+      const line = text.substring(lineStart, lineEnd);
+      const checklistRegex = /^(\s*)(?:-|\*|\d+[.)])\s\[(?: |x|X)\]/;
       const match = line.match(checklistRegex);
       if (match && pos - lineStart <= match[0].length) {
         e.preventDefault();
         const replacement = line.includes('[ ]') ? '[x]' : '[ ]';
         const newLine = line.replace(/\[( |x)\]/, replacement);
-        markdownTextarea.value = text.substring(0, lineStart) + newLine + text.substring(effectiveLineEnd);
+        markdownTextarea.value = text.substring(0, lineStart) + newLine + text.substring(lineEnd);
         textarea.selectionStart = textarea.selectionEnd = pos;
         debouncedInputHandler();
       }
     };
     markdownTextarea.addEventListener('click', handleEditorClick);
 
-    const handleEnterKey = (e) => {
-      const textarea = e.target;
-      const pos = textarea.selectionStart;
-      const text = textarea.value;
-      const lineStart = text.lastIndexOf('\n', pos - 1) + 1;
-      const line = text.substring(lineStart, pos);
-      const listRegex = /^(\s*)((?:-|\*|\d+\.)\s(?:\[[ x]\]\s)?)(\s*.*)/;
-      const match = line.match(listRegex);
-      if (match) {
-        const content = match[3];
-        if (!content.trim()) {
-          e.preventDefault();
-          textarea.setRangeText('', lineStart, pos, 'end');
-          debouncedInputHandler();
-          return;
+    // ===== 改良版 Enter キー：リスト自動継続／終了 =====
+    function isInsideCodeFence(text, pos) {
+      // pos までの行で ``` または ~~~ の出現回数を数え、奇数ならフェンス内
+      let inFence = false;
+      let fenceMark = '';
+      let i = 0;
+      while (i < pos) {
+        const lineStart = i;
+        let lineEnd = text.indexOf('\n', lineStart);
+        if (lineEnd === -1) lineEnd = text.length;
+        const line = text.slice(lineStart, lineEnd).trim();
+        const m = line.match(/^(`{3,}|~{3,})/);
+        if (m) {
+          const mark = m[1][0] === '`' ? '```' : '~~~';
+          if (!inFence) { inFence = true; fenceMark = mark; }
+          else if (line.startsWith(fenceMark)) { inFence = false; fenceMark = ''; }
         }
-        e.preventDefault();
-        const indent = match[1];
-        let listMarker = match[2];
-        const numberedMatch = listMarker.match(/^(\d+)\.\s/);
-        if (numberedMatch) { listMarker = `${parseInt(numberedMatch[1], 10) + 1}. `; }
-        else if (listMarker.includes('[x]')) { listMarker = listMarker.replace('[x]', '[ ]'); }
-        textarea.setRangeText(`\n${indent}${listMarker}`, pos, pos, 'end');
-        debouncedInputHandler();
+        i = lineEnd + 1;
       }
-    };
-
-    // ▼▼▼ ここから Tab/Shift+Tab のインデント／アウトデント実装 ▼▼▼
-    function getLineRangeForSelection(text, selStart, selEnd) {
-      const lineStart = text.lastIndexOf('\n', selStart - 1) + 1;
-      let lineEnd = text.indexOf('\n', selEnd);
-      if (lineEnd === -1) lineEnd = text.length;
-      return { lineStart, lineEnd };
+      return inFence;
     }
 
+    const handleEnterKey = (e) => {
+      const textarea = e.target;
+      const text = textarea.value;
+      const pos = textarea.selectionStart;
+      if (textarea.selectionStart !== textarea.selectionEnd) return; // 範囲選択時は通常の改行
+
+      // コードフェンス内では何もしない
+      if (isInsideCodeFence(text, pos)) return;
+
+      const lineStart = text.lastIndexOf('\n', pos - 1) + 1;
+      let lineEnd = text.indexOf('\n', pos);
+      if (lineEnd === -1) lineEnd = text.length;
+
+      const lineFull = text.slice(lineStart, lineEnd);
+
+      // blockquote(> ...) を含む先頭構造 + 箇条書き or 番号付き or タスク
+      const m = lineFull.match(/^(\s*(?:>\s*)*)([*+-]|\d+[.)])\s(?:(\[(?: |x|X)\])\s)?(.*)$/);
+      if (!m) return; // リストではないので通常の改行
+
+      const quotePrefix = m[1] || '';              // "  > " など
+      const markerRaw   = m[2];                    // "-", "*", "+", "1.", "1)"
+      const hasCheckbox = !!m[3];                  // [ ] または [x]
+      const contentRest = m[4] || '';              // リスト内容（行末まで）
+
+      // マーカー以降、キャレットまでに実内容があるか判定
+      const prefixLen =
+        quotePrefix.length +
+        markerRaw.length + 1 +                // marker + space
+        (hasCheckbox ? (m[3].length + 1) : 0);// checkbox + space
+
+      const afterMarkerAbs = lineStart + prefixLen;
+      const beforeCaretTail = text.slice(afterMarkerAbs, pos);
+      const afterCaretTail  = text.slice(pos, lineEnd);
+
+      // ⑤ 空項目なら、マーカーのみ削除し「引用は維持」して改行（＝リストを終了）
+      if (beforeCaretTail.trim().length === 0 && afterCaretTail.trim().length === 0) {
+        e.preventDefault();
+        textarea.setRangeText('\n' + quotePrefix, lineStart, lineEnd, 'end');
+        debouncedInputHandler();
+        return;
+      }
+
+      // 2) 自動継続
+      e.preventDefault();
+
+      // 次のマーカーを作成
+      let nextMarker = markerRaw;
+      const ordered = /^\d+[.)]$/.test(markerRaw);
+      if (ordered) {
+        const num = parseInt(markerRaw, 10);
+        const punct = markerRaw.endsWith(')') ? ')' : '.';
+        nextMarker = `${num + 1}${punct}`;
+      }
+      const checkboxNext = hasCheckbox ? '[ ] ' : '';
+      const insertText = `\n${quotePrefix}${nextMarker} ${checkboxNext}`;
+
+      textarea.setRangeText(insertText, pos, pos, 'end');
+      debouncedInputHandler();
+    };
+
+    // ▼▼▼ Tab/Shift+Tab のインデント／アウトデント ▼▼▼
     function outdentOneLevel(line) {
-      // 既定: INDENT_SPACES（例: 2スペース）、Tabにも対処
       if (line.startsWith(INDENT_SPACES)) {
         return { line: line.slice(INDENT_SPACES.length), removed: INDENT_SPACES.length };
       }
@@ -1232,7 +1669,6 @@
       }
 
       if (!e.shiftKey) {
-        // インデント
         const indented = lines.map(l => INDENT_SPACES + l);
         const newBlock = indented.join('\n');
         markdownTextarea.setRangeText(newBlock, lineStart, lineEnd, 'end');
@@ -1242,7 +1678,6 @@
         markdownTextarea.selectionEnd   = selEnd   + deltaAll;
         debouncedInputHandler();
       } else {
-        // アウトデント
         let removedTotal = 0;
         let removedFirst = 0;
         const outdented = lines.map((l, i) => {
@@ -1258,7 +1693,7 @@
         debouncedInputHandler();
       }
     }
-    // ▲▲▲ Tab/Shift+Tab 実装ここまで ▲▲▲
+    // ▲▲▲ Tab/Shift+Tab ここまで ▲▲▲
 
     const cleanupOrphanedImageRefs = () => {
       const contentValue = markdownTextarea.value;
@@ -1271,7 +1706,6 @@
       const defLines = currentDefsContent.split('\n');
       const keptDefLines = defLines.filter(line => {
         const defMatch = line.match(/^\[(image-ref-\d+)\]:/);
-        // 非画像参照は常に保持。画像参照のみ未使用なら削除。
         return !defMatch || usedRefs.has(defMatch[1]);
       });
       const newDefsContent = keptDefLines.join('\n');
@@ -1283,26 +1717,69 @@
       return false;
     };
 
+    // 5) 画像参照の孤児クリーンアップは Idle で間引き
+    let cleanupPending = false;
+    const requestCleanup = () => {
+      if (cleanupPending) return;
+      cleanupPending = true;
+      runIdle(() => { cleanupPending = false; cleanupOrphanedImageRefs(); });
+    };
+
+    // ▼ ロックダウンUIの更新
+    function updateLockdownUI(noteLen) {
+      const shouldLock = noteLen >= LOCKDOWN_THRESHOLD;
+      isLockdown = shouldLock;
+
+      if (shouldLock) {
+        splitButton.disabled = true;
+        previewButton.disabled = true;
+        splitButton.title = T.lockdownMsg;
+        previewButton.title = T.lockdownMsg;
+        lockdownIndicator.style.display = 'inline-block';
+
+        if (!container.classList.contains('mode-editor')) {
+          switchMode('editor', false);
+        }
+        localStorage.setItem(STORAGE_KEY_MODE, 'editor');
+      } else {
+        if (splitButton.disabled || previewButton.disabled) {
+          splitButton.disabled = false;
+          previewButton.disabled = false;
+          splitButton.removeAttribute('title');
+          previewButton.removeAttribute('title');
+          lockdownIndicator.style.display = 'none';
+        }
+      }
+    }
+
     const handleInput = () => {
-      cleanupOrphanedImageRefs();
+      requestCleanup();
       isInternallyUpdating = true;
-      // 直接 .value を設定するだけではReactなどのフレームワークに無視されることがある
       nativeTextareaSetter.call(originalTextarea, getFullContent());
       originalTextarea.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
-      if (container.classList.contains('mode-split') || container.classList.contains('mode-preview')) {
-        debouncedUpdatePreview();
+
+      updateLockdownUI(markdownTextarea.value.length);
+
+      if (!isLockdown && (container.classList.contains('mode-split') || container.classList.contains('mode-preview'))) {
+        const len = markdownTextarea.value.length;
+        if (len >= HEAVY_NOTE_THRESHOLD) {
+          setTimeout(() => { if (!isLockdown) updatePreview(); }, 500);
+        } else {
+          debouncedUpdatePreview();
+        }
       }
       requestAnimationFrame(() => { isInternallyUpdating = false; });
     };
     debouncedInputHandler = debounce(handleInput, 300);
     markdownTextarea.addEventListener('input', debouncedInputHandler);
 
-    // ★ 外部更新の取り込み（value 変化は MutationObserver では拾えない）
+    // ★ 外部更新の取り込み
     const onHostInput = () => {
       if (isInternallyUpdating) return;
       isInternallyUpdating = true;
       extractAndSetContent(originalTextarea.value);
-      if (container.classList.contains('mode-split') || container.classList.contains('mode-preview')) {
+      updateLockdownUI(markdownTextarea.value.length);
+      if (!isLockdown && (container.classList.contains('mode-split') || container.classList.contains('mode-preview'))) {
         updatePreview();
       }
       requestAnimationFrame(() => { isInternallyUpdating = false; });
@@ -1329,18 +1806,27 @@
 
     const modeButtons = { editor: editorButton, split: splitButton, preview: previewButton };
     const switchMode = (mode, shouldFocus = true) => {
+      if (isLockdown && mode !== 'editor') {
+        mode = 'editor';
+      }
       container.classList.remove('mode-editor', 'mode-split', 'mode-preview');
       container.classList.add(`mode-${mode}`);
       Object.values(modeButtons).forEach(btn => btn.classList.remove('active'));
       modeButtons[mode].classList.add('active');
       localStorage.setItem(STORAGE_KEY_MODE, mode);
+
+      // 10) aria-pressed
+      editorButton.setAttribute('aria-pressed', String(mode==='editor'));
+      splitButton.setAttribute('aria-pressed',  String(mode==='split'));
+      previewButton.setAttribute('aria-pressed',String(mode==='preview'));
+
       markdownTextarea.removeEventListener('scroll', onEditorScroll);
       previewContainer.removeEventListener('scroll', onPreviewScroll);
       if (mode === 'split') {
         markdownTextarea.addEventListener('scroll', onEditorScroll, { passive: true });
         previewContainer.addEventListener('scroll', onPreviewScroll, { passive: true });
       }
-      if (mode === 'preview' || mode === 'split') { updatePreview(); }
+      if (!isLockdown && (mode === 'preview' || mode === 'split')) { updatePreview(); }
       if (shouldFocus && mode !== 'preview') { markdownTextarea.focus(); }
       updateHeadingSelector();
     };
@@ -1362,7 +1848,7 @@
     const handlePrint = () => {
       const printContainer = document.createElement('div');
       printContainer.className = 'print-container';
-      if (container.classList.contains('mode-editor')) {
+      if (container.classList.contains('mode-editor') || isLockdown) {
         const pre = document.createElement('pre');
         pre.className = 'raw-text-print';
         pre.textContent = markdownTextarea.value;
@@ -1381,20 +1867,68 @@
     };
     printButton.addEventListener('click', handlePrint);
 
-    // --- 初期化 ---
-    extractAndSetContent(originalTextarea.value);
-    const initialToolbarVisible = localStorage.getItem(STORAGE_KEY_TOOLBAR_VISIBLE) !== 'false';
-    toggleToolbar(initialToolbarVisible);
-    const savedMode = localStorage.getItem(STORAGE_KEY_MODE);
+    // --- アクティブインスタンスを公開（グローバルHotkeyから呼べるように） ---
+    const teardown = () => {
+      if (destroyed) return;
+      destroyed = true;
+      // （グローバルHotkeyはページ単位で1つだけ残す）
+      markdownTextarea.removeEventListener('input', debouncedInputHandler);
+      markdownTextarea.removeEventListener('click', handleEditorClick);
+      markdownTextarea.removeEventListener('paste', handlePaste);
+      originalTextarea.removeEventListener('input', onHostInput);
+      originalTextarea.removeEventListener('change', onHostInput);
+      markdownTextarea.removeEventListener('scroll', onEditorScroll);
+      previewContainer.removeEventListener('scroll', onPreviewScroll);
+      // 統合 keydown リスナの取り外し
+      markdownTextarea.removeEventListener('keydown', keydownHandler);
+      if (container && container.parentNode) {
+        container.parentNode.removeChild(container);
+      }
+      document.querySelectorAll('[data-sn-markdown-hidden-by-enhancer="1"]').forEach(el => {
+        el.classList.remove('sn-markdown-hidden', 'sn-markdown-full-height');
+        delete el.dataset.snMarkdownHiddenByEnhancer;
+      });
+      if (observeChunkCodes && observeChunkCodes.cleanup) {
+        observeChunkCodes.cleanup();
+      }
+      // beforeunload 登録の解除
+      window.removeEventListener('beforeunload', teardown);
+    };
 
-    activeEditorInstance = { textarea: markdownTextarea, switchMode: switchMode };
-    switchMode(savedMode || 'split', isNewNoteSetup);
+    activeEditorInstance = {
+      textarea: markdownTextarea,
+      switchMode: switchMode,
+      applyBold:  () => applyMarkdown(markdownTextarea, '**', '**', T.boldPlaceholder),
+      applyItalic: () => applyMarkdown(markdownTextarea, '*',  '*',  T.italicPlaceholder),
+      handlePrint: handlePrint,
+      teardown
+    };
 
-    console.log(`Markdown Editor for Standard Notes (v${GM_info.script.version}, Robust Edition) has been initialized.`);
-    if (isNewNoteSetup) { console.log('New note detected, focusing editor.'); }
+    // Keydown 統合（エディタ内のみで Enter/Tab と ⌘/Ctrl+B・I を処理）
+    const keydownHandler = (e) => {
+      // IME合成中でも Cmd/Ctrl 系は処理したい
+      if (e.isComposing && !(e.metaKey || e.ctrlKey)) return;
 
-    // ▼ 既存 Enter ハンドラ + Tab/Shift+Tab を同じ keydown に統合
-    markdownTextarea.addEventListener('keydown', (e) => {
+      // ⌘/Ctrl+B / ⌘/Ctrl+I
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey) {
+        const k = e.key.toLowerCase();
+        if (k === 'b') {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          activeEditorInstance.applyBold();
+          return;
+        }
+        if (k === 'i') {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          activeEditorInstance.applyItalic();
+          return;
+        }
+      }
+
+      // Enter / Tab の処理
       if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
         handleEnterKey(e);
         return;
@@ -1403,7 +1937,29 @@
         handleTabKey(e);
         return;
       }
-    });
+    };
+    markdownTextarea.addEventListener('keydown', keydownHandler);
+
+    // --- 初期化 ---
+    extractAndSetContent(originalTextarea.value);
+    const initialToolbarVisible = localStorage.getItem(STORAGE_KEY_TOOLBAR_VISIBLE) !== 'false';
+    toggleToolbar(initialToolbarVisible);
+
+    // 初期ロックダウン判定＆UI反映
+    updateLockdownUI(markdownTextarea.value.length);
+
+    const savedMode = localStorage.getItem(STORAGE_KEY_MODE);
+    if (isLockdown) {
+      switchMode('editor', !!isNewNoteSetup);
+    } else {
+      switchMode(savedMode || 'split', isNewNoteSetup);
+    }
+
+    console.log(`Markdown Editor for Standard Notes (v${(GM_info && GM_info.script && GM_info.script.version) || 'unknown'}, Stream+Lockdown+Hardened Edition) initialized.`);
+    if (isNewNoteSetup) { console.log('New note detected, focusing editor.'); }
+
+    // 破棄/クリーンアップ
+    window.addEventListener('beforeunload', teardown);
   }
 
   function initiateEditorSetup(editor, attempts = 0) {
@@ -1436,34 +1992,42 @@
           if (editor && !editor.dataset.markdownReady) {
             editorNeedsSetup = true;
             editorInstance = editor;
-            break;
+            // break せずに最後に見つかったものを採用してもOK（堅牢化）
           }
         }
       }
-      if (editorNeedsSetup) break;
     }
 
     if (editorNeedsSetup) {
+      // ③ 旧インスタンスを正しく破棄
+      if (activeEditorInstance?.teardown) {
+        try { activeEditorInstance.teardown(); } catch (_) {}
+      }
       const oldCustomEditor = document.querySelector('.markdown-editor-container');
       if (oldCustomEditor) oldCustomEditor.remove();
       initiateEditorSetup(editorInstance);
     }
 
-    // タイトル欄の監視を常に試みる
+    // タイトル欄の監視
     setupTitleEnterListener();
 
-    // エディタがDOMから削除された場合のクリーンアップ処理
+    // エディタがDOMから削除された場合のクリーンアップ
     const customEditor = document.querySelector('.markdown-editor-container');
     if (customEditor && !document.querySelector('#note-text-editor')) {
-      customEditor.remove();
+      // 旧インスタンスを正しく破棄
+      if (activeEditorInstance?.teardown) {
+        try { activeEditorInstance.teardown(); } catch (_) {}
+      }
       activeEditorInstance = null;
-      document.querySelectorAll('[data-sn-markdown-hidden-by-enhancer="1"]').forEach(el => {
-        el.classList.remove('sn-markdown-hidden');
-        delete el.dataset.snMarkdownHiddenByEnhancer;
-      });
     }
   });
 
   mainObserver.observe(document.body, { childList: true, subtree: true });
+  window.addEventListener('beforeunload', () => { try { mainObserver.disconnect(); } catch(_){} });
+
+  // 6) 初回ロード時に即起動
+  const initial = document.querySelector('#note-text-editor');
+  if (initial && !initial.dataset.markdownReady) initiateEditorSetup(initial);
+  setupTitleEnterListener();
 
 })();
