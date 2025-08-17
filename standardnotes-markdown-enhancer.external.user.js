@@ -64,6 +64,12 @@
     return setTimeout(() => cb({ timeRemaining: () => 0, didTimeout: true }), 0);
   };
 
+  // --- highlight.js resolver (userscript sandbox 対応) ---
+  const HLJS =
+    (typeof hljs !== 'undefined') ? hljs :
+    (typeof window !== 'undefined' && typeof window.hljs !== 'undefined') ? window.hljs :
+    null;
+
   // UserScriptエンジンの誤パース回避
   const DEFINITIONS_HEADER = '<' + '!-- sn-markdown-enhancer-definitions';
   const DEFINITIONS_FOOTER = '--' + '>';
@@ -1350,8 +1356,17 @@
         highlighting = true;
         runIdle(() => {
           try {
-            if (window.hljs && !next.classList.contains('hljs')) {
-              hljs.highlightElement(next);
+            if (HLJS && !next.dataset.hljsDone) {
+              try {
+                HLJS.highlightElement(next);
+              } catch (err) {
+                // 未登録言語などで失敗した場合は language-* を外して自動判定で再挑戦
+                next.className = Array.from(next.classList)
+                  .filter(c => !c.startsWith('language-'))
+                  .join(' ');
+                try { HLJS.highlightElement(next); } catch (_) {}
+              }
+              next.dataset.hljsDone = '1'; // 二重実行防止
             }
             const pre = next.closest('pre');
             if (pre) ensureDecorations(pre);
