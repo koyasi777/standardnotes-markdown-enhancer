@@ -10,7 +10,7 @@
 // @name:de              Erweiterter Markdown-Editor für Standard Notes
 // @name:pt-BR           Editor Markdown avançado para Standard Notes
 // @name:ru              Улучшенный редактор Markdown для Standard Notes
-// @version              6.1.5
+// @version              6.2.0
 // @description          Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency. This version features a new architecture for rock-solid sync reliability.
 // @description:ja       Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップ。盤石な同期信頼性を実現する新アーキテクチャ版です。
 // @description:zh-CN    非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。此版本采用新架构，具有坚如磐石的同步可靠性。
@@ -1770,11 +1770,6 @@
         splitButton.title = T.lockdownMsg;
         previewButton.title = T.lockdownMsg;
         lockdownIndicator.style.display = 'inline-block';
-
-        if (!container.classList.contains('mode-editor')) {
-          switchMode('editor', false);
-        }
-        localStorage.setItem(STORAGE_KEY_MODE, 'editor');
       } else {
         if (splitButton.disabled || previewButton.disabled) {
           splitButton.disabled = false;
@@ -1848,7 +1843,7 @@
     const onPreviewScroll = () => handleScroll(previewContainer, markdownTextarea);
 
     const modeButtons = { editor: editorButton, split: splitButton, preview: previewButton };
-    const switchMode = (mode, shouldFocus = true) => {
+    const switchMode = (mode, shouldFocus = true, temporary = false) => {
       if (isLockdown && mode !== 'editor') {
         mode = 'editor';
       }
@@ -1856,7 +1851,10 @@
       container.classList.add(`mode-${mode}`);
       Object.values(modeButtons).forEach(btn => btn.classList.remove('active'));
       modeButtons[mode].classList.add('active');
-      localStorage.setItem(STORAGE_KEY_MODE, mode);
+      // temporary フラグが false の場合のみ設定を保存する
+      if (!temporary) {
+        localStorage.setItem(STORAGE_KEY_MODE, mode);
+      }
 
       // 10) aria-pressed
       editorButton.setAttribute('aria-pressed', String(mode==='editor'));
@@ -1932,7 +1930,7 @@
       if (observeChunkCodes && observeChunkCodes.cleanup) {
         observeChunkCodes.cleanup();
       }
-      // ★★★ observerをグローバルか、teardownのスコープでアクセス可能にしておく必要がある
+      // observerをグローバルか、teardownのスコープでアクセス可能にしておく必要がある
       if (observer) observer.disconnect();
       // beforeunload 登録の解除
       window.removeEventListener('beforeunload', teardown);
@@ -1991,12 +1989,12 @@
     // 初期ロックダウン判定＆UI反映
     updateLockdownUI(markdownTextarea.value.length);
 
-    const savedMode = localStorage.getItem(STORAGE_KEY_MODE);
-    if (isLockdown) {
-      switchMode('editor', !!isNewNoteSetup);
-    } else {
-      switchMode(savedMode || 'split', isNewNoteSetup);
-    }
+    // isLockdown 状態に基づいて最終的なモードを決定し、一度だけ呼び出す
+    const savedMode = localStorage.getItem(STORAGE_KEY_MODE) || 'split';
+    const targetMode = isLockdown ? 'editor' : savedMode;
+    const isTemporary = isLockdown; // ロックダウン時のみ一時的な変更とする
+
+    switchMode(targetMode, !!isNewNoteSetup, isTemporary);
 
     console.log(`Markdown Editor for Standard Notes (v${(GM_info && GM_info.script && GM_info.script.version) || 'unknown'}, Stream+Lockdown+Hardened Edition) initialized.`);
     if (isNewNoteSetup) { console.log('New note detected, focusing editor.'); }
