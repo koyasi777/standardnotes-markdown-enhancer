@@ -10,7 +10,7 @@
 // @name:de              Erweiterter Markdown-Editor für Standard Notes
 // @name:pt-BR           Editor Markdown avançado para Standard Notes
 // @name:ru              Улучшенный редактор Markdown для Standard Notes
-// @version              6.2.0
+// @version              6.3.0
 // @description          Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency. This version features a new architecture for rock-solid sync reliability.
 // @description:ja       Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップ。盤石な同期信頼性を実現する新アーキテクチャ版です。
 // @description:zh-CN    非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。此版本采用新架构，具有坚如磐石的同步可靠性。
@@ -343,8 +343,42 @@
     .markdown-editor-container.mode-editor .${PREVIEW_CONTAINER_CLASS} { display: none; }
     .markdown-editor-container.mode-preview .markdown-toolbar, .markdown-editor-container.mode-preview .custom-markdown-textarea { display: none; }
     .markdown-editor-container.mode-preview .${PREVIEW_CONTAINER_CLASS} { display: block; }
-    .markdown-editor-container.mode-split .custom-markdown-textarea, .markdown-editor-container.mode-split .${PREVIEW_CONTAINER_CLASS} { display: block; flex-basis: 50%; width: 50%; }
-    .markdown-editor-container.mode-split .${PREVIEW_CONTAINER_CLASS} { border-left: 1px solid var(--sn-stylekit-border-color, #e0e0e0); }
+    .markdown-editor-container.mode-split .custom-markdown-textarea {
+        display: block;
+        width: var(--sn-markdown-splitter-position, 50%);
+        flex-basis: var(--sn-markdown-splitter-position, 50%);
+        flex-grow: 0;
+        flex-shrink: 0;
+    }
+    .markdown-editor-container.mode-split .${PREVIEW_CONTAINER_CLASS} {
+        display: block;
+        flex-grow: 1;
+        flex-shrink: 1;
+        width: auto;
+        flex-basis: auto;
+        border-left: 1px solid var(--sn-stylekit-border-color, #e0e0e0);
+    }
+    .markdown-editor-container.mode-split .editor-preview-wrapper {
+        --sn-markdown-splitter-position: 50%;
+    }
+    .sn-markdown-splitter {
+        flex-basis: 5px;
+        flex-shrink: 0;
+        flex-grow: 0;
+        background-color: var(--sn-stylekit-border-color, #e0e0e0);
+        cursor: col-resize;
+        transition: background-color 0.2s;
+        position: relative;
+        z-index: 10;
+    }
+    .sn-markdown-splitter:hover,
+    body.is-resizing .sn-markdown-splitter {
+        background-color: var(--sn-stylekit-primary-color, #346df1);
+    }
+    body.is-resizing {
+        cursor: col-resize;
+        user-select: none;
+    }
 
     /* チャンク仮想化 */
     .${PREVIEW_CONTAINER_CLASS} .preview-chunk {
@@ -453,6 +487,87 @@
       clearTimeout(timeout);
       timeout = setTimeout(later, wait);
     };
+  }
+
+  const STORAGE_KEY_SPLITTER = 'snMarkdownSplitterPosition';
+
+  function setupSplitter(container, splitter, editorPane) {
+      const MIN_PERCENT = 15; // 最小幅 15%
+      const MAX_PERCENT = 85; // 最大幅 85%
+
+      // 1. 初期位置をlocalStorageから読み込んで適用
+      const savedPosition = parseFloat(localStorage.getItem(STORAGE_KEY_SPLITTER));
+      const initialPosition = (savedPosition && savedPosition >= MIN_PERCENT && savedPosition <= MAX_PERCENT) ? savedPosition : 50;
+      container.style.setProperty('--sn-markdown-splitter-position', `${initialPosition}%`);
+
+      let isDragging = false;
+      let startX = 0;
+      let startWidth = 0;
+
+      const handleMouseDown = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+
+          isDragging = true;
+          startX = e.clientX;
+          startWidth = editorPane.offsetWidth;
+
+          document.body.classList.add('is-resizing');
+
+          window.addEventListener('mousemove', handleMouseMove);
+          window.addEventListener('mouseup', handleMouseUp);
+      };
+
+      const handleMouseMove = (e) => {
+          if (!isDragging) return;
+
+          // requestAnimationFrameで更新を最適化
+          requestAnimationFrame(() => {
+              const deltaX = e.clientX - startX;
+              const containerWidth = container.offsetWidth;
+
+              if (containerWidth === 0) return;
+
+              const newWidth = startWidth + deltaX;
+              let newPercent = (newWidth / containerWidth) * 100;
+
+              // 最小・最大幅の制限
+              newPercent = Math.max(MIN_PERCENT, Math.min(MAX_PERCENT, newPercent));
+
+              container.style.setProperty('--sn-markdown-splitter-position', `${newPercent}%`);
+          });
+      };
+
+      const handleMouseUp = () => {
+          if (!isDragging) return;
+
+          isDragging = false;
+          document.body.classList.remove('is-resizing');
+
+          window.removeEventListener('mousemove', handleMouseMove);
+          window.removeEventListener('mouseup', handleMouseUp);
+
+          // 3. ドラッグ終了時に位置をlocalStorageに保存
+          const finalPosition = container.style.getPropertyValue('--sn-markdown-splitter-position');
+          if (finalPosition) {
+              localStorage.setItem(STORAGE_KEY_SPLITTER, parseFloat(finalPosition));
+          }
+      };
+
+      splitter.addEventListener('mousedown', handleMouseDown);
+
+      // 4. クリーンアップ関数を返す
+      return {
+          destroy: () => {
+              splitter.removeEventListener('mousedown', handleMouseDown);
+              // 万が一ドラッグ中にノートが切り替わった場合も考慮
+              window.removeEventListener('mousemove', handleMouseMove);
+              window.removeEventListener('mouseup', handleMouseUp);
+              if (document.body.classList.contains('is-resizing')) {
+                   document.body.classList.remove('is-resizing');
+              }
+          }
+      };
   }
 
   function createIcon(pathData) {
@@ -1273,10 +1388,18 @@
 
     const contentWrapper = document.createElement('div');
     contentWrapper.className = 'editor-preview-wrapper';
-    contentWrapper.append(markdownTextarea, previewContainer);
+
+    const splitter = document.createElement('div');
+    splitter.className = 'sn-markdown-splitter';
+    splitter.setAttribute('aria-label', 'Resize editor panes');
+    splitter.setAttribute('role', 'separator');
+
+    contentWrapper.append(markdownTextarea, splitter, previewContainer);
     modeBar.append(editorButton, splitButton, previewButton, lockdownIndicator, toolbarToggleButton, printButton);
     container.append(modeBar, toolbar, contentWrapper);
     editorWrapper.after(container);
+
+    const splitterInstance = setupSplitter(contentWrapper, splitter, markdownTextarea);
 
     // =========================
     // ▼ ストリーミング・プレビュー
@@ -1912,6 +2035,11 @@
     const teardown = () => {
       if (destroyed) return;
       destroyed = true;
+
+      if (splitterInstance && splitterInstance.destroy) {
+          splitterInstance.destroy();
+      }
+
       // （グローバルHotkeyはページ単位で1つだけ残す）
       markdownTextarea.removeEventListener('input', debouncedInputHandler);
       markdownTextarea.removeEventListener('click', handleEditorClick);
