@@ -10,7 +10,7 @@
 // @name:de              Erweiterter Markdown-Editor für Standard Notes
 // @name:pt-BR           Editor Markdown avançado para Standard Notes
 // @name:ru              Улучшенный редактор Markdown для Standard Notes
-// @version              6.0.0
+// @version              6.1.0
 // @description          Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency. This version features a new architecture for rock-solid sync reliability.
 // @description:ja       Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップ。盤石な同期信頼性を実現する新アーキテクチャ版です。
 // @description:zh-CN    非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。此版本采用新架构，具有坚如磐石的同步可靠性。
@@ -1112,18 +1112,34 @@
 
     // 3) 行頭系操作：プレフィクスの付与/解除をトグル
     function applyLinePrefix(textarea, prefix) {
-      const val = textarea.value;
-      const selStart = textarea.selectionStart;
-      const selEnd   = textarea.selectionEnd;
-      const { lineStart, lineEnd } = getLineRangeForSelection(val, selStart, selEnd);
-      const lines = val.slice(lineStart, lineEnd).split('\n');
-      const allHave = lines.every(l => l.startsWith(prefix) || l.trim() === '');
-      const next = allHave
-        ? lines.map(l => l.startsWith(prefix) ? l.slice(prefix.length) : l)
-        : lines.map(l => l ? prefix + l : l);
-      textarea.setRangeText(next.join('\n'), lineStart, lineEnd, 'end');
-      textarea.focus();
-      debouncedInputHandler();
+        const val = textarea.value;
+        const selStart = textarea.selectionStart;
+        const selEnd   = textarea.selectionEnd;
+        const { lineStart, lineEnd } = getLineRangeForSelection(val, selStart, selEnd);
+        const lines = val.slice(lineStart, lineEnd).split('\n');
+
+        // [修正ポイント1] 空行を除いた行を基準に「すべてがプレフィックス持ちか」を判定する
+        const nonEmptyLines = lines.filter(l => l.trim() !== '');
+        const allHavePrefix = nonEmptyLines.length > 0 && nonEmptyLines.every(l => l.startsWith(prefix));
+
+        if (allHavePrefix) {
+            // 【削除モード】
+            const next = lines.map(line => line.startsWith(prefix) ? line.slice(prefix.length) : line);
+            textarea.setRangeText(next.join('\n'), lineStart, lineEnd, 'select');
+        } else {
+            // 【付与モード】
+            const next = lines.map(line => {
+                // [修正ポイント2] 複数行選択時の空行はそのままにしつつ、単一の空行の場合はプレフィックスを付与する
+                if (line.trim() === '' && lines.length > 1) {
+                    return line;
+                }
+                return prefix + line;
+            });
+            textarea.setRangeText(next.join('\n'), lineStart, lineEnd, 'select');
+        }
+
+        textarea.focus();
+        debouncedInputHandler();
     }
 
     // --- Toolbar buttons ---
@@ -1788,19 +1804,28 @@
     debouncedInputHandler = debounce(handleInput, 300);
     markdownTextarea.addEventListener('input', debouncedInputHandler);
 
-    // ★ 外部更新の取り込み
-    const onHostInput = () => {
-      if (isInternallyUpdating) return;
-      isInternallyUpdating = true;
-      extractAndSetContent(originalTextarea.value);
-      updateLockdownUI(markdownTextarea.value.length);
-      if (!isLockdown && (container.classList.contains('mode-split') || container.classList.contains('mode-preview'))) {
-        updatePreview();
-      }
-      requestAnimationFrame(() => { isInternallyUpdating = false; });
-    };
-    originalTextarea.addEventListener('input', onHostInput);
-    originalTextarea.addEventListener('change', onHostInput);
+    // ★ 外部更新の取り込み（MutationObserverによる堅牢な実装）
+    const observer = new MutationObserver(() => {
+        // isInternallyUpdatingフラグは、コールバック内で直接チェックする
+        if (isInternallyUpdating) return;
+
+        // onHostInputが持つべきロジックをここで実行
+        isInternallyUpdating = true;
+        extractAndSetContent(originalTextarea.value);
+        updateLockdownUI(markdownTextarea.value.length);
+        if (!isLockdown && (container.classList.contains('mode-split') || container.classList.contains('mode-preview'))) {
+            updatePreview();
+        }
+        requestAnimationFrame(() => { isInternallyUpdating = false; });
+    });
+
+    // 旧バージョンと同じ広範な監視設定で、あらゆる変更を捉える
+    observer.observe(originalTextarea, {
+        attributes: true,
+        childList: true,
+        subtree: true,
+        characterData: true
+    });
 
     // スクロール同期
     let scrollRequest;
@@ -1890,8 +1915,6 @@
       markdownTextarea.removeEventListener('input', debouncedInputHandler);
       markdownTextarea.removeEventListener('click', handleEditorClick);
       markdownTextarea.removeEventListener('paste', handlePaste);
-      originalTextarea.removeEventListener('input', onHostInput);
-      originalTextarea.removeEventListener('change', onHostInput);
       markdownTextarea.removeEventListener('scroll', onEditorScroll);
       previewContainer.removeEventListener('scroll', onPreviewScroll);
       // 統合 keydown リスナの取り外し
@@ -1906,6 +1929,8 @@
       if (observeChunkCodes && observeChunkCodes.cleanup) {
         observeChunkCodes.cleanup();
       }
+      // ★★★ observerをグローバルか、teardownのスコープでアクセス可能にしておく必要がある
+      if (observer) observer.disconnect();
       // beforeunload 登録の解除
       window.removeEventListener('beforeunload', teardown);
     };
