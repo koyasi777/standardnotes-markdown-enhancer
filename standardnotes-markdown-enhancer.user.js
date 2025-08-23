@@ -1,36 +1,36 @@
 // ==UserScript==
-// @name              Enhanced Markdown Editor for Standard Notes
-// @name:ja             Standard Notes 高機能Markdownエディタ拡張
-// @name:en             Enhanced Markdown Editor for Standard Notes
-// @name:zh-CN            为Standard Notes增强Markdown编辑器
-// @name:zh-TW            為Standard Notes強化Markdown編輯器
-// @name:ko             Standard Notes용 고급 Markdown 에ディ터 확장
-// @name:fr             Éditeur Markdown amélioré pour Standard Notes
-// @name:es             Editor Markdown mejorado para Standard Notes
-// @name:de             Erweiterter Markdown-Editor für Standard Notes
-// @name:pt-BR            Editor Markdown avançado para Standard Notes
-// @name:ru             Улучшенный редактор Markdown для Standard Notes
-// @version             6.3.0
-// @description         Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency. This version features a new architecture for rock-solid sync reliability.
-// @description:ja        Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップ。盤石な同期信頼性を実現する新アーキテクチャ版です。
-// @description:zh-CN     非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。此版本采用新架构，具有坚如磐石的同步可靠性。
-// @description:zh-TW     非官方強化Markdown編輯器，為Standard Notes新增即時預覽、工具列、自動縮放圖片貼上/上傳、PDF匯出等功能，並自動清除未使用圖片。此版本採用新架構，具備堅如磐石的同步可靠性。
-// @description:ko        Standard Notes를 위한 강력한 비공식 Markdown 에디터! 실시간 미리보기, 서식 툴바, 이미지 붙여넣기/업로드(자동 리사이즈), PDF 내보내기 지원. 사용하지 않는 이미지는 자동 정리됩니다. 확고한 동기화 신뢰성을 위한 새로운 아키텍처 버전입니다。
-// @description:fr        Améliorez Standard Notes avec un éditeur Markdown puissant et non officiel : aperçu en direct, barre d’outils, collage/téléversement d’images redimensionnées automatiquement, export PDF. Nettoyage automatique des images inutilisées. Cette version présente une nouvelle architecture pour une fiabilité de synchronisation à toute épreuve.
-// @description:es        Mejora Standard Notes con un potente editor Markdown no oficial: vista previa en vivo, barra de herramientas, pegado/carga de imágenes con redimensionado automático y exportación a PDF. Las imágenes no usadas se eliminan automáticamente. Esta versión presenta una nueva arquitectura para una fiabilidad de sincronización sólida como una roca.
-// @description:de        Erweitern Sie Standard Notes mit einem leistungsstarken, inoffiziellen Markdown-Editor: Live-Vorschau, Formatierungsleiste, Bild-Einfügen/-Hochladen mit automatischer Größenanpassung und PDF-Export. Nicht verwendete Bilder werden automatisch bereinigt. Diese Version verfügt über eine neue Architektur für eine absolut zuverlässige Synchronisierung.
-// @description:pt-BR     Potencialize o Standard Notes com um editor Markdown poderoso e não oficial: visualização ao vivo, barra de formatação, colagem/envio de imagens com redimensionamento automático e exportação para PDF. Imagens não utilizadas são removidas automaticamente. Esta versão apresenta uma nova arquitetura para uma confiabilidade de sincronização sólida.
-// @description:ru        Улучшите Standard Notes с помощью мощного неофициального редактора Markdown: живая превью, панель форматирования, вставка/загрузка изображений с автоизменением размера и экспорт в PDF. Неиспользуемые изображения автоматически удаляются. Эта версия имеет новую архитектуру для надежной синхронизации.
-// @namespace           https://github.com/koyasi777/standardnotes-markdown-enhancer
-// @author              koyasi777
-// @match               https://app.standardnotes.com/*
-// @grant               GM_addStyle
-// @grant               GM_info
-// @homepageURL         https://github.com/koyasi777/standardnotes-markdown-enhancer
-// @supportURL          https://github.com/koyasi777/standardnotes-markdown-enhancer/issues
-// @icon                https://app.standardnotes.com/favicon/favicon-32x32.png
-// @license             MIT
-// @run-at              document-idle
+// @name                 Enhanced Markdown Editor for Standard Notes
+// @name:ja              Standard Notes 高機能Markdownエディタ拡張
+// @name:en              Enhanced Markdown Editor for Standard Notes
+// @name:zh-CN           为Standard Notes增强Markdown编辑器
+// @name:zh-TW           為Standard Notes強化Markdown編輯器
+// @name:ko              Standard Notes용 고급 Markdown 에디터 확장
+// @name:fr              Éditeur Markdown amélioré pour Standard Notes
+// @name:es              Editor Markdown mejorado para Standard Notes
+// @name:de              Erweiterter Markdown-Editor für Standard Notes
+// @name:pt-BR           Editor Markdown avançado para Standard Notes
+// @name:ru              Улучшенный редактор Markdown для Standard Notes
+// @version              6.5.0
+// @description          Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency. This version features a new architecture for rock-solid sync reliability.
+// @description:ja       Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップ。盤石な同期信頼性を実現する新アーキテクチャ版です。
+// @description:zh-CN    非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。此版本采用新架构，具有坚如磐石的同步可靠性。
+// @description:zh-TW    非官方強化Markdown編輯器，為Standard Notes新增即時預覽、工具列、自動縮放圖片貼上/上傳、PDF匯出等功能，並自動清除未使用圖片。此版本採用新架構，具備堅如磐石的同步可靠性。
+// @description:ko       Standard Notes를 위한 강력한 비공식 Markdown 에디터! 실시간 미리보기, 서식 툴바, 이미지 붙여넣기/업로드(자동 리사이즈), PDF 내보내기 지원. 사용하지 않는 이미지는 자동 정리됩니다. 확고한 동기화 신뢰성을 위한 새로운 아키텍처 버전입니다。
+// @description:fr       Améliorez Standard Notes avec un éditeur Markdown puissant et non officiel : aperçu en direct, barre d’outils, collage/téléversement d’images redimensionnées automatiquement, export PDF. Nettoyage automatique des images inutilisées. Cette version présente une nouvelle architecture pour une fiabilité de synchronisation à toute épreuve.
+// @description:es       Mejora Standard Notes con un potente editor Markdown no oficial: vista previa en vivo, barra de herramientas, pegado/carga de imágenes con redimensionado automático y exportación a PDF. Las imágenes no usadas se eliminan automáticamente. Esta versión presenta una nueva arquitectura para una fiabilidad de sincronización sólida como una roca.
+// @description:de       Erweitern Sie Standard Notes mit einem leistungsstarken, inoffiziellen Markdown-Editor: Live-Vorschau, Formatierungsleiste, Bild-Einfügen/-Hochladen mit automatischer Größenanpassung und PDF-Export. Nicht verwendete Bilder werden automatisch bereinigt. Diese Version verfügt über eine neue Architektur für eine absolut zuverlässige Synchronisierung.
+// @description:pt-BR    Potencialize o Standard Notes com um editor Markdown poderoso e não oficial: visualização ao vivo, barra de formatação, colagem/envio de imagens com redimensionamento automático e exportação para PDF. Imagens não utilizadas são removidas automaticamente. Esta versão apresenta uma nova arquitetura para uma confiabilidade de sincronização sólida.
+// @description:ru       Улучшите Standard Notes с помощью мощного неофициального редактора Markdown: живая превью, панель форматирования, вставка/загрузка изображений с автоизменением размера и экспорт в PDF. Неиспользуемые изображения автоматически удаляются. Эта версия имеет новую архитектуру для надежной синхронизации.
+// @namespace            https://github.com/koyasi777/standardnotes-markdown-enhancer
+// @author               koyasi777
+// @match                https://app.standardnotes.com/*
+// @grant                GM_addStyle
+// @grant                GM_info
+// @homepageURL          https://github.com/koyasi777/standardnotes-markdown-enhancer
+// @supportURL           https://github.com/koyasi777/standardnotes-markdown-enhancer/issues
+// @icon                 https://app.standardnotes.com/favicon/favicon-32x32.png
+// @license              MIT
+// @run-at               document-idle
 // @noframes
 // ==/UserScript==
 
@@ -50445,7 +50445,7 @@
                   A double quote can start either a string or a line comment. Strings are
                   ended before the end of a line by another double quote and can contain
                   escaped double-quotes and post-escaped line breaks.
-            
+
                   Also, any double quote at the beginning of a line is a comment but we
                   don't handle that properly at the moment: any double quote inside will
                   turn them into a string. Handling it properly will require a smarter
@@ -53965,6 +53965,10 @@ Please report this to https://github.com/markedjs/marked.`, e) {
     const HEAVY_NOTE_THRESHOLD = Math.floor(BASE_HEAVY_NOTE_THRESHOLD * PERF_SCALE);
     const LOCKDOWN_THRESHOLD = Math.floor(BASE_LOCKDOWN_THRESHOLD * PERF_SCALE);
     const MD_CHUNK_TARGET = Math.floor(BASE_MD_CHUNK_TARGET * PERF_SCALE);
+    const CODE_VIRT_TRIGGER_CHARS = 1e5;
+    const CODE_VIRT_TRIGGER_LINES = 2e3;
+    const CODE_CHUNK_MAX_LINES = 400;
+    const CODE_CHUNK_MAX_CHARS = 2e4;
     const runIdle = (cb) => {
       if (window.requestIdleCallback) return window.requestIdleCallback(cb, { timeout: 80 });
       return setTimeout(() => cb({ timeRemaining: () => 0, didTimeout: true }), 0);
@@ -54027,6 +54031,12 @@ Please report this to https://github.com/markedjs/marked.`, e) {
         if (node.nodeName === "A" && attr === "href" && data.keepAttr !== false) {
           node.setAttribute("target", "_blank");
           node.setAttribute("rel", "noopener noreferrer");
+        }
+      });
+      purify.addHook("afterSanitizeAttributes", (node) => {
+        if (node.nodeName === "INPUT") {
+          const t = (node.getAttribute("type") || "").toLowerCase();
+          if (t !== "checkbox") node.remove();
         }
       });
       purify.__snHooksAdded = true;
@@ -54254,6 +54264,7 @@ Please report this to https://github.com/markedjs/marked.`, e) {
     .${PREVIEW_CONTAINER_CLASS} .hljs-strong { font-weight: bold; }
     .${PREVIEW_CONTAINER_CLASS} a { color: var(--sn-stylekit-primary-color, #007bff) !important; text-decoration: underline; }
     .${PREVIEW_CONTAINER_CLASS} a:hover { text-decoration: none; }
+    .${PREVIEW_CONTAINER_CLASS} pre code .code-chunk { display: block; }
     @media (prefers-color-scheme: dark) {
       .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-keyword, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-selector-tag, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-subst, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-deletion, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-meta, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-selector-class { color: #ff7b72 !important; }
       .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-string, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-doctag { color: #a5d6ff !important; }
@@ -55381,6 +55392,48 @@ ${DEFINITIONS_FOOTER}`;
       }
       let previewRenderToken = 0;
       let observeChunkCodes = null;
+      function shouldVirtualizeCode(codeEl) {
+        const txt = codeEl.textContent || "";
+        const lines = (txt.match(/\n/g)?.length || 0) + 1;
+        return txt.length > CODE_VIRT_TRIGGER_CHARS || lines > CODE_VIRT_TRIGGER_LINES;
+      }
+      function virtualizeLargeCodeBlock(codeEl) {
+        if (codeEl.dataset.virtualized === "1") return;
+        const pre = codeEl.closest("pre");
+        if (pre && !pre.dataset.rawTextSaved) {
+          pre.dataset.rawTextSaved = codeEl.textContent || "";
+        }
+        const text2 = codeEl.textContent || "";
+        const lines = text2.split("\n");
+        const frag = document.createDocumentFragment();
+        let buf = [];
+        let charCount = 0;
+        let lineCount = 0;
+        const flush = () => {
+          if (!buf.length) return;
+          const span = document.createElement("span");
+          span.className = "code-chunk";
+          span.textContent = buf.join("\n");
+          span.dataset.state = "pending";
+          frag.appendChild(span);
+          buf = [];
+          charCount = 0;
+          lineCount = 0;
+        };
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          buf.push(line);
+          charCount += line.length + 1;
+          lineCount += 1;
+          if (charCount >= CODE_CHUNK_MAX_CHARS || lineCount >= CODE_CHUNK_MAX_LINES) {
+            flush();
+          }
+        }
+        flush();
+        codeEl.textContent = "";
+        codeEl.appendChild(frag);
+        codeEl.dataset.virtualized = "1";
+      }
       function postProcessPreview(containerEl) {
         let globalTaskIndex = 0;
         if (!containerEl.dataset.copyDelegationAttached) {
@@ -55388,9 +55441,10 @@ ${DEFINITIONS_FOOTER}`;
             const btn = e.target.closest(".copy-code-button");
             if (!btn) return;
             const pre = btn.closest("pre");
+            const raw = pre?.dataset?.rawTextSaved;
             const codeEl = pre && pre.querySelector("code");
-            if (!codeEl) return;
-            navigator.clipboard.writeText(codeEl.innerText).then(() => {
+            const toCopy = raw || codeEl?.textContent || "";
+            navigator.clipboard.writeText(toCopy).then(() => {
               btn.textContent = T.copied;
               btn.classList.add("copied");
               setTimeout(() => {
@@ -55409,12 +55463,13 @@ ${DEFINITIONS_FOOTER}`;
         const highlightQueue = [];
         let highlighting = false;
         const ensureDecorations = (preEl) => {
-          if (!preEl.querySelector(".code-language-label")) {
-            const label = document.createElement("div");
+          let label = preEl.querySelector(".code-language-label");
+          if (!label) {
+            label = document.createElement("div");
             label.className = "code-language-label";
-            label.textContent = preEl.dataset.explicitLang || "code";
             preEl.appendChild(label);
           }
+          label.textContent = preEl.dataset.explicitLang || "code";
           if (!preEl.querySelector(".copy-code-button")) {
             const btn = document.createElement("button");
             btn.className = "copy-code-button";
@@ -55431,19 +55486,38 @@ ${DEFINITIONS_FOOTER}`;
           runIdle(() => {
             try {
               if (HLJS && !next.dataset.hljsDone) {
-                try {
-                  HLJS.highlightElement(next);
-                } catch (err) {
-                  next.className = Array.from(next.classList).filter((c) => !c.startsWith("language-")).join(" ");
+                if (next.classList.contains("code-chunk")) {
+                  const pre = next.closest("pre");
+                  const code = next.closest("code");
+                  if (code && !code.classList.contains("hljs")) code.classList.add("hljs");
+                  let lang2 = "";
+                  const cls = Array.from(code?.classList || []).find((c) => c.startsWith("language-"));
+                  if (cls) lang2 = cls.replace("language-", "");
+                  const raw = next.textContent || "";
+                  let html2 = "";
+                  try {
+                    html2 = lang2 ? HLJS.highlight(raw, { language: lang2, ignoreIllegals: true }).value : HLJS.highlightAuto(raw).value;
+                  } catch (_2) {
+                    html2 = raw.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+                  }
+                  next.innerHTML = html2;
+                  next.dataset.hljsDone = "1";
+                  next.dataset.state = "ready";
+                  try {
+                    io.unobserve(next);
+                  } catch (_2) {
+                  }
+                  if (pre) ensureDecorations(pre);
+                } else {
                   try {
                     HLJS.highlightElement(next);
                   } catch (_2) {
                   }
+                  next.dataset.hljsDone = "1";
+                  const pre = next.closest("pre");
+                  if (pre) ensureDecorations(pre);
                 }
-                next.dataset.hljsDone = "1";
               }
-              const pre = next.closest("pre");
-              if (pre) ensureDecorations(pre);
             } finally {
               highlighting = false;
               pumpHighlight();
@@ -55453,19 +55527,33 @@ ${DEFINITIONS_FOOTER}`;
         const io = new IntersectionObserver((entries2) => {
           for (const ent of entries2) {
             if (ent.isIntersecting) {
-              const codeEl = ent.target;
-              const langMatch = Array.from(codeEl.classList).find((cls) => cls.startsWith("language-"));
+              const codeEl = ent.target.classList.contains("code-chunk") ? ent.target.closest("code") : ent.target;
+              const langMatch = codeEl && Array.from(codeEl.classList).find((cls) => cls.startsWith("language-"));
               if (langMatch) {
                 const pre = codeEl.closest("pre");
                 if (pre) pre.dataset.explicitLang = langMatch.replace("language-", "");
               }
-              highlightQueue.push(codeEl);
+              highlightQueue.push(ent.target);
               pumpHighlight();
             }
           }
-        }, { root: previewContainer, rootMargin: devMemGB <= 4 ? "80px 0px" : "200px 0px", threshold: 0.01 });
+        }, { root: previewContainer, rootMargin: devMemGB <= 4 ? "80px 0px" : "200px 0px", threshold: 0 });
         const processWithin = (root) => {
-          root.querySelectorAll("pre code").forEach((code) => io.observe(code));
+          root.querySelectorAll("pre").forEach((pre) => ensureDecorations(pre));
+          root.querySelectorAll("pre code").forEach((code) => {
+            const pre = code.closest("pre");
+            if (pre && !pre.dataset.rawTextSaved) {
+              pre.dataset.rawTextSaved = code.textContent || "";
+            }
+            if (shouldVirtualizeCode(code)) virtualizeLargeCodeBlock(code);
+          });
+          root.querySelectorAll("pre code").forEach((code) => {
+            if (code.dataset.virtualized === "1") {
+              code.querySelectorAll('.code-chunk[data-state="pending"]').forEach((ch) => io.observe(ch));
+            } else {
+              io.observe(code);
+            }
+          });
           root.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
             const li = cb.closest("li");
             if (li) {
