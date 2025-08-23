@@ -10,7 +10,7 @@
 // @name:de              Erweiterter Markdown-Editor für Standard Notes
 // @name:pt-BR           Editor Markdown avançado para Standard Notes
 // @name:ru              Улучшенный редактор Markdown для Standard Notes
-// @version              6.3.1
+// @version              6.5.0
 // @description          Boost Standard Notes with a powerful, unofficial Markdown editor featuring live preview, formatting toolbar, image pasting/uploading with auto-resize, and PDF export. Unused images are auto-cleaned for efficiency. This version features a new architecture for rock-solid sync reliability.
 // @description:ja       Standard Notesを強化する非公式の高機能Markdownエディタ！ライブプレビュー、装飾ツールバー、画像の貼り付け・アップロード（自動リサイズ）、PDF出力に対応。未使用画像は自動でクリーンアップ。盤石な同期信頼性を実現する新アーキテクチャ版です。
 // @description:zh-CN    非官方增强的Markdown编辑器，为Standard Notes添加实时预览、工具栏、自动调整大小的图像粘贴/上传、PDF导出等功能，并自动清理未使用的图像。此版本采用新架构，具有坚如磐石的同步可靠性。
@@ -57,6 +57,12 @@
   const HEAVY_NOTE_THRESHOLD = Math.floor(BASE_HEAVY_NOTE_THRESHOLD * PERF_SCALE);
   const LOCKDOWN_THRESHOLD   = Math.floor(BASE_LOCKDOWN_THRESHOLD   * PERF_SCALE);
   const MD_CHUNK_TARGET      = Math.floor(BASE_MD_CHUNK_TARGET      * PERF_SCALE);
+
+  // 大型コードブロックの仮想化トリガ＆1チャンクの大きさ
+  const CODE_VIRT_TRIGGER_CHARS = 100_000;  // これを超えたら仮想化
+  const CODE_VIRT_TRIGGER_LINES = 2_000;
+  const CODE_CHUNK_MAX_LINES    = 400;      // 1チャンクあたり行数上限
+  const CODE_CHUNK_MAX_CHARS    = 20_000;   // 1チャンクあたり文字数上限
 
   // requestIdleCallback フォールバック
   const runIdle = (cb) => {
@@ -145,6 +151,14 @@
         node.setAttribute('rel', 'noopener noreferrer');
       }
     });
+
+    DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+      if (node.nodeName === 'INPUT') {
+        const t = (node.getAttribute('type') || '').toLowerCase();
+        if (t !== 'checkbox') node.remove(); // 確実に除去
+      }
+    });
+
     DOMPurify.__snHooksAdded = true;
   }
 
@@ -308,6 +322,7 @@
     .${PREVIEW_CONTAINER_CLASS} .hljs-strong { font-weight: bold; }
     .${PREVIEW_CONTAINER_CLASS} a { color: var(--sn-stylekit-primary-color, #007bff) !important; text-decoration: underline; }
     .${PREVIEW_CONTAINER_CLASS} a:hover { text-decoration: none; }
+    .${PREVIEW_CONTAINER_CLASS} pre code .code-chunk { display: block; }
     @media (prefers-color-scheme: dark) {
       .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-keyword, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-selector-tag, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-subst, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-deletion, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-meta, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-selector-class { color: #ff7b72 !important; }
       .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-string, .${PREVIEW_CONTAINER_CLASS} pre code.hljs .hljs-doctag { color: #a5d6ff !important; }
@@ -1450,6 +1465,59 @@
     let previewRenderToken = 0;
     let observeChunkCodes = null;
 
+    function shouldVirtualizeCode(codeEl) {
+      const txt = codeEl.textContent || '';
+      const lines = (txt.match(/\n/g)?.length || 0) + 1;
+      return txt.length > CODE_VIRT_TRIGGER_CHARS || lines > CODE_VIRT_TRIGGER_LINES;
+    }
+
+    function virtualizeLargeCodeBlock(codeEl) {
+      if (codeEl.dataset.virtualized === '1') return;
+
+      const pre = codeEl.closest('pre');
+      if (pre && !pre.dataset.rawTextSaved) {
+        // コピー用に元テキストを保存（常にこれを使ってコピーする）
+        pre.dataset.rawTextSaved = codeEl.textContent || '';
+      }
+
+      const text = codeEl.textContent || '';
+      const lines = text.split('\n');
+
+      const frag = document.createDocumentFragment();
+      let buf = [];
+      let charCount = 0;
+      let lineCount = 0;
+
+      const flush = () => {
+        if (!buf.length) return;
+        const span = document.createElement('span');
+        span.className = 'code-chunk';
+        // 初期は生テキスト（HTML生成は可視時に実行）
+        span.textContent = buf.join('\n');
+        span.dataset.state = 'pending';
+        frag.appendChild(span);
+        buf = [];
+        charCount = 0;
+        lineCount = 0;
+      };
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        buf.push(line);
+        charCount += line.length + 1;
+        lineCount += 1;
+        if (charCount >= CODE_CHUNK_MAX_CHARS || lineCount >= CODE_CHUNK_MAX_LINES) {
+          flush();
+        }
+      }
+      flush();
+
+      // 置き換え（code 要素のクラスはそのまま保持）
+      codeEl.textContent = '';
+      codeEl.appendChild(frag);
+      codeEl.dataset.virtualized = '1';
+    }
+
     function postProcessPreview(containerEl) {
       // ① チェックボックスのグローバルインデックス化（チャンクを跨いで一意）
       let globalTaskIndex = 0;
@@ -1459,9 +1527,10 @@
           const btn = e.target.closest('.copy-code-button');
           if (!btn) return;
           const pre = btn.closest('pre');
+          const raw = pre?.dataset?.rawTextSaved;
           const codeEl = pre && pre.querySelector('code');
-          if (!codeEl) return;
-          navigator.clipboard.writeText(codeEl.innerText).then(() => {
+          const toCopy = raw || codeEl?.textContent || '';
+          navigator.clipboard.writeText(toCopy).then(() => {
             btn.textContent = T.copied; btn.classList.add('copied');
             setTimeout(() => { btn.textContent = T.copy; btn.classList.remove('copied'); }, 2000);
           }).catch(() => {
@@ -1476,12 +1545,14 @@
       let highlighting = false;
 
       const ensureDecorations = (preEl) => {
-        if (!preEl.querySelector('.code-language-label')) {
-          const label = document.createElement('div');
+        let label = preEl.querySelector('.code-language-label');
+        if (!label) {
+          label = document.createElement('div');
           label.className = 'code-language-label';
-          label.textContent = preEl.dataset.explicitLang || 'code';
           preEl.appendChild(label);
         }
+        // 毎回 dataset を反映
+        label.textContent = preEl.dataset.explicitLang || 'code';
         if (!preEl.querySelector('.copy-code-button')) {
           const btn = document.createElement('button');
           btn.className = 'copy-code-button';
@@ -1499,19 +1570,38 @@
         runIdle(() => {
           try {
             if (HLJS && !next.dataset.hljsDone) {
-              try {
-                HLJS.highlightElement(next);
-              } catch (err) {
-                // 未登録言語などで失敗した場合は language-* を外して自動判定で再挑戦
-                next.className = Array.from(next.classList)
-                  .filter(c => !c.startsWith('language-'))
-                  .join(' ');
+              // ▼▼▼ 仮想化チャンクの場合 ▼▼▼
+              if (next.classList.contains('code-chunk')) {
+                const pre = next.closest('pre');
+                const code = next.closest('code');
+                if (code && !code.classList.contains('hljs')) code.classList.add('hljs');
+                // 言語名は code のクラスから推定（例: language-ts）
+                let lang = '';
+                const cls = Array.from(code?.classList || []).find(c => c.startsWith('language-'));
+                if (cls) lang = cls.replace('language-', '');
+                const raw = next.textContent || '';
+                let html = '';
+                try {
+                  html = lang
+                    ? HLJS.highlight(raw, { language: lang, ignoreIllegals: true }).value
+                    : HLJS.highlightAuto(raw).value;
+                } catch (_) {
+                  // 失敗時は生のまま（でも UI は付ける）
+                  html = raw.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+                }
+                next.innerHTML = html;
+                next.dataset.hljsDone = '1';
+                next.dataset.state = 'ready';
+                try { io.unobserve(next); } catch(_) {}
+                if (pre) ensureDecorations(pre);
+              } else {
+                // ▼▼▼ 通常の <pre><code> 丸ごと ▼▼▼
                 try { HLJS.highlightElement(next); } catch (_) {}
+                next.dataset.hljsDone = '1';
+                const pre = next.closest('pre');
+                if (pre) ensureDecorations(pre);
               }
-              next.dataset.hljsDone = '1'; // 二重実行防止
             }
-            const pre = next.closest('pre');
-            if (pre) ensureDecorations(pre);
           } finally {
             highlighting = false;
             pumpHighlight();
@@ -1522,21 +1612,39 @@
       const io = new IntersectionObserver(entries => {
         for (const ent of entries) {
           if (ent.isIntersecting) {
-            const codeEl = ent.target;
-            const langMatch = Array.from(codeEl.classList).find(cls => cls.startsWith('language-'));
+            const codeEl = ent.target.classList.contains('code-chunk')
+              ? ent.target.closest('code')
+              : ent.target;
+            const langMatch = codeEl && Array.from(codeEl.classList).find(cls => cls.startsWith('language-'));
             if (langMatch) {
               const pre = codeEl.closest('pre');
               if (pre) pre.dataset.explicitLang = langMatch.replace('language-','');
             }
-            highlightQueue.push(codeEl);
+            highlightQueue.push(ent.target); // チャンク or code のどちらでもOK
             pumpHighlight();
           }
         }
       }, { root: previewContainer, rootMargin: (devMemGB <= 4 ? '80px 0px' : '200px 0px'), threshold: 0 });
 
       const processWithin = (root) => {
-        root.querySelectorAll('pre').forEach(pre => ensureDecorations(pre)); // 先にUIを付ける
-        root.querySelectorAll('pre code').forEach(code => io.observe(code));  // 可視になったらハイライト
+        // ① 先にUI（コピー/ラベル）を必ず付ける
+        root.querySelectorAll('pre').forEach(pre => ensureDecorations(pre));
+        // ② 大型コードはその場で仮想化
+        root.querySelectorAll('pre code').forEach(code => {
+          const pre = code.closest('pre');
+          if (pre && !pre.dataset.rawTextSaved) {
+            pre.dataset.rawTextSaved = code.textContent || '';
+          }
+          if (shouldVirtualizeCode(code)) virtualizeLargeCodeBlock(code);
+        });
+        // ③ 監視対象を登録（通常: code、仮想化: 各チャンク）
+        root.querySelectorAll('pre code').forEach(code => {
+          if (code.dataset.virtualized === '1') {
+            code.querySelectorAll('.code-chunk[data-state="pending"]').forEach(ch => io.observe(ch));
+          } else {
+            io.observe(code);
+          }
+        });
         root.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
           const li = cb.closest('li'); if (li) {
             li.classList.add('task-list-item'); if (cb.checked) li.classList.add('completed');
